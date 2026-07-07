@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #063009;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Paleta de marca MOVE */
+  --color-move-green: #063009;
+  --color-move-coral: #ff4f3f;
+  --color-move-lime: #d4ff3f;
+
+  /* Tipografías */
+  --font-heading: var(--font-poppins);
+  --font-body: var(--font-inter);
+  /* TAN Canard: fuente de reemplazo hasta que se cargue la real.
+     Ver src/fonts/tan-canard/README.md */
+  --font-brand: "TAN Canard", Georgia, "Times New Roman", serif;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}

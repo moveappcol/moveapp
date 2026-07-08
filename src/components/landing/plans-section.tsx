@@ -88,9 +88,7 @@ export default function PlansSection() {
         </div>
 
         <p className="mt-6 font-body text-sm text-move-green/60">
-          Puedes cancelar una clase hasta 24 horas antes sin costo. Después
-          de eso, los créditos se cobran igual. Ver política completa en el
-          pie de página.
+          Puedes cancelar las clases hasta 24h antes sin costo.
         </p>
       </div>
     </section>

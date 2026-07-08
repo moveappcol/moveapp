@@ -35,7 +35,6 @@ export default function Footer() {
             </p>
             <p className="mt-3 font-body text-sm text-white/70">
               Puedes cancelar una clase hasta 24 horas antes sin costo.
-              Pasado ese plazo, los créditos se cobran igual.
             </p>
           </div>
         </div>

@@ -15,7 +15,7 @@ export type Gym = {
 /**
  * Esquema actual en Airtable — tabla "Gimnasios":
  *   - Nombre        (texto)
- *   - Actividades   (texto simple, una sola actividad por ahora)
+ *   - Actividades   (selección múltiple)
  *   - Ciudad        (texto — hoy contiene la dirección, ej: "cll 93 b")
  *   - Latitud       (número, opcional — aún no está creada, se usa cuando exista)
  *   - Longitud      (número, opcional — aún no está creada, se usa cuando exista)
@@ -115,12 +115,12 @@ export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }
     .filter((record) => Boolean(record.get("Nombre")))
     .map((record) => {
       const photos = record.get("Foto") as { url: string }[] | undefined;
-      const activity = (record.get("Actividades") as string) ?? "";
+      const activities = (record.get("Actividades") as string[]) ?? [];
       const address = (record.get("Ciudad") as string) ?? "";
       return {
         id: record.id,
         name: (record.get("Nombre") as string) ?? "Sin nombre",
-        activities: activity.trim() ? [activity.trim()] : [],
+        activities: activities.map((a) => a.trim()).filter(Boolean),
         city: "",
         address: address.trim(),
         lat: (record.get("Latitud") as number) ?? null,

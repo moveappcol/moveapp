@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Hero() {
@@ -34,9 +35,16 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative aspect-square w-full max-w-md justify-self-center rounded-[2.5rem] bg-move-green md:justify-self-end">
+        <div className="relative aspect-square w-full max-w-md justify-self-center overflow-hidden rounded-[2.5rem] bg-move-coral md:justify-self-end">
+          <Image
+            src="/brand/move-logo-source.png"
+            alt="MOVE"
+            fill
+            sizes="(min-width: 768px) 28rem, 90vw"
+            className="object-contain p-10"
+            priority
+          />
           <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-move-lime" />
-          <div className="absolute -right-4 top-8 h-16 w-16 rounded-2xl bg-move-coral" />
         </div>
       </div>
     </section>

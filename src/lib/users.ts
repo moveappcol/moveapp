@@ -7,14 +7,16 @@ export type UserCredits = {
 };
 
 /**
- * Esquema en Airtable — tabla "Usuarios":
+ * Esquema en Airtable — tabla "usuarios" (nombre en minúscula):
  *   - Correo       (texto, igual al correo de la cuenta de Clerk)
  *   - Creditos     (número)
  *   - Vencimiento  (fecha)
  */
+const USUARIOS_TABLE = "usuarios";
+
 export async function getUserCreditsByEmail(email: string): Promise<UserCredits | null> {
   const base = getAirtableBase();
-  const records = await base("Usuarios")
+  const records = await base(USUARIOS_TABLE)
     .select({
       filterByFormula: `LOWER({Correo}) = LOWER("${email}")`,
       maxRecords: 1,
@@ -33,18 +35,18 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
 
 export async function deductCredits(recordId: string, amount: number): Promise<number> {
   const base = getAirtableBase();
-  const record = await base("Usuarios").find(recordId);
+  const record = await base(USUARIOS_TABLE).find(recordId);
   const current = (record.get("Creditos") as number) ?? 0;
   const next = Math.max(0, current - amount);
-  await base("Usuarios").update([{ id: recordId, fields: { Creditos: next } }]);
+  await base(USUARIOS_TABLE).update([{ id: recordId, fields: { Creditos: next } }]);
   return next;
 }
 
 export async function addCredits(recordId: string, amount: number): Promise<number> {
   const base = getAirtableBase();
-  const record = await base("Usuarios").find(recordId);
+  const record = await base(USUARIOS_TABLE).find(recordId);
   const current = (record.get("Creditos") as number) ?? 0;
   const next = current + amount;
-  await base("Usuarios").update([{ id: recordId, fields: { Creditos: next } }]);
+  await base(USUARIOS_TABLE).update([{ id: recordId, fields: { Creditos: next } }]);
   return next;
 }

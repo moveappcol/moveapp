@@ -55,14 +55,14 @@ export default async function Header() {
         <div className="flex items-center gap-3">
           {userId ? (
             <>
-              <div className="hidden text-right sm:block">
+              <Link href="/mis-reservas" className="hidden text-right sm:block">
                 <p className="font-heading text-sm font-semibold leading-tight text-move-green">
                   {displayName}
                 </p>
                 <p className="font-body text-xs leading-tight text-move-green/60">
                   {credits !== null ? `${credits} créditos` : "—"}
                 </p>
-              </div>
+              </Link>
               <UserButton />
             </>
           ) : (

@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getUserCreditsByEmail } from "@/lib/users";
+import UserMenu from "./user-menu";
 
 const NAV_LINKS = [
   { href: "/#gimnasios", label: "Gimnasios" },
@@ -63,29 +63,7 @@ export default async function Header() {
                   {credits !== null ? `${credits} créditos` : "—"}
                 </p>
               </div>
-              <UserButton>
-                <UserButton.MenuItems>
-                  <UserButton.Link
-                    label="Mis reservas"
-                    href="/mis-reservas"
-                    labelIcon={
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <path d="M16 2v4M8 2v4M3 10h18" />
-                      </svg>
-                    }
-                  />
-                </UserButton.MenuItems>
-              </UserButton>
+              <UserMenu />
             </>
           ) : (
             <>

@@ -55,15 +55,37 @@ export default async function Header() {
         <div className="flex items-center gap-3">
           {userId ? (
             <>
-              <Link href="/mis-reservas" className="hidden text-right sm:block">
-                <p className="font-heading text-sm font-semibold leading-tight text-move-green">
+              <div className="text-right">
+                <p className="hidden font-heading text-sm font-semibold leading-tight text-move-green sm:block">
                   {displayName}
                 </p>
-                <p className="font-body text-xs leading-tight text-move-green/60">
+                <p className="font-body text-xs font-semibold leading-tight text-move-green/70 sm:font-normal sm:text-move-green/60">
                   {credits !== null ? `${credits} créditos` : "—"}
                 </p>
-              </Link>
-              <UserButton />
+              </div>
+              <UserButton>
+                <UserButton.MenuItems>
+                  <UserButton.Link
+                    label="Mis reservas"
+                    href="/mis-reservas"
+                    labelIcon={
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M16 2v4M8 2v4M3 10h18" />
+                      </svg>
+                    }
+                  />
+                </UserButton.MenuItems>
+              </UserButton>
             </>
           ) : (
             <>

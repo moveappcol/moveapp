@@ -27,12 +27,6 @@ export default function ClassBookingForm({
 
   return (
     <form action={formAction} className="flex flex-wrap items-center gap-3">
-      <input
-        type="datetime-local"
-        name="fecha"
-        required
-        className="rounded-full border border-move-green/20 px-4 py-2 font-body text-sm text-move-green outline-none focus:border-move-coral"
-      />
       <button
         type="submit"
         disabled={isPending}

@@ -9,7 +9,7 @@ export async function bookClass(
   gimnasioId: string,
   claseId: string,
   _prevState: BookingResult | null,
-  formData: FormData
+  _formData: FormData
 ): Promise<BookingResult> {
   const { userId } = await auth();
   if (!userId) {
@@ -22,14 +22,12 @@ export async function bookClass(
     return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
   }
 
-  const fecha = formData.get("fecha");
-  if (typeof fecha !== "string" || !fecha) {
-    return { ok: false, error: "Elige una fecha y hora para la clase." };
-  }
-
   const clase = await getClaseById(claseId);
   if (!clase) {
     return { ok: false, error: "Esta clase ya no está disponible." };
+  }
+  if (!clase.fecha) {
+    return { ok: false, error: "Esta clase todavía no tiene fecha confirmada." };
   }
   if (clase.cuposDisponibles <= 0) {
     return { ok: false, error: "Esta clase ya no tiene cupos disponibles." };
@@ -44,7 +42,7 @@ export async function bookClass(
     claseId,
     gimnasioId,
     claseCredits: clase.credits,
-    fechaISO: new Date(fecha).toISOString(),
+    fechaISO: clase.fecha,
   });
 
   if (result.ok) {

@@ -6,7 +6,7 @@ export type Clase = {
   credits: number;
   cuposTotales: number;
   cuposDisponibles: number;
-  horario: string | null;
+  fecha: string | null;
   gimnasioId: string | null;
 };
 
@@ -15,7 +15,8 @@ export type Clase = {
  *   - Clase          (texto, nombre de la clase)
  *   - Creditos       (número)
  *   - Cupos totales  (número)
- *   - Horario        (texto libre, informativo — no se interpreta)
+ *   - Horario        (fecha y hora — cada fila es una sesión específica,
+ *                      no un horario recurrente)
  *   - "Gimnasio "    (link a Gimnasios — OJO: el nombre real trae un espacio al final)
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
@@ -49,6 +50,24 @@ export async function countActiveReservationsForClase(claseId: string): Promise<
     .length;
 }
 
+function mapRecordToClase(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  record: any,
+  reservados: number
+): Clase {
+  const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
+  const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
+  return {
+    id: record.id,
+    name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
+    credits: (record.get("Creditos") as number) ?? 0,
+    cuposTotales,
+    cuposDisponibles: Math.max(0, cuposTotales - reservados),
+    fecha: (record.get("Horario") as string) ?? null,
+    gimnasioId: gimnasio?.[0] ?? null,
+  };
+}
+
 export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
   const base = getAirtableBase();
   // Se filtra en JS en vez de con filterByFormula: ARRAYJOIN sobre un campo
@@ -61,39 +80,17 @@ export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
 
   return records
     .filter((record) => Boolean(record.get("Clase")))
-    .map((record) => {
-      const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
-      const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
-      const reservados = activeCounts.get(record.id) ?? 0;
-      return {
-        id: record.id,
-        name: (record.get("Clase") as string) ?? "Sin nombre",
-        credits: (record.get("Creditos") as number) ?? 0,
-        cuposTotales,
-        cuposDisponibles: Math.max(0, cuposTotales - reservados),
-        horario: (record.get("Horario") as string)?.trim() || null,
-        gimnasioId: gimnasio?.[0] ?? null,
-      };
-    })
-    .filter((clase) => clase.gimnasioId === gimnasioId);
+    .map((record) => mapRecordToClase(record, activeCounts.get(record.id) ?? 0))
+    .filter((clase) => clase.gimnasioId === gimnasioId)
+    .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
 }
 
 export async function getClaseById(id: string): Promise<Clase | null> {
   const base = getAirtableBase();
   try {
     const record = await base("Clases").find(id);
-    const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
-    const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
     const reservados = await countActiveReservationsForClase(id);
-    return {
-      id: record.id,
-      name: (record.get("Clase") as string) ?? "Sin nombre",
-      credits: (record.get("Creditos") as number) ?? 0,
-      cuposTotales,
-      cuposDisponibles: Math.max(0, cuposTotales - reservados),
-      horario: (record.get("Horario") as string)?.trim() || null,
-      gimnasioId: gimnasio?.[0] ?? null,
-    };
+    return mapRecordToClase(record, reservados);
   } catch {
     return null;
   }

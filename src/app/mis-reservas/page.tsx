@@ -48,7 +48,11 @@ export default async function MisReservasPage() {
                     {r.clase?.name ?? "Clase"} — {r.gym?.name ?? "Gimnasio"}
                   </p>
                   <p className="mt-1 font-body text-sm text-move-green/60">
-                    {r.fecha ? new Date(r.fecha).toLocaleString("es-CO") : "Sin fecha"}
+                    {r.fecha
+                      ? new Date(r.fecha).toLocaleString("es-CO", {
+                          timeZone: "America/Bogota",
+                        })
+                      : "Sin fecha"}
                   </p>
                   <p className="mt-1 font-body text-xs font-medium uppercase tracking-wide text-move-green/50">
                     {r.estado ?? "Reservado"}

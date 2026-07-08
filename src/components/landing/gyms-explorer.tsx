@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import type { Gym } from "@/lib/gyms";
 import { distanceKm } from "@/lib/geo";
 
@@ -130,9 +131,10 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {results.map((gym) => (
-          <div
+          <Link
+            href={`/gimnasios/${gym.id}`}
             key={gym.id}
-            className="overflow-hidden rounded-2xl border border-move-green/10"
+            className="block overflow-hidden rounded-2xl border border-move-green/10 transition-shadow hover:shadow-md"
           >
             <div className="flex h-36 items-center justify-center bg-move-green/5">
               {gym.photoUrl ? (
@@ -165,7 +167,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
                 {gym.activities.join(", ")} · {gym.address}
               </p>
             </div>
-          </div>
+          </Link>
         ))}
 
         {results.length === 0 && (

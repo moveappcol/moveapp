@@ -101,6 +101,24 @@ function isAirtableConfigured(): boolean {
   return Boolean(process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID);
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapRecordToGym(record: any): Gym {
+  const photos = record.get("Foto") as { url: string }[] | undefined;
+  const activities = (record.get("Actividades") as string[]) ?? [];
+  const address = (record.get("Ciudad") as string) ?? "";
+  return {
+    id: record.id,
+    name: (record.get("Nombre") as string) ?? "Sin nombre",
+    activities: activities.map((a) => a.trim()).filter(Boolean),
+    city: "",
+    address: address.trim(),
+    lat: (record.get("Latitud") as number) ?? null,
+    lng: (record.get("Longitud") as number) ?? null,
+    photoUrl: photos?.[0]?.url ?? null,
+    description: (record.get("Descripción") as string) ?? null,
+  };
+}
+
 export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }> {
   if (!isAirtableConfigured()) {
     return { gyms: MOCK_GYMS, usingMockData: true };
@@ -111,24 +129,21 @@ export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }
     .select({ filterByFormula: "{Activo} = 1" })
     .all();
 
-  const gyms: Gym[] = records
-    .filter((record) => Boolean(record.get("Nombre")))
-    .map((record) => {
-      const photos = record.get("Foto") as { url: string }[] | undefined;
-      const activities = (record.get("Actividades") as string[]) ?? [];
-      const address = (record.get("Ciudad") as string) ?? "";
-      return {
-        id: record.id,
-        name: (record.get("Nombre") as string) ?? "Sin nombre",
-        activities: activities.map((a) => a.trim()).filter(Boolean),
-        city: "",
-        address: address.trim(),
-        lat: (record.get("Latitud") as number) ?? null,
-        lng: (record.get("Longitud") as number) ?? null,
-        photoUrl: photos?.[0]?.url ?? null,
-        description: (record.get("Descripción") as string) ?? null,
-      };
-    });
+  const gyms = records.filter((r) => Boolean(r.get("Nombre"))).map(mapRecordToGym);
 
   return { gyms, usingMockData: false };
+}
+
+export async function getGymById(id: string): Promise<Gym | null> {
+  if (!isAirtableConfigured()) {
+    return MOCK_GYMS.find((g) => g.id === id) ?? null;
+  }
+
+  const base = getAirtableBase();
+  try {
+    const record = await base("Gimnasios").find(id);
+    return mapRecordToGym(record);
+  } catch {
+    return null;
+  }
 }

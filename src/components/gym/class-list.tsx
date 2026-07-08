@@ -31,7 +31,10 @@ export default function ClassList({
                 {clase.name}
               </p>
               <p className="mt-1 font-body text-sm text-move-green/60">
-                {clase.horario ?? "Horario a confirmar"} · {clase.cuposTotales} cupos
+                {clase.horario ?? "Horario a confirmar"} ·{" "}
+                {clase.cuposDisponibles > 0
+                  ? `${clase.cuposDisponibles} de ${clase.cuposTotales} cupos`
+                  : "Sin cupos disponibles"}
               </p>
             </div>
             <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
@@ -40,17 +43,25 @@ export default function ClassList({
           </div>
 
           <div className="mt-4">
-            <Show when="signed-in">
-              <ClassBookingForm gimnasioId={gimnasioId} claseId={clase.id} />
-            </Show>
-            <Show when="signed-out">
-              <Link
-                href="/iniciar-sesion"
-                className="font-heading text-sm font-semibold text-move-coral hover:underline"
-              >
-                Inicia sesión para reservar
-              </Link>
-            </Show>
+            {clase.cuposDisponibles <= 0 ? (
+              <p className="font-body text-sm text-move-green/50">
+                Esta clase ya está llena.
+              </p>
+            ) : (
+              <>
+                <Show when="signed-in">
+                  <ClassBookingForm gimnasioId={gimnasioId} claseId={clase.id} />
+                </Show>
+                <Show when="signed-out">
+                  <Link
+                    href="/iniciar-sesion"
+                    className="font-heading text-sm font-semibold text-move-coral hover:underline"
+                  >
+                    Inicia sesión para reservar
+                  </Link>
+                </Show>
+              </>
+            )}
           </div>
         </li>
       ))}

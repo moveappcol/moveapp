@@ -23,11 +23,10 @@ const GIMNASIO_FIELD = "Gimnasio ";
 
 export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
   const base = getAirtableBase();
-  const records = await base("Clases")
-    .select({
-      filterByFormula: `FIND("${gimnasioId}", ARRAYJOIN({${GIMNASIO_FIELD}}))`,
-    })
-    .all();
+  // Se filtra en JS en vez de con filterByFormula: ARRAYJOIN sobre un campo
+  // de enlace concatena los nombres de los registros vinculados, no sus IDs,
+  // así que no se puede buscar el gimnasioId directamente en una fórmula.
+  const records = await base("Clases").select().all();
 
   return records
     .filter((record) => Boolean(record.get("Clase")))
@@ -41,7 +40,8 @@ export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
         horario: (record.get("Horario") as string)?.trim() || null,
         gimnasioId: gimnasio?.[0] ?? null,
       };
-    });
+    })
+    .filter((clase) => clase.gimnasioId === gimnasioId);
 }
 
 export async function getClaseById(id: string): Promise<Clase | null> {

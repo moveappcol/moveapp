@@ -1,0 +1,15 @@
+name: Liquidaciones a gimnasios
+
+on:
+  schedule:
+    - cron: "0 */4 * * *" # cada 4 horas
+  workflow_dispatch: {}
+
+jobs:
+  liquidar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger liquidaciones cron
+        run: |
+          curl -sf -X GET "https://www.movecol.com/api/cron/liquidaciones" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

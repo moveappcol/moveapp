@@ -147,3 +147,28 @@ export async function getGymById(id: string): Promise<Gym | null> {
     return null;
   }
 }
+
+export type GymBillingInfo = {
+  id: string;
+  name: string;
+  email: string | null;
+  pricePerReservation: number | null;
+};
+
+/** Datos de facturación del gimnasio — no forman parte del Gym público
+ * (no se muestran en el storefront), solo se usan para liquidaciones. */
+export async function getGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
+  const base = getAirtableBase();
+  try {
+    const record = await base("Gimnasios").find(id);
+    const price = record.get("Precio por reserva") as number | string | undefined;
+    return {
+      id: record.id,
+      name: ((record.get("Nombre") as string) ?? "").trim(),
+      email: (record.get("Correo") as string) ?? null,
+      pricePerReservation: price !== undefined ? Number(price) : null,
+    };
+  } catch {
+    return null;
+  }
+}

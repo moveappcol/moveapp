@@ -18,6 +18,23 @@ export type Reservation = {
   estado: string | null;
 };
 
+export type ReservaDetalle = { userName: string; estado: string };
+
+/** Todas las reservas de una clase (cualquier estado), para armar el
+ * reporte de liquidación. Se filtra en JS porque ARRAYJOIN sobre un campo
+ * de link junta el nombre del link, no su id — filtrar por id en una
+ * fórmula no funciona. */
+export async function getReservationsDetailForClase(claseId: string): Promise<ReservaDetalle[]> {
+  const base = getAirtableBase();
+  const records = await base("Reservas").select().all();
+  return records
+    .filter((r) => (r.get("Clase") as string[] | undefined)?.[0] === claseId)
+    .map((r) => ({
+      userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
+      estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
+    }));
+}
+
 const CANCELLATION_WINDOW_HOURS = 24;
 
 /**

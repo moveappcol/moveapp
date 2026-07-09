@@ -85,6 +85,17 @@ export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
     .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
 }
 
+/** Todas las clases con fecha, de cualquier gimnasio — usado por el cron de
+ * liquidaciones (no necesita cupos disponibles, así que no calcula reservas
+ * activas por clase). */
+export async function getAllClasesConFecha(): Promise<Clase[]> {
+  const base = getAirtableBase();
+  const records = await base("Clases").select().all();
+  return records
+    .filter((record) => Boolean(record.get("Clase")) && Boolean(record.get("Horario")))
+    .map((record) => mapRecordToClase(record, 0));
+}
+
 export async function getClaseById(id: string): Promise<Clase | null> {
   const base = getAirtableBase();
   try {

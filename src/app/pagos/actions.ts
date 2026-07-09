@@ -5,6 +5,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { buildIntegritySignature, wompiPublicKey, WOMPI_CHECKOUT_URL } from "@/lib/wompi";
 import { buildReference, findCatalogItem, type PurchaseKind } from "@/lib/orders";
 import { createPendingPago } from "@/lib/pagos";
+import { getSubscriptionByEmail } from "@/lib/subscriptions";
 
 export async function startCheckout(kind: PurchaseKind, itemId: string): Promise<void> {
   const { userId } = await auth();
@@ -16,6 +17,13 @@ export async function startCheckout(kind: PurchaseKind, itemId: string): Promise
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) redirect("/#planes");
+
+  if (kind === "topup") {
+    const subscription = await getSubscriptionByEmail(email);
+    if (!subscription || subscription.estado !== "Activa") {
+      redirect("/mi-suscripcion?requiere_plan=1");
+    }
+  }
 
   const reference = buildReference(kind, itemId, userId);
   const amountInCents = item.price * 100;

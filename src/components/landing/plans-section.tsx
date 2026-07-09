@@ -1,12 +1,16 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
 import {
   CREDIT_PLANS,
   CREDIT_TOPUPS,
   formatCOP,
 } from "@/lib/credits-pricing";
+import { startCheckout } from "@/app/pagos/actions";
 import CreditCalculator from "./credit-calculator";
 
-export default function PlansSection() {
+export default async function PlansSection() {
+  const { userId } = await auth();
+
   return (
     <section id="planes" className="bg-move-green/[0.03]">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
@@ -44,16 +48,31 @@ export default function PlansSection() {
               <p className="mt-1 font-body text-sm text-move-green/60">
                 Créditos válidos por 1 mes
               </p>
-              <Link
-                href="/crear-cuenta"
-                className={`mt-6 rounded-full px-6 py-3 text-center font-heading text-sm font-semibold transition-opacity hover:opacity-90 ${
-                  i === 1
-                    ? "bg-move-coral text-white"
-                    : "bg-move-green text-white"
-                }`}
-              >
-                Elegir plan
-              </Link>
+              {userId ? (
+                <form action={startCheckout.bind(null, "plan", plan.id)}>
+                  <button
+                    type="submit"
+                    className={`mt-6 w-full rounded-full px-6 py-3 text-center font-heading text-sm font-semibold transition-opacity hover:opacity-90 ${
+                      i === 1
+                        ? "bg-move-coral text-white"
+                        : "bg-move-green text-white"
+                    }`}
+                  >
+                    Elegir plan
+                  </button>
+                </form>
+              ) : (
+                <Link
+                  href="/crear-cuenta"
+                  className={`mt-6 rounded-full px-6 py-3 text-center font-heading text-sm font-semibold transition-opacity hover:opacity-90 ${
+                    i === 1
+                      ? "bg-move-coral text-white"
+                      : "bg-move-green text-white"
+                  }`}
+                >
+                  Elegir plan
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -72,12 +91,31 @@ export default function PlansSection() {
                 key={topup.id}
                 className="flex items-center justify-between rounded-2xl border border-move-green/10 bg-white px-6 py-4"
               >
-                <span className="font-heading text-sm font-medium text-move-green">
-                  {topup.label}
-                </span>
-                <span className="font-heading text-sm font-semibold text-move-coral">
-                  {formatCOP(topup.price)}
-                </span>
+                <div>
+                  <span className="block font-heading text-sm font-medium text-move-green">
+                    {topup.label}
+                  </span>
+                  <span className="block font-heading text-sm font-semibold text-move-coral">
+                    {formatCOP(topup.price)}
+                  </span>
+                </div>
+                {userId ? (
+                  <form action={startCheckout.bind(null, "topup", topup.id)}>
+                    <button
+                      type="submit"
+                      className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                      Comprar
+                    </button>
+                  </form>
+                ) : (
+                  <Link
+                    href="/crear-cuenta"
+                    className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    Comprar
+                  </Link>
+                )}
               </div>
             ))}
           </div>

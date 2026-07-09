@@ -1,0 +1,15 @@
+name: Wompi subscription billing
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # 8am America/Bogota (UTC-5)
+  workflow_dispatch: {}
+
+jobs:
+  bill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger billing cron
+        run: |
+          curl -sf -X GET "https://www.movecol.com/api/cron/billing" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

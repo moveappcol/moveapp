@@ -46,21 +46,19 @@ export default async function PlansSection() {
                 {formatCOP(plan.price)}
               </p>
               <p className="mt-1 font-body text-sm text-move-green/60">
-                Créditos válidos por 1 mes
+                Se cobra automáticamente cada mes. Cancela cuando quieras.
               </p>
               {userId ? (
-                <form action={startCheckout.bind(null, "plan", plan.id)}>
-                  <button
-                    type="submit"
-                    className={`mt-6 w-full rounded-full px-6 py-3 text-center font-heading text-sm font-semibold transition-opacity hover:opacity-90 ${
-                      i === 1
-                        ? "bg-move-coral text-white"
-                        : "bg-move-green text-white"
-                    }`}
-                  >
-                    Elegir plan
-                  </button>
-                </form>
+                <Link
+                  href={`/suscribirse/${plan.id}`}
+                  className={`mt-6 rounded-full px-6 py-3 text-center font-heading text-sm font-semibold transition-opacity hover:opacity-90 ${
+                    i === 1
+                      ? "bg-move-coral text-white"
+                      : "bg-move-green text-white"
+                  }`}
+                >
+                  Elegir plan
+                </Link>
               ) : (
                 <Link
                   href="/crear-cuenta"

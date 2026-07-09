@@ -46,9 +46,9 @@ export async function createPendingPago(params: {
   tipo: PurchaseKind;
   item: string;
   creditos: number;
-}): Promise<void> {
+}): Promise<string> {
   const base = getAirtableBase();
-  await base(PAGOS_TABLE).create(
+  const created = await base(PAGOS_TABLE).create(
     [
       {
         fields: {
@@ -63,6 +63,7 @@ export async function createPendingPago(params: {
     ],
     { typecast: true }
   );
+  return created[0].id;
 }
 
 export async function findPagoByReferencia(referencia: string): Promise<Pago | null> {

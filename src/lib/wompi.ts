@@ -90,3 +90,113 @@ export async function fetchTransaction(id: string): Promise<WompiTransaction | n
     amountInCents: tx.amount_in_cents,
   };
 }
+
+function wompiPrivateKey(): string {
+  return requireEnv("WOMPI_PRIVATE_KEY");
+}
+
+export type AcceptanceTokens = {
+  acceptanceToken: string;
+  personalAuthToken: string;
+  permalinkAcceptance: string;
+  permalinkPersonalAuth: string;
+};
+
+/** Los tokens de aceptación (términos + tratamiento de datos) que Wompi
+ * exige mostrarle a la persona antes de guardar su tarjeta. Expiran a los
+ * ~30 minutos, así que se piden justo antes de usarlos, nunca se cachean. */
+export async function fetchAcceptanceTokens(): Promise<AcceptanceTokens> {
+  const res = await fetch(`${wompiApiBase()}/merchants/${wompiPublicKey()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("No pudimos obtener los términos de Wompi.");
+  const json = await res.json();
+  const data = json.data;
+  return {
+    acceptanceToken: data.presigned_acceptance.acceptance_token,
+    personalAuthToken: data.presigned_personal_data_auth.acceptance_token,
+    permalinkAcceptance: data.presigned_acceptance.permalink,
+    permalinkPersonalAuth: data.presigned_personal_data_auth.permalink,
+  };
+}
+
+export type WompiPaymentSource = { id: number; status: string };
+
+/** Guarda una tarjeta tokenizada como "fuente de pago" reutilizable, para
+ * poder cobrarla luego sin que la persona esté presente (suscripción). */
+export async function createPaymentSource(params: {
+  cardToken: string;
+  customerEmail: string;
+  acceptanceToken: string;
+  personalAuthToken: string;
+}): Promise<WompiPaymentSource> {
+  const res = await fetch(`${wompiApiBase()}/payment_sources`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${wompiPrivateKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      type: "CARD",
+      token: params.cardToken,
+      customer_email: params.customerEmail,
+      acceptance_token: params.acceptanceToken,
+      accept_personal_auth: params.personalAuthToken,
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json?.error?.messages ? JSON.stringify(json.error.messages) : "No pudimos guardar la tarjeta.");
+  }
+  return { id: json.data.id, status: json.data.status };
+}
+
+/** Cobra una fuente de pago guardada, server-to-server, sin que la persona
+ * esté presente (renovación mensual). Requiere la llave privada — nunca
+ * llamar esto desde el cliente. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Cobra una fuente de pago guardada, server-to-server, sin que la persona
+ * esté presente (renovación mensual). Requiere la llave privada — nunca
+ * llamar esto desde el cliente. Wompi puede responder "PENDING" y resolver
+ * el estado final unos segundos después, así que se hace un poll corto acá;
+ * si sigue pendiente, el webhook lo termina de confirmar más tarde. */
+export async function chargeWithPaymentSource(params: {
+  amountInCents: number;
+  customerEmail: string;
+  paymentSourceId: number;
+  reference: string;
+}): Promise<WompiTransaction> {
+  const signature = buildIntegritySignature(params.reference, params.amountInCents, "COP");
+  const res = await fetch(`${wompiApiBase()}/transactions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${wompiPrivateKey()}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount_in_cents: params.amountInCents,
+      currency: "COP",
+      customer_email: params.customerEmail,
+      payment_source_id: params.paymentSourceId,
+      payment_method: { installments: 1 },
+      reference: params.reference,
+      signature,
+    }),
+  });
+  const json = await res.json();
+  if (!res.ok) {
+    throw new Error(json?.error?.messages ? JSON.stringify(json.error.messages) : "No pudimos cobrar la tarjeta.");
+  }
+  let tx = json.data;
+
+  for (let i = 0; i < 5 && tx.status === "PENDING"; i++) {
+    await sleep(2000);
+    const polled = await fetchTransaction(tx.id);
+    if (polled) tx = { ...tx, status: polled.status };
+  }
+
+  return { id: tx.id, status: tx.status, reference: tx.reference, amountInCents: tx.amount_in_cents };
+}

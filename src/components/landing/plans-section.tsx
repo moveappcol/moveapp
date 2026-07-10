@@ -50,7 +50,10 @@ export default async function PlansSection() {
                   Más popular
                 </span>
               )}
-              <p className="font-heading text-lg font-semibold text-move-green">
+              <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-coral">
+                {plan.name}
+              </p>
+              <p className="mt-1 font-heading text-lg font-semibold text-move-green">
                 {plan.label}
               </p>
               <p className="mt-2 font-heading text-3xl font-bold text-move-green">

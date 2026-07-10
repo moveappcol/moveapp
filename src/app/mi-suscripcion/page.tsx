@@ -47,7 +47,7 @@ export default async function MiSuscripcionPage({
                 href={`/suscribirse/${p.id}`}
                 className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Suscribirme a {p.label}
+                Suscribirme a {p.name} ({p.label})
               </Link>
             ))}
           </div>
@@ -56,7 +56,7 @@ export default async function MiSuscripcionPage({
         <div className="mt-8 space-y-6">
           <div className="rounded-2xl border border-move-green/10 bg-white p-6">
             <p className="font-heading text-lg font-semibold text-move-green">
-              {plan?.label ?? subscription.plan}
+              {plan ? `${plan.name} — ${plan.label}` : subscription.plan}
             </p>
             <p className="mt-1 font-body text-sm text-move-green/70">
               {plan ? `${formatCOP(plan.price)} al mes` : ""}
@@ -74,7 +74,7 @@ export default async function MiSuscripcionPage({
             )}
             {planSiguiente && (
               <p className="mt-1 font-body text-xs font-medium uppercase tracking-wide text-move-coral">
-                Cambia a {planSiguiente.label} en la próxima renovación
+                Cambia a {planSiguiente.name} ({planSiguiente.label}) en la próxima renovación
               </p>
             )}
           </div>
@@ -91,7 +91,7 @@ export default async function MiSuscripcionPage({
                     type="submit"
                     className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
                   >
-                    Cambiar a {p.label}
+                    Cambiar a {p.name}
                   </button>
                 </form>
               ))}

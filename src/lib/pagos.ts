@@ -7,7 +7,7 @@ import type { PurchaseKind } from "./orders";
  *   - TransaccionId (texto, id de la transacción en Wompi)
  *   - Correo        (texto)
  *   - Tipo          (selección: "Plan" | "Adicional")
- *   - item          (texto, minúscula — id del catálogo, ej. "plan-25")
+ *   - item          (texto, minúscula — id del catálogo, ej. "plan-starter")
  *   - Creditos      (número)
  *   - Estado        (selección: "Pendiente" | "Aprobado" | "Rechazado")
  */

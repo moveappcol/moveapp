@@ -5,7 +5,7 @@ import { getAirtableBase } from "./airtable";
  * suscripción activa o inactiva; se reutiliza la misma fila si vuelve a
  * suscribirse):
  *   - Correo               (texto)
- *   - Plan                 (texto — id del catálogo, ej. "plan-25")
+ *   - Plan                 (texto — id del catálogo, ej. "plan-starter")
  *   - WompiPaymentSourceId (texto — id de la tarjeta guardada en Wompi)
  *   - Estado               (selección: "Activa" | "Cancelada" | "Pago fallido")
  *   - ProximoCobro         (fecha)

@@ -2,12 +2,15 @@
 
 import { useMemo, useState } from "react";
 import {
+  CREDIT_PLANS,
   estimateCostForCredits,
   estimateCreditsForBudget,
   formatCOP,
 } from "@/lib/credits-pricing";
 
 type Mode = "credits" | "budget";
+
+const CHEAPEST_PLAN = CREDIT_PLANS.reduce((min, p) => (p.price < min.price ? p : min));
 
 export default function CreditCalculator() {
   const [mode, setMode] = useState<Mode>("credits");
@@ -110,7 +113,8 @@ export default function CreditCalculator() {
               </p>
               <ul className="mt-3 space-y-1 font-body text-sm text-move-green/70">
                 <li>
-                  Plan {result.plan.label} — {formatCOP(result.plan.price)}
+                  Plan {result.plan.name} ({result.plan.label}) —{" "}
+                  {formatCOP(result.plan.price)}
                 </li>
                 {result.topups.map((item) => (
                   <li key={item.pkg.id}>
@@ -123,7 +127,7 @@ export default function CreditCalculator() {
           ) : (
             <p className="font-body text-sm text-move-green/70">
               {mode === "budget"
-                ? "Tu presupuesto no alcanza ni para el plan más pequeño (25 créditos por $200.000)."
+                ? `Tu presupuesto no alcanza ni para el plan más pequeño (${CHEAPEST_PLAN.label} por ${formatCOP(CHEAPEST_PLAN.price)}).`
                 : "Ingresa un número de créditos mayor a 0."}
             </p>
           )}

@@ -1,20 +1,21 @@
 export type CreditPackage = {
   id: string;
+  name?: string;
   label: string;
   credits: number;
   price: number;
 };
 
 export const CREDIT_PLANS: CreditPackage[] = [
-  { id: "plan-25", label: "25 créditos", credits: 25, price: 200_000 },
-  { id: "plan-45", label: "45 créditos", credits: 45, price: 320_000 },
-  { id: "plan-70", label: "70 créditos", credits: 70, price: 480_000 },
+  { id: "plan-starter", name: "Starter", label: "30 créditos", credits: 30, price: 210_000 },
+  { id: "plan-balance", name: "Balance", label: "52 créditos", credits: 52, price: 335_000 },
+  { id: "plan-volume", name: "Volume", label: "84 créditos", credits: 84, price: 500_000 },
 ];
 
 export const CREDIT_TOPUPS: CreditPackage[] = [
-  { id: "topup-5", label: "5 créditos", credits: 5, price: 40_000 },
-  { id: "topup-10", label: "10 créditos", credits: 10, price: 70_000 },
-  { id: "topup-15", label: "15 créditos", credits: 15, price: 102_000 },
+  { id: "topup-5", label: "5 créditos", credits: 5, price: 45_000 },
+  { id: "topup-10", label: "10 créditos", credits: 10, price: 85_000 },
+  { id: "topup-15", label: "15 créditos", credits: 15, price: 120_000 },
 ];
 
 export type PackageBreakdownItem = { pkg: CreditPackage; quantity: number };

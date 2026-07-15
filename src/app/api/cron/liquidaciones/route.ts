@@ -5,7 +5,7 @@ import { getReservationsDetailForClase } from "@/lib/reservations";
 import { liquidacionExists, createLiquidacion, computeFechaDePago, toBogotaDateString } from "@/lib/liquidaciones";
 import { buildReservationsCsv, sendLiquidacionEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "moveappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueapp.com.co";
 const LOCK_IN_HOURS = 24;
 
 export async function GET(req: NextRequest) {

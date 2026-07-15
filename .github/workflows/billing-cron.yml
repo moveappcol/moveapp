@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger billing cron
         run: |
-          curl -sf -X GET "https://www.movecol.com/api/cron/billing" \
+          curl -sf -X GET "https://www.uniqueapp.com.co/api/cron/billing" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

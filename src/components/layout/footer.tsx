@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-const CONTACT_EMAIL = "moveappcol@gmail.com";
+const CONTACT_EMAIL = "gerencia@uniqueapp.com.co";
 
 export default function Footer() {
   return (

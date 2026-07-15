@@ -4,7 +4,7 @@ import { fetchTransaction } from "@/lib/wompi";
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   APPROVED: {
     title: "¡Pago aprobado!",
-    body: "Tus créditos ya deberían estar disponibles en tu cuenta. Si no los ves en un par de minutos, escríbenos a moveappcol@gmail.com.",
+    body: "Tus créditos ya deberían estar disponibles en tu cuenta. Si no los ves en un par de minutos, escríbenos a gerencia@uniqueapp.com.co.",
   },
   DECLINED: {
     title: "Pago rechazado",
@@ -20,7 +20,7 @@ const STATUS_COPY: Record<string, { title: string; body: string }> = {
   },
   ERROR: {
     title: "Ocurrió un error",
-    body: "No pudimos procesar tu pago. Puedes intentar de nuevo o escribirnos a moveappcol@gmail.com.",
+    body: "No pudimos procesar tu pago. Puedes intentar de nuevo o escribirnos a gerencia@uniqueapp.com.co.",
   },
 };
 
@@ -40,7 +40,7 @@ export default async function PagoResultadoPage({
       </h1>
       <p className="mt-3 font-body text-sm text-move-green/70">
         {copy?.body ??
-          "No pudimos verificar el estado de este pago. Si crees que es un error, escríbenos a moveappcol@gmail.com."}
+          "No pudimos verificar el estado de este pago. Si crees que es un error, escríbenos a gerencia@uniqueapp.com.co."}
       </p>
       <Link
         href="/"

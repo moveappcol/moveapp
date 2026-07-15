@@ -9,7 +9,7 @@ export default function Footer() {
         <div className="grid gap-10 md:grid-cols-3">
           <div>
             <p className="font-brand text-2xl font-bold uppercase tracking-tight">
-              MOVE
+              UNIQUE
             </p>
             <p className="mt-3 max-w-xs font-body text-sm text-white/70">
               Un solo plan de créditos para entrenar en los mejores gimnasios
@@ -40,7 +40,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} MOVE. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} UNIQUE. Todos los derechos reservados.</p>
           <nav className="flex gap-6">
             <Link href="/#gimnasios" className="hover:text-white">
               Gimnasios

@@ -37,7 +37,7 @@ export default async function Header() {
           href="/"
           className="font-brand text-2xl font-bold uppercase tracking-tight text-move-green"
         >
-          MOVE
+          UNIQUE
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

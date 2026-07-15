@@ -15,7 +15,7 @@ export default function Hero() {
             cuando quieras.
           </h1>
           <p className="mt-5 max-w-md font-body text-lg text-move-green/70">
-            Con un plan de créditos <span className="font-brand text-move-green">MOVE</span> accedes a
+            Con un plan de créditos <span className="font-brand text-move-green">UNIQUE</span> accedes a
             cycling, boxing, yoga y muchas más disciplinas en los mejores
             gimnasios y estudios afiliados, sin ataduras a uno solo.
           </p>
@@ -37,8 +37,8 @@ export default function Hero() {
 
         <div className="relative aspect-square w-full max-w-md justify-self-center overflow-hidden rounded-[2.5rem] bg-move-coral md:justify-self-end">
           <Image
-            src="/brand/move-logo-source.png"
-            alt="MOVE"
+            src="/brand/unique-logo-source.png"
+            alt="UNIQUE"
             fill
             sizes="(min-width: 768px) 28rem, 90vw"
             className="object-contain p-10"

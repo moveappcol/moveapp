@@ -8,9 +8,9 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
-  title: "MOVE — Entrena en los mejores gimnasios y estudios",
+  title: "UNIQUE — Entrena en los mejores gimnasios y estudios",
   description:
-    "Un solo plan de créditos para acceder a cycling, boxing, yoga y más en los gimnasios y estudios afiliados a MOVE.",
+    "Un solo plan de créditos para acceder a cycling, boxing, yoga y más en los gimnasios y estudios afiliados a UNIQUE.",
 };
 
 export default function RootLayout({

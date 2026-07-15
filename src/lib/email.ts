@@ -33,13 +33,16 @@ async function sendEmail(params: {
   }
 }
 
-export function buildReservationsCsv(rows: { userName: string; estado: string }[]): string {
-  const escape = (value: string) => `"${value.replace(/"/g, '""')}"`;
-  const header = "Nombre,Estado";
-  const lines = rows.map((r) => `${escape(r.userName)},${escape(r.estado)}`);
-  return [header, ...lines].join("\n");
+function toAttachment(filename: string, rtf: string): EmailAttachment {
+  return { filename, content: Buffer.from(rtf, "utf-8").toString("base64") };
 }
 
+function recipients(gymEmail: string | null, ownerEmail: string): string[] {
+  return [ownerEmail, ...(gymEmail ? [gymEmail] : [])];
+}
+
+/** Correo de las 24h antes: incluye el resumen financiero para el dueño y
+ * adjunta la plantilla "Pre reservas 24h antes" ya llena. */
 export async function sendLiquidacionEmail(params: {
   gymEmail: string | null;
   ownerEmail: string;
@@ -48,24 +51,42 @@ export async function sendLiquidacionEmail(params: {
   fecha: string;
   reservasConfirmadas: number;
   totalAPagar: number;
-  csv: string;
+  rtf: string;
 }): Promise<void> {
-  const to = [params.ownerEmail, ...(params.gymEmail ? [params.gymEmail] : [])];
-  const csvBase64 = Buffer.from(params.csv, "utf-8").toString("base64");
-
   const html = `
     <p>Liquidación generada para <strong>${params.clase}</strong> en <strong>${params.gimnasio}</strong> (${params.fecha}).</p>
     <p>Reservas confirmadas: ${params.reservasConfirmadas}<br/>
     Total a pagar: ${formatCOP(params.totalAPagar)}</p>
-    <p>El detalle de cada reserva va adjunto en CSV.</p>
+    <p>El documento de pre-reservas va adjunto.</p>
   `;
 
   await sendEmail({
-    to,
-    subject: `Liquidación — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
+    to: recipients(params.gymEmail, params.ownerEmail),
+    subject: `Pre reservas 24h antes — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
     html,
-    attachments: [
-      { filename: `liquidacion-${params.clase}-${params.fecha}.csv`, content: csvBase64 },
-    ],
+    attachments: [toAttachment(`pre-reservas-${params.clase}-${params.fecha}.rtf`, params.rtf)],
+  });
+}
+
+/** Correo de los 15 minutos antes: solo la lista final (puede incluir gente
+ * que reservó después del corte de las 24h). */
+export async function sendReservasFinalesEmail(params: {
+  gymEmail: string | null;
+  ownerEmail: string;
+  gimnasio: string;
+  clase: string;
+  fecha: string;
+  rtf: string;
+}): Promise<void> {
+  const html = `
+    <p>Lista final de reservas para <strong>${params.clase}</strong> en <strong>${params.gimnasio}</strong> (${params.fecha}).</p>
+    <p>El documento va adjunto.</p>
+  `;
+
+  await sendEmail({
+    to: recipients(params.gymEmail, params.ownerEmail),
+    subject: `Reservas finales — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
+    html,
+    attachments: [toAttachment(`reservas-finales-${params.clase}-${params.fecha}.rtf`, params.rtf)],
   });
 }

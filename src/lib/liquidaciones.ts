@@ -17,23 +17,51 @@ import { getAirtableBase } from "./airtable";
  *   - Fecha de pago              (fecha, calculada con la regla de quincena)
  *   - "Total a pagar "             (fórmula de Airtable, de solo lectura —
  *      Reservas confirmadas × Precio por reserva)
+ *   - Reservas finales enviadas     (checkbox — evita reenviar el doc de
+ *      "reservas finales" cuando el cron de 15 min corre varias veces)
  */
 const LIQUIDACION_TABLE = "Liquidacion";
 const ESTADO_PAGO_FIELD = "Estado de pago ";
 const TOTAL_A_PAGAR_FIELD = "Total a pagar ";
 
+export type LiquidacionRecord = {
+  id: string;
+  reservasFinalesEnviadas: boolean;
+};
+
 /** Se trae todo y se filtra en JS — comparar fechas dentro de una fórmula
  * de Airtable no es confiable (ver ARRAYJOIN/filtro por fecha en otros
  * lugares del código), así que es más seguro comparar los valores ya
  * traídos. */
-export async function liquidacionExists(gimnasio: string, clase: string, fecha: string): Promise<boolean> {
+export async function findLiquidacion(
+  gimnasio: string,
+  clase: string,
+  fecha: string
+): Promise<LiquidacionRecord | null> {
   const base = getAirtableBase();
   const records = await base(LIQUIDACION_TABLE).select().all();
-  return records.some(
+  const match = records.find(
     (r) =>
       (r.get("Gimnasio") as string) === gimnasio &&
       (r.get("Clase") as string) === clase &&
       (r.get("Fecha") as string) === fecha
+  );
+  if (!match) return null;
+  return {
+    id: match.id,
+    reservasFinalesEnviadas: Boolean(match.get("Reservas finales enviadas")),
+  };
+}
+
+export async function liquidacionExists(gimnasio: string, clase: string, fecha: string): Promise<boolean> {
+  return (await findLiquidacion(gimnasio, clase, fecha)) !== null;
+}
+
+export async function markReservasFinalesEnviadas(id: string): Promise<void> {
+  const base = getAirtableBase();
+  await base(LIQUIDACION_TABLE).update(
+    [{ id, fields: { "Reservas finales enviadas": true } }],
+    { typecast: true }
   );
 }
 

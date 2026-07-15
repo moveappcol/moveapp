@@ -1,0 +1,15 @@
+name: Reservas finales a gimnasios
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # cada 5 minutos
+  workflow_dispatch: {}
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reservas-finales cron
+        run: |
+          curl -sf -X GET "https://www.uniqueapp.com.co/api/cron/reservas-finales" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

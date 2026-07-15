@@ -36,6 +36,49 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
 }
 
 const CANCELLATION_WINDOW_HOURS = 24;
+const BOOKING_CUTOFF_MINUTES = 20;
+const MAX_MONTHLY_RESERVATIONS_PER_GYM = 3;
+
+/** "Y-M" del mes de una fecha en hora de Bogotá (no la del proceso del
+ * servidor, que en producción puede no ser America/Bogota). */
+function toBogotaMonthKey(iso: string): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Bogota",
+    year: "numeric",
+    month: "2-digit",
+  });
+  const parts = fmt.formatToParts(new Date(iso));
+  const year = parts.find((p) => p.type === "year")?.value;
+  const month = parts.find((p) => p.type === "month")?.value;
+  return `${year}-${month}`;
+}
+
+/** Cuántas reservas tiene esta persona en este gimnasio, en el mes de la
+ * clase que quiere reservar — sin contar las que canceló a tiempo (esas no
+ * le "cuentan" un cupo). Se filtra en JS por el mismo motivo que en otros
+ * lugares del código: no es confiable filtrar por fecha/link en una fórmula
+ * de Airtable. */
+async function countMonthlyReservationsAtGym(
+  userName: string,
+  gimnasioId: string,
+  monthKey: string
+): Promise<number> {
+  const base = getAirtableBase();
+  const records = await base("Reservas").select().all();
+  return records.filter((r) => {
+    const usuario = ((r.get("Usuario") as string) ?? "").trim();
+    if (usuario !== userName) return false;
+
+    const gimnasios = r.get("Gimnasios") as string[] | undefined;
+    if (!gimnasios?.includes(gimnasioId)) return false;
+
+    const fecha = r.get("Fecha") as string | undefined;
+    if (!fecha || toBogotaMonthKey(fecha) !== monthKey) return false;
+
+    const estado = ((r.get("Estado") as string) ?? "").trim();
+    return estado !== "Cancelado on time";
+  }).length;
+}
 
 /**
  * Esquema en Airtable — tabla "Reservas":
@@ -55,6 +98,14 @@ export async function createReservation(params: {
 }): Promise<BookingResult> {
   const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO } = params;
 
+  const minutesUntilClass = (new Date(fechaISO).getTime() - Date.now()) / (1000 * 60);
+  if (minutesUntilClass < BOOKING_CUTOFF_MINUTES) {
+    return {
+      ok: false,
+      error: `Las reservas para esta clase cierran ${BOOKING_CUTOFF_MINUTES} minutos antes de que empiece.`,
+    };
+  }
+
   const account = await getUserCreditsByEmail(userEmail);
   if (!account) {
     return {
@@ -66,6 +117,18 @@ export async function createReservation(params: {
     return {
       ok: false,
       error: `No tienes créditos suficientes: te quedan ${account.credits} y esta clase vale ${claseCredits}.`,
+    };
+  }
+
+  const monthlyCount = await countMonthlyReservationsAtGym(
+    userName,
+    gimnasioId,
+    toBogotaMonthKey(fechaISO)
+  );
+  if (monthlyCount >= MAX_MONTHLY_RESERVATIONS_PER_GYM) {
+    return {
+      ok: false,
+      error: `Ya llegaste al máximo de ${MAX_MONTHLY_RESERVATIONS_PER_GYM} reservas este mes en este gimnasio.`,
     };
   }
 

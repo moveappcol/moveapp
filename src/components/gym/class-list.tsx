@@ -3,6 +3,8 @@ import { Show } from "@clerk/nextjs";
 import type { Clase } from "@/lib/classes";
 import ClassBookingForm from "./class-booking-form";
 
+const BOOKING_CUTOFF_MINUTES = 20;
+
 function formatFecha(fecha: string | null): string {
   if (!fecha) return "Fecha por confirmar";
   return new Date(fecha).toLocaleString("es-CO", {
@@ -13,6 +15,11 @@ function formatFecha(fecha: string | null): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function isBookingClosed(fecha: string): boolean {
+  const minutesUntilClass = (new Date(fecha).getTime() - Date.now()) / (1000 * 60);
+  return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
 }
 
 export default function ClassList({
@@ -64,6 +71,10 @@ export default function ClassList({
             ) : clase.cuposDisponibles <= 0 ? (
               <p className="font-body text-sm text-move-green/50">
                 Esta clase ya está llena.
+              </p>
+            ) : isBookingClosed(clase.fecha) ? (
+              <p className="font-body text-sm text-move-green/50">
+                Las reservas para esta clase ya cerraron.
               </p>
             ) : (
               <>

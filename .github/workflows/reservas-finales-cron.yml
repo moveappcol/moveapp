@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger reservas-finales cron
         run: |
-          curl -sf -X GET "https://www.uniqueapp.com.co/api/cron/reservas-finales" \
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/reservas-finales" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

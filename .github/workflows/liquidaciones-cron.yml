@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger liquidaciones cron
         run: |
-          curl -sf -X GET "https://www.uniqueapp.com.co/api/cron/liquidaciones" \
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/liquidaciones" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

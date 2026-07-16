@@ -4,6 +4,7 @@ export type UserCredits = {
   recordId: string;
   credits: number;
   vencimiento: string | null;
+  cedula: string | null;
 };
 
 /**
@@ -11,6 +12,7 @@ export type UserCredits = {
  *   - Correo       (texto, igual al correo de la cuenta de Clerk)
  *   - Creditos     (número)
  *   - Vencimiento  (fecha)
+ *   - Cedula       (texto — se pide una sola vez, al crear la cuenta)
  */
 const USUARIOS_TABLE = "usuarios";
 
@@ -30,7 +32,23 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     recordId: record.id,
     credits: (record.get("Creditos") as number) ?? 0,
     vencimiento: (record.get("Vencimiento") as string) ?? null,
+    cedula: (record.get("Cedula") as string) || null,
   };
+}
+
+/** Guarda la cédula de la persona — crea el registro en "usuarios" si
+ * todavía no existe (pasa justo después de crear la cuenta, antes de
+ * comprar cualquier plan). */
+export async function setUserCedula(email: string, cedula: string): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+
+  if (existing) {
+    await base(USUARIOS_TABLE).update([{ id: existing.recordId, fields: { Cedula: cedula } }]);
+    return;
+  }
+
+  await base(USUARIOS_TABLE).create([{ fields: { Correo: email, Creditos: 0, Cedula: cedula } }]);
 }
 
 export async function deductCredits(recordId: string, amount: number): Promise<number> {

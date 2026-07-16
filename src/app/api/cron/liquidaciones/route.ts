@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
 import { getReservationsDetailForClase } from "@/lib/reservations";
-import { liquidacionExists, createLiquidacion, computeFechaDePago, toBogotaDateString } from "@/lib/liquidaciones";
+import {
+  liquidacionExists,
+  createLiquidacion,
+  buildCountsFromReservas,
+  computeFechaDePago,
+  toBogotaDateString,
+} from "@/lib/liquidaciones";
 import { sendLiquidacionEmail } from "@/lib/email";
 import { buildReservationRtf } from "@/lib/rtf";
 
@@ -57,28 +63,26 @@ export async function GET(req: NextRequest) {
     }
 
     const reservas = await getReservationsDetailForClase(clase.id);
-    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
+    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation);
 
-    const { totalAPagar } = await createLiquidacion({
+    const { totals } = await createLiquidacion({
       gimnasio: gym.name,
       clase: clase.name,
       fecha,
-      reservasConfirmadas: confirmadas.length,
-      creditosTotales: confirmadas.length * clase.credits,
-      precioPorReserva: gym.pricePerReservation,
-      detalle: reservas.map((r) => `${r.userName} - ${r.estado}`).join("\n") || "Sin reservas.",
       fechaDePago: computeFechaDePago(clase.fecha),
+      counts,
     });
 
     generated += 1;
 
+    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     const rtf = buildReservationRtf({
       title: "Pre reservas 24h antes",
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
       claseName: clase.name,
       horario: formatHora(clase.fecha),
-      names: confirmadas.map((r) => r.userName),
+      reservas: confirmadas.map((r) => ({ tipo: r.tipo, nombre: r.userName, cedula: r.cedula })),
     });
 
     try {
@@ -88,8 +92,8 @@ export async function GET(req: NextRequest) {
         gimnasio: gym.name,
         clase: clase.name,
         fecha,
-        reservasConfirmadas: confirmadas.length,
-        totalAPagar,
+        reservasConfirmadas: counts.reservasConfirmadas,
+        totalAPagar: totals.totalAPagar,
         rtf,
       });
     } catch {

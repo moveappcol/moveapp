@@ -5,6 +5,8 @@ import { getReservationsDetailForClase } from "@/lib/reservations";
 import {
   findLiquidacion,
   createLiquidacion,
+  updateLiquidacionCounts,
+  buildCountsFromReservas,
   markReservasFinalesEnviadas,
   computeFechaDePago,
   toBogotaDateString,
@@ -62,7 +64,7 @@ export async function GET(req: NextRequest) {
 
     let liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
     const reservas = await getReservationsDetailForClase(clase.id);
-    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
+    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation);
 
     if (!liquidacion) {
       // No debería pasar (la liquidación ya se genera a las 24h), pero por
@@ -71,13 +73,14 @@ export async function GET(req: NextRequest) {
         gimnasio: gym.name,
         clase: clase.name,
         fecha,
-        reservasConfirmadas: confirmadas.length,
-        creditosTotales: confirmadas.length * clase.credits,
-        precioPorReserva: gym.pricePerReservation,
-        detalle: reservas.map((r) => `${r.userName} - ${r.estado}`).join("\n") || "Sin reservas.",
         fechaDePago: computeFechaDePago(clase.fecha),
+        counts,
       });
       liquidacion = { id, reservasFinalesEnviadas: false };
+    } else {
+      // Puede haber reservas nuevas hechas después del corte de 24h — se
+      // actualizan los conteos y totales antes de mandar la lista final.
+      await updateLiquidacionCounts(liquidacion.id, counts);
     }
 
     if (liquidacion.reservasFinalesEnviadas) {
@@ -85,13 +88,14 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     const rtf = buildReservationRtf({
       title: "Reservas finales",
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
       claseName: clase.name,
       horario: formatHora(clase.fecha),
-      names: confirmadas.map((r) => r.userName),
+      reservas: confirmadas.map((r) => ({ tipo: r.tipo, nombre: r.userName, cedula: r.cedula })),
     });
 
     try {

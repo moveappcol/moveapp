@@ -6,7 +6,7 @@ export default function CrearCuentaPage() {
       <SignUp
         path="/crear-cuenta"
         signInUrl="/iniciar-sesion"
-        fallbackRedirectUrl="/"
+        fallbackRedirectUrl="/completar-perfil"
       />
     </div>
   );

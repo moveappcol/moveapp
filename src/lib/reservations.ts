@@ -18,7 +18,14 @@ export type Reservation = {
   estado: string | null;
 };
 
-export type ReservaDetalle = { userName: string; estado: string };
+export type TipoReserva = "A" | "B" | null;
+
+export type ReservaDetalle = {
+  userName: string;
+  estado: string;
+  cedula: string;
+  tipo: TipoReserva;
+};
 
 /** Todas las reservas de una clase (cualquier estado), para armar el
  * reporte de liquidación. Se filtra en JS porque ARRAYJOIN sobre un campo
@@ -29,10 +36,15 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
   const records = await base("Reservas").select().all();
   return records
     .filter((r) => (r.get("Clase") as string[] | undefined)?.[0] === claseId)
-    .map((r) => ({
-      userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
-      estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
-    }));
+    .map((r) => {
+      const tipo = ((r.get("Tipo") as string) ?? "").trim();
+      return {
+        userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
+        estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
+        cedula: ((r.get("Cedula") as string) ?? "").trim(),
+        tipo: tipo === "A" || tipo === "B" ? tipo : null,
+      };
+    });
 }
 
 const CANCELLATION_WINDOW_HOURS = 24;
@@ -87,6 +99,9 @@ async function countMonthlyReservationsAtGym(
  *   - Gimnasios  (link a Gimnasios)
  *   - Fecha      (fecha y hora)
  *   - Estado     (selección: "Reservado", "Cancelado on time", "Asistió", "No asistió", ...)
+ *   - Cedula     (texto — copiada del perfil del usuario al reservar)
+ *   - Tipo       (selección: "A" | "B" — la llena el staff a mano según
+ *      cuándo el gimnasio dio esos cupos; vacío hasta que se clasifique)
  */
 export async function createReservation(params: {
   userEmail: string;
@@ -119,6 +134,12 @@ export async function createReservation(params: {
       error: `No tienes créditos suficientes: te quedan ${account.credits} y esta clase vale ${claseCredits}.`,
     };
   }
+  if (!account.cedula) {
+    return {
+      ok: false,
+      error: "Completa tu perfil (cédula) antes de reservar.",
+    };
+  }
 
   const monthlyCount = await countMonthlyReservationsAtGym(
     userName,
@@ -141,6 +162,7 @@ export async function createReservation(params: {
         Gimnasios: [gimnasioId],
         Fecha: fechaISO,
         Estado: "Reservado",
+        Cedula: account.cedula,
       },
     },
   ]);

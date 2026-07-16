@@ -12,7 +12,7 @@ import {
 import { sendReservasFinalesEmail } from "@/lib/email";
 import { buildReservationRtf } from "@/lib/rtf";
 
-const OWNER_EMAIL = "gerencia@uniqueapp.com.co";
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
 // Ventana amplia porque el cron corre cada pocos minutos y puede atrasarse:
 // desde 30 min después de empezar la clase (por si acaso) hasta 15 min antes.
 const WINDOW_START_MINUTES = -30;

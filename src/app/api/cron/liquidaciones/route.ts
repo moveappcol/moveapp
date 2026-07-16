@@ -6,7 +6,7 @@ import { liquidacionExists, createLiquidacion, computeFechaDePago, toBogotaDateS
 import { sendLiquidacionEmail } from "@/lib/email";
 import { buildReservationRtf } from "@/lib/rtf";
 
-const OWNER_EMAIL = "gerencia@uniqueapp.com.co";
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
 const LOCK_IN_HOURS = 24;
 
 function formatFechaLarga(iso: string): string {

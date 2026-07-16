@@ -33,6 +33,14 @@ async function sendEmail(params: {
   }
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function toAttachment(filename: string, rtf: string): EmailAttachment {
   return { filename, content: Buffer.from(rtf, "utf-8").toString("base64") };
 }
@@ -88,5 +96,24 @@ export async function sendReservasFinalesEmail(params: {
     subject: `Reservas finales — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
     html,
     attachments: [toAttachment(`reservas-finales-${params.clase}-${params.fecha}.rtf`, params.rtf)],
+  });
+}
+
+/** Mensaje del formulario de contacto del sitio. */
+export async function sendContactEmail(params: {
+  ownerEmail: string;
+  name: string;
+  fromEmail: string;
+  message: string;
+}): Promise<void> {
+  const html = `
+    <p>Nuevo mensaje de contacto de <strong>${escapeHtml(params.name)}</strong> (${escapeHtml(params.fromEmail)}):</p>
+    <p>${escapeHtml(params.message).replace(/\n/g, "<br/>")}</p>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `Nuevo mensaje de contacto — ${params.name}`,
+    html,
   });
 }

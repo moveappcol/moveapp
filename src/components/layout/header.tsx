@@ -42,13 +42,13 @@ export default async function Header() {
 
         <nav className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => (
-            <Link
+            <a
               key={link.href}
               href={link.href}
               className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </nav>
 

@@ -1,10 +1,8 @@
-import Link from "next/link";
-
 const CONTACT_EMAIL = "uniqueappcol@gmail.com";
 
 export default function Footer() {
   return (
-    <footer id="contacto" className="border-t border-move-green/10 bg-move-green text-white">
+    <footer className="border-t border-move-green/10 bg-move-green text-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
@@ -41,13 +39,20 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} UNIQUE. Todos los derechos reservados.</p>
+          {/* Anchors nativos a propósito: ver nota en hero.tsx */}
           <nav className="flex gap-6">
-            <Link href="/#gimnasios" className="hover:text-white">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/#gimnasios" className="hover:text-white">
               Gimnasios
-            </Link>
-            <Link href="/#planes" className="hover:text-white">
+            </a>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/#planes" className="hover:text-white">
               Planes
-            </Link>
+            </a>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a href="/#contacto" className="hover:text-white">
+              Contacto
+            </a>
           </nav>
         </div>
       </div>

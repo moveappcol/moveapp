@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -19,19 +18,24 @@ export default function Hero() {
             cycling, boxing, yoga y muchas más disciplinas en los mejores
             gimnasios y estudios afiliados, sin ataduras a uno solo.
           </p>
+          {/* Anchors nativos a propósito: los links de sección deben
+              recargar y hacer scroll de forma confiable en todos los
+              navegadores, sin depender del scroll-restoration de Next. */}
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a
               href="/#planes"
               className="rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
             >
               Ver planes de créditos
-            </Link>
-            <Link
+            </a>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a
               href="/#gimnasios"
               className="rounded-full border border-move-green/20 px-6 py-3 font-heading text-sm font-semibold text-move-green transition-colors hover:border-move-green"
             >
               Explorar gimnasios
-            </Link>
+            </a>
           </div>
         </div>
 

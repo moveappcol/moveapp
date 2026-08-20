@@ -1,7 +1,6 @@
 export const TIPOS_DOCUMENTO = [
   "Cédula de ciudadanía",
   "Cédula de extranjería",
-  "Tarjeta de identidad",
   "Pasaporte",
   "Otro",
 ] as const;
@@ -20,7 +19,6 @@ export function validateDocumentNumber(tipo: TipoDocumento, numero: string): str
 
   switch (tipo) {
     case "Cédula de ciudadanía":
-    case "Tarjeta de identidad":
       if (!/^\d{6,11}$/.test(value)) {
         return "Ese número no parece válido — debe tener solo dígitos (6 a 11).";
       }

@@ -22,6 +22,21 @@ function isBookingClosed(fecha: string): boolean {
   return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
 }
 
+/** No mostramos el conteo exacto de cupos: si queda más de la mitad no se
+ * dice nada, y si queda la mitad o menos se avisa en rojo sin dar el
+ * número. Si ya no queda ninguno, el mensaje de "clase llena" de abajo ya
+ * lo cubre. */
+function CuposAviso({ cuposDisponibles, cuposTotales }: { cuposDisponibles: number; cuposTotales: number }) {
+  if (cuposDisponibles <= 0 || cuposTotales <= 0) return null;
+  if (cuposDisponibles / cuposTotales > 0.5) return null;
+
+  return (
+    <p className="mt-1 font-body text-sm font-medium text-red-600">
+      Quedan pocos cupos disponibles
+    </p>
+  );
+}
+
 export default function ClassList({
   gimnasioId,
   classes,
@@ -52,11 +67,10 @@ export default function ClassList({
               <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
                 {formatFecha(clase.fecha)}
               </p>
-              <p className="mt-1 font-body text-sm text-move-green/60">
-                {clase.cuposDisponibles > 0
-                  ? `${clase.cuposDisponibles} de ${clase.cuposTotales} cupos`
-                  : "Sin cupos disponibles"}
-              </p>
+              <CuposAviso
+                cuposDisponibles={clase.cuposDisponibles}
+                cuposTotales={clase.cuposTotales}
+              />
             </div>
             <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
               {clase.credits} créditos

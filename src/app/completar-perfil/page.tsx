@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getUserCreditsByEmail } from "@/lib/users";
-import CedulaForm from "@/components/perfil/cedula-form";
+import CompletarPerfilForm from "@/components/perfil/completar-perfil-form";
 
 export default async function CompletarPerfilPage() {
   const { userId } = await auth();
@@ -11,7 +11,7 @@ export default async function CompletarPerfilPage() {
   const email = user?.primaryEmailAddress?.emailAddress;
   if (email) {
     const account = await getUserCreditsByEmail(email);
-    if (account?.cedula) redirect("/");
+    if (account?.perfilCompleto) redirect("/");
   }
 
   return (
@@ -20,12 +20,12 @@ export default async function CompletarPerfilPage() {
         Completa tu perfil
       </h1>
       <p className="mt-2 font-body text-sm text-move-green/70">
-        Necesitamos tu número de cédula para poder identificarte en cada
-        reserva. Solo te la pedimos una vez.
+        Necesitamos estos datos para poder identificarte en cada reserva.
+        Solo te los pedimos una vez.
       </p>
 
       <div className="mt-8 rounded-2xl border border-move-green/10 bg-white p-6">
-        <CedulaForm />
+        <CompletarPerfilForm defaultNombre={user?.firstName ?? ""} defaultApellido={user?.lastName ?? ""} />
       </div>
     </section>
   );

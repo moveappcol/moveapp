@@ -34,6 +34,7 @@ export default async function SuscribirsePage({
         <SubscribeForm
           planId={plan.id}
           planLabel={`${plan.name} (${plan.label})`}
+          planPrice={plan.price}
           publicKey={wompiPublicKey()}
           permalinkAcceptance={tokens.permalinkAcceptance}
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}

@@ -1,5 +1,9 @@
 import { getAirtableBase } from "./airtable";
 
+// Cuando los gimnasios afiliados estén confirmados, cambiar a false para
+// que la grilla y las páginas de detalle sean públicas.
+export const GYMS_COMING_SOON = true;
+
 export type Gym = {
   id: string;
   name: string;
@@ -8,20 +12,42 @@ export type Gym = {
   address: string;
   lat: number | null;
   lng: number | null;
+  /** Foto que se ve en la grilla (antes de entrar al gimnasio). */
   photoUrl: string | null;
+  /** Foto que se ve dentro de la página del gimnasio (distinta a la de la grilla). */
+  photoDetailUrl: string | null;
   description: string | null;
+  puntualidad: string | null;
+  politicaCancelacion: string | null;
+  ropaCalzado: string | null;
+  materiales: string | null;
+  servicios: string[];
+  politicaMenores: string | null;
+  nivelRecomendado: string | null;
+  recomendaciones: string | null;
 };
 
 /**
- * Esquema actual en Airtable — tabla "Gimnasios":
- *   - Nombre        (texto)
- *   - Actividades   (selección múltiple)
- *   - Ciudad        (texto — hoy contiene la dirección, ej: "cll 93 b")
- *   - Latitud       (número, opcional — aún no está creada, se usa cuando exista)
- *   - Longitud      (número, opcional — aún no está creada, se usa cuando exista)
- *   - Foto          (adjunto, opcional — aún no está creada)
- *   - Descripción   (texto largo, opcional — aún no está creada)
- *   - Activo        (casilla, última columna — solo se traen los marcados)
+ * Esquema actual en Airtable — tabla "Gimnasios" (ojo: varios nombres de
+ * campo traen un espacio al final, hay que copiarlos tal cual):
+ *   - Nombre                                     (texto)
+ *   - Actividades                                (selección múltiple)
+ *   - Ciudad                                     (texto — la ciudad real)
+ *   - Dirección                                  (texto — dirección exacta)
+ *   - Latitud                                    (número)
+ *   - Longitud                                   (número)
+ *   - Foto                                       (adjunto — se ve en la grilla)
+ *   - "Foto detalle"                             (adjunto — se ve dentro del gimnasio, distinta a la de la grilla)
+ *   - "Descripción "                             (texto largo)
+ *   - Puntualidad                                (texto largo)
+ *   - "Politica de cancelación "                 (texto largo)
+ *   - "Ropa/calzado requerido "                  (texto largo)
+ *   - "Materiales requeridos "                   (texto largo)
+ *   - "Servicios y amenidades "                  (selección múltiple)
+ *   - "Política para menores de edad"            (texto largo)
+ *   - "Nivel recomendado (principiante/avanzado)" (texto largo)
+ *   - "Recomendaciones adicionales"              (texto largo)
+ *   - Activo                                     (casilla — solo se traen los marcados)
  *
  * "Numero" y "Reservas" existen en la base pero no se usan aquí todavía.
  */
@@ -38,7 +64,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6486,
     lng: -74.0628,
     photoUrl: null,
-    description: null,
+    photoDetailUrl: null,
+    description: "Clases de cycling con música en vivo y luces LED.",
+    puntualidad: "Llega 10 minutos antes de tu clase.",
+    politicaCancelacion: "Cancela con 24h de anticipación para no perder tus créditos.",
+    ropaCalzado: "Ropa deportiva cómoda y tenis con suela plana.",
+    materiales: "Prestamos zapatillas de spinning sin costo.",
+    servicios: ["Casilleros", "Duchas", "Agua / hidratación"],
+    politicaMenores: "Solo mayores de 16 años.",
+    nivelRecomendado: "Apto para todos los niveles.",
+    recomendaciones: "Trae toalla y una botella de agua.",
   },
   {
     id: "mock-2",
@@ -49,7 +84,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6946,
     lng: -74.0307,
     photoUrl: null,
+    photoDetailUrl: null,
     description: null,
+    puntualidad: null,
+    politicaCancelacion: null,
+    ropaCalzado: null,
+    materiales: null,
+    servicios: [],
+    politicaMenores: null,
+    nivelRecomendado: null,
+    recomendaciones: null,
   },
   {
     id: "mock-3",
@@ -60,7 +104,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.2088,
     lng: -75.5679,
     photoUrl: null,
+    photoDetailUrl: null,
     description: null,
+    puntualidad: null,
+    politicaCancelacion: null,
+    ropaCalzado: null,
+    materiales: null,
+    servicios: [],
+    politicaMenores: null,
+    nivelRecomendado: null,
+    recomendaciones: null,
   },
   {
     id: "mock-4",
@@ -71,7 +124,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6707,
     lng: -74.0479,
     photoUrl: null,
+    photoDetailUrl: null,
     description: null,
+    puntualidad: null,
+    politicaCancelacion: null,
+    ropaCalzado: null,
+    materiales: null,
+    servicios: [],
+    politicaMenores: null,
+    nivelRecomendado: null,
+    recomendaciones: null,
   },
   {
     id: "mock-5",
@@ -82,7 +144,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.2447,
     lng: -75.5916,
     photoUrl: null,
+    photoDetailUrl: null,
     description: null,
+    puntualidad: null,
+    politicaCancelacion: null,
+    ropaCalzado: null,
+    materiales: null,
+    servicios: [],
+    politicaMenores: null,
+    nivelRecomendado: null,
+    recomendaciones: null,
   },
   {
     id: "mock-6",
@@ -93,7 +164,16 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.1719,
     lng: -75.5636,
     photoUrl: null,
+    photoDetailUrl: null,
     description: null,
+    puntualidad: null,
+    politicaCancelacion: null,
+    ropaCalzado: null,
+    materiales: null,
+    servicios: [],
+    politicaMenores: null,
+    nivelRecomendado: null,
+    recomendaciones: null,
   },
 ];
 
@@ -101,21 +181,40 @@ function isAirtableConfigured(): boolean {
   return Boolean(process.env.AIRTABLE_API_KEY && process.env.AIRTABLE_BASE_ID);
 }
 
+function textField(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  record: any,
+  field: string
+): string | null {
+  const value = ((record.get(field) as string) ?? "").trim();
+  return value || null;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRecordToGym(record: any): Gym {
   const photos = record.get("Foto") as { url: string }[] | undefined;
+  const photosDetail = record.get("Foto detalle") as { url: string }[] | undefined;
   const activities = (record.get("Actividades") as string[]) ?? [];
-  const address = (record.get("Ciudad") as string) ?? "";
+  const servicios = (record.get("Servicios y amenidades ") as string[]) ?? [];
   return {
     id: record.id,
     name: (record.get("Nombre") as string) ?? "Sin nombre",
     activities: activities.map((a) => a.trim()).filter(Boolean),
-    city: "",
-    address: address.trim(),
+    city: ((record.get("Ciudad") as string) ?? "").trim(),
+    address: ((record.get("Dirección") as string) ?? "").trim(),
     lat: (record.get("Latitud") as number) ?? null,
     lng: (record.get("Longitud") as number) ?? null,
     photoUrl: photos?.[0]?.url ?? null,
-    description: (record.get("Descripción") as string) ?? null,
+    photoDetailUrl: photosDetail?.[0]?.url ?? null,
+    description: textField(record, "Descripción "),
+    puntualidad: textField(record, "Puntualidad"),
+    politicaCancelacion: textField(record, "Politica de cancelación "),
+    ropaCalzado: textField(record, "Ropa/calzado requerido "),
+    materiales: textField(record, "Materiales requeridos "),
+    servicios: servicios.map((s) => s.trim()).filter(Boolean),
+    politicaMenores: textField(record, "Política para menores de edad"),
+    nivelRecomendado: textField(record, "Nivel recomendado (principiante/avanzado)"),
+    recomendaciones: textField(record, "Recomendaciones adicionales"),
   };
 }
 
@@ -153,7 +252,18 @@ export type GymBillingInfo = {
   name: string;
   email: string | null;
   pricePerReservation: number | null;
+  /** Fracción (0.4 = 40%) — null si el gimnasio no tiene un porcentaje
+   * propio configurado todavía en Airtable (se usa el default). */
+  porcentajeTipoA: number | null;
+  porcentajeTipoB: number | null;
 };
+
+/** Convierte el entero guardado en Airtable ("Porcentaje tipo A" = 40) a
+ * fracción (0.4). */
+function toPorcentaje(value: number | string | undefined): number | null {
+  if (value === undefined || value === "") return null;
+  return Number(value) / 100;
+}
 
 /** Datos de facturación del gimnasio — no forman parte del Gym público
  * (no se muestran en el storefront), solo se usan para liquidaciones. */
@@ -167,6 +277,8 @@ export async function getGymBillingInfo(id: string): Promise<GymBillingInfo | nu
       name: ((record.get("Nombre") as string) ?? "").trim(),
       email: (record.get("Correo") as string) ?? null,
       pricePerReservation: price !== undefined ? Number(price) : null,
+      porcentajeTipoA: toPorcentaje(record.get("Porcentaje tipo A") as number | string | undefined),
+      porcentajeTipoB: toPorcentaje(record.get("Porcentaje tipo B") as number | string | undefined),
     };
   } catch {
     return null;

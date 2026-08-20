@@ -1,0 +1,15 @@
+name: Reporte quincenal de reservas por gimnasio
+
+on:
+  schedule:
+    - cron: "0 13 * * *" # 8am America/Bogota (UTC-5) — el endpoint decide si hoy toca reporte (día 14 o fin de mes)
+  workflow_dispatch: {}
+
+jobs:
+  reportar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reporte-quincenal cron
+        run: |
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/reporte-quincenal" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

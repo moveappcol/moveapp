@@ -24,6 +24,7 @@ export type ReservaDetalle = {
   userName: string;
   estado: string;
   cedula: string;
+  correo: string;
   tipo: TipoReserva;
 };
 
@@ -42,6 +43,7 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
         userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
         estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
         cedula: ((r.get("Cedula") as string) ?? "").trim(),
+        correo: ((r.get("Correo") as string) ?? "").trim(),
         tipo: tipo === "A" || tipo === "B" ? tipo : null,
       };
     });
@@ -100,6 +102,7 @@ async function countMonthlyReservationsAtGym(
  *   - Fecha      (fecha y hora)
  *   - Estado     (selección: "Reservado", "Cancelado on time", "Asistió", "No asistió", ...)
  *   - Cedula     (texto — copiada del perfil del usuario al reservar)
+ *   - Correo     (texto — copiado de la cuenta del usuario al reservar)
  *   - Tipo       (selección: "A" | "B" — la llena el staff a mano según
  *      cuándo el gimnasio dio esos cupos; vacío hasta que se clasifique)
  */
@@ -163,6 +166,7 @@ export async function createReservation(params: {
         Fecha: fechaISO,
         Estado: "Reservado",
         Cedula: account.cedula,
+        Correo: userEmail,
       },
     },
   ]);

@@ -10,7 +10,7 @@ import {
   toBogotaDateString,
 } from "@/lib/liquidaciones";
 import { sendLiquidacionEmail } from "@/lib/email";
-import { buildReservationRtf } from "@/lib/rtf";
+import { buildReservasFinalesPdf } from "@/lib/pdf";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 const LOCK_IN_HOURS = 24;
@@ -63,9 +63,12 @@ export async function GET(req: NextRequest) {
     }
 
     const reservas = await getReservationsDetailForClase(clase.id);
-    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation);
+    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation, {
+      tipoA: gym.porcentajeTipoA,
+      tipoB: gym.porcentajeTipoB,
+    });
 
-    const { totals } = await createLiquidacion({
+    await createLiquidacion({
       gimnasio: gym.name,
       clase: clase.name,
       fecha,
@@ -76,25 +79,30 @@ export async function GET(req: NextRequest) {
     generated += 1;
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
-    const rtf = buildReservationRtf({
-      title: "Pre reservas 24h antes",
+    const pdf = await buildReservasFinalesPdf({
+      variant: "24h",
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
-      claseName: clase.name,
-      horario: formatHora(clase.fecha),
-      reservas: confirmadas.map((r) => ({ tipo: r.tipo, nombre: r.userName, cedula: r.cedula })),
+      clase: clase.name,
+      hora: formatHora(clase.fecha),
+      reservas: confirmadas.map((r) => ({
+        tipo: r.tipo,
+        nombre: r.userName,
+        cedula: r.cedula,
+        correo: r.correo,
+      })),
     });
 
     try {
       await sendLiquidacionEmail({
         gymEmail: gym.email,
         ownerEmail: OWNER_EMAIL,
-        gimnasio: gym.name,
         clase: clase.name,
-        fecha,
-        reservasConfirmadas: counts.reservasConfirmadas,
-        totalAPagar: totals.totalAPagar,
-        rtf,
+        fechaLarga: formatFechaLarga(clase.fecha),
+        hora: formatHora(clase.fecha),
+        asistentes: confirmadas.map((r) => r.userName),
+        archivo: `${clase.name}-${fecha}`,
+        pdf,
       });
     } catch {
       emailFailed += 1;

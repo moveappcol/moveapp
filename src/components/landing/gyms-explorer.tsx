@@ -136,7 +136,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
             key={gym.id}
             className="block overflow-hidden rounded-2xl border border-move-green/10 transition-shadow hover:shadow-md"
           >
-            <div className="flex h-36 items-center justify-center bg-move-green/5">
+            <div className="flex aspect-[16/9] items-center justify-center bg-move-green/5">
               {gym.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -164,7 +164,10 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
                 )}
               </div>
               <p className="mt-1 font-body text-sm text-move-green/60">
-                {gym.activities.join(", ")} · {gym.address}
+                {gym.activities.join(", ")}
+              </p>
+              <p className="mt-0.5 font-body text-sm text-move-green/50">
+                {gym.address}
               </p>
             </div>
           </Link>

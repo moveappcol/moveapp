@@ -16,9 +16,14 @@ export async function chargeSubscriptionPlan(params: {
   planId: string;
   paymentSourceId: number;
   ownerRef: string;
+  /** Fracción entre 0 y 1 (0.2 = 20% de descuento) — ya validada por el
+   * llamador contra un cupón real, nunca confiar en un valor del cliente. */
+  descuento?: number;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("plan", params.planId);
   if (!item) return { ok: false, error: "Plan desconocido." };
+
+  const precio = params.descuento ? Math.round(item.price * (1 - params.descuento)) : item.price;
 
   const reference = buildReference("plan", params.planId, params.ownerRef);
   const pagoId = await createPendingPago({
@@ -32,7 +37,7 @@ export async function chargeSubscriptionPlan(params: {
   let tx;
   try {
     tx = await chargeWithPaymentSource({
-      amountInCents: item.price * 100,
+      amountInCents: precio * 100,
       customerEmail: params.correo,
       paymentSourceId: params.paymentSourceId,
       reference,

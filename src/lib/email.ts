@@ -1,5 +1,3 @@
-import { formatCOP } from "./credits-pricing";
-
 type EmailAttachment = { filename: string; content: string };
 
 async function sendEmail(params: {
@@ -41,61 +39,148 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function toAttachment(filename: string, rtf: string): EmailAttachment {
-  return { filename, content: Buffer.from(rtf, "utf-8").toString("base64") };
+function toAttachment(filename: string, content: Buffer): EmailAttachment {
+  return { filename, content: content.toString("base64") };
 }
 
 function recipients(gymEmail: string | null, ownerEmail: string): string[] {
   return [ownerEmail, ...(gymEmail ? [gymEmail] : [])];
 }
 
-/** Correo de las 24h antes: incluye el resumen financiero para el dueño y
- * adjunta la plantilla "Pre reservas 24h antes" ya llena. */
+function attendeesListHtml(nombres: string[]): string {
+  if (nombres.length === 0) return "<p>Sin reservas confirmadas.</p>";
+  return `<ul>${nombres.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
+}
+
+/** Correo de las 24h antes: adjunta el PDF "RESERVAS FINALES (24 h antes)".
+ * No incluye el total a pagar (ese queda solo en el form de pagos). */
 export async function sendLiquidacionEmail(params: {
   gymEmail: string | null;
   ownerEmail: string;
-  gimnasio: string;
   clase: string;
-  fecha: string;
-  reservasConfirmadas: number;
-  totalAPagar: number;
-  rtf: string;
+  fechaLarga: string;
+  hora: string;
+  asistentes: string[];
+  archivo: string;
+  pdf: Buffer;
 }): Promise<void> {
   const html = `
-    <p>Liquidación generada para <strong>${params.clase}</strong> en <strong>${params.gimnasio}</strong> (${params.fecha}).</p>
-    <p>Reservas confirmadas: ${params.reservasConfirmadas}<br/>
-    Total a pagar: ${formatCOP(params.totalAPagar)}</p>
-    <p>El documento de pre-reservas va adjunto.</p>
+    <p>Hola,</p>
+    <p>Les compartimos las reservas confirmadas para la clase de <strong>${escapeHtml(params.clase)}</strong>, programada para el ${escapeHtml(params.fechaLarga)} a las ${escapeHtml(params.hora)}.</p>
+    <p>A continuación encontrarán el listado de personas que, hasta este momento, tienen su reserva confirmada:</p>
+    ${attendeesListHtml(params.asistentes)}
+    <p>Esta información se envía 24 horas antes del inicio de la clase para facilitar su organización. Si se presentan nuevas reservas o cancelaciones, recibirán una actualización antes del inicio de la clase.</p>
+    <p>¡Gracias por ser parte de UNIQUE!</p>
   `;
 
   await sendEmail({
     to: recipients(params.gymEmail, params.ownerEmail),
-    subject: `Pre reservas 24h antes — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
+    subject: "Reservas confirmadas para la clase en 24 h",
     html,
-    attachments: [toAttachment(`pre-reservas-${params.clase}-${params.fecha}.rtf`, params.rtf)],
+    attachments: [toAttachment(`pre-reservas-${params.archivo}.pdf`, params.pdf)],
   });
 }
 
-/** Correo de los 15 minutos antes: solo la lista final (puede incluir gente
- * que reservó después del corte de las 24h). */
+/** Correo de los 20 minutos antes: adjunta el PDF "RESERVAS FINALES (20 min
+ * antes)" (puede incluir gente que reservó después del corte de las 24h). */
 export async function sendReservasFinalesEmail(params: {
   gymEmail: string | null;
   ownerEmail: string;
-  gimnasio: string;
   clase: string;
-  fecha: string;
-  rtf: string;
+  asistentes: string[];
+  archivo: string;
+  pdf: Buffer;
 }): Promise<void> {
   const html = `
-    <p>Lista final de reservas para <strong>${params.clase}</strong> en <strong>${params.gimnasio}</strong> (${params.fecha}).</p>
-    <p>El documento va adjunto.</p>
+    <p>Hola,</p>
+    <p>La clase de <strong>${escapeHtml(params.clase)}</strong> comenzará en 20 minutos.</p>
+    <p>Les compartimos el listado final de asistentes confirmados:</p>
+    ${attendeesListHtml(params.asistentes)}
+    <p>Les deseamos una excelente clase y, como siempre, gracias por ser parte de UNIQUE.</p>
   `;
 
   await sendEmail({
     to: recipients(params.gymEmail, params.ownerEmail),
-    subject: `Reservas finales — ${params.gimnasio} — ${params.clase} (${params.fecha})`,
+    subject: "Actualización final de asistentes – Clase próxima a iniciar",
     html,
-    attachments: [toAttachment(`reservas-finales-${params.clase}-${params.fecha}.rtf`, params.rtf)],
+    attachments: [toAttachment(`reservas-finales-${params.archivo}.pdf`, params.pdf)],
+  });
+}
+
+/** Correo quincenal (días 1–14 y 15–fin de mes) para cada gimnasio: adjunta
+ * el PDF "RESERVAS TOTALES DEL PERIODO" — solo cantidades, sin plata. */
+export async function sendReservasTotalesPeriodoEmail(params: {
+  gymEmail: string | null;
+  ownerEmail: string;
+  periodo: string;
+  archivo: string;
+  pdf: Buffer;
+}): Promise<void> {
+  const html = `
+    <p>Hola,</p>
+    <p>Les compartimos el registro de todas las reservas confirmadas en su gimnasio durante el periodo del ${escapeHtml(params.periodo)}.</p>
+    <p>El documento adjunto incluye el detalle de cada reserva (nombre, cédula, clase y fecha) y el total por tipo de reserva.</p>
+    <p>¡Gracias por ser parte de UNIQUE!</p>
+  `;
+
+  await sendEmail({
+    to: recipients(params.gymEmail, params.ownerEmail),
+    subject: `Registro de reservas del periodo — ${params.periodo}`,
+    html,
+    attachments: [toAttachment(`reservas-periodo-${params.archivo}.pdf`, params.pdf)],
+  });
+}
+
+/** Correo quincenal (días 1–14 y 15–fin de mes), solo para el dueño: adjunta
+ * el PDF "form pagos" con porcentaje, valor por reserva y total a pagar de
+ * cada gimnasio. Nunca se manda a los gimnasios. */
+export async function sendFormPagosEmail(params: {
+  ownerEmail: string;
+  periodo: string;
+  pdf: Buffer;
+}): Promise<void> {
+  const html = `
+    <p>Hola,</p>
+    <p>Adjunto el detalle de pagos a gimnasios correspondiente al periodo del ${escapeHtml(params.periodo)}, con el porcentaje, el valor por reserva y el total a pagar de cada uno.</p>
+    <p>¡Gracias!</p>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `Form pagos — ${params.periodo}`,
+    html,
+    attachments: [toAttachment(`form-pagos-${params.periodo}.pdf`, params.pdf)],
+  });
+}
+
+/** Solicitud de un gimnasio que quiere afiliarse a la plataforma. */
+export async function sendGymApplicationEmail(params: {
+  ownerEmail: string;
+  nombre: string;
+  direccion: string;
+  ciudad: string;
+  instagram: string;
+  disciplina: string;
+  descripcion: string;
+  contacto: string;
+}): Promise<void> {
+  const html = `
+    <p>Nueva solicitud de afiliación de gimnasio:</p>
+    <p>
+      <strong>Nombre:</strong> ${escapeHtml(params.nombre)}<br/>
+      <strong>Dirección:</strong> ${escapeHtml(params.direccion)}<br/>
+      <strong>Ciudad:</strong> ${escapeHtml(params.ciudad)}<br/>
+      <strong>Instagram:</strong> ${escapeHtml(params.instagram)}<br/>
+      <strong>Disciplina:</strong> ${escapeHtml(params.disciplina)}<br/>
+      <strong>Contacto:</strong> ${escapeHtml(params.contacto)}
+    </p>
+    <p><strong>Descripción:</strong><br/>${escapeHtml(params.descripcion).replace(/\n/g, "<br/>")}</p>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `Nueva solicitud de gimnasio — ${params.nombre}`,
+    html,
   });
 }
 

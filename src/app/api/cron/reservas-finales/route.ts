@@ -12,13 +12,15 @@ import {
   toBogotaDateString,
 } from "@/lib/liquidaciones";
 import { sendReservasFinalesEmail } from "@/lib/email";
-import { buildReservationRtf } from "@/lib/rtf";
+import { buildReservasFinalesPdf } from "@/lib/pdf";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 // Ventana amplia porque el cron corre cada pocos minutos y puede atrasarse:
-// desde 30 min después de empezar la clase (por si acaso) hasta 15 min antes.
+// desde 30 min después de empezar la clase (por si acaso) hasta 20 min antes
+// (coincide con el cierre real de reservas, así que a los 20 min ya no puede
+// llegar gente nueva y la lista sí es final).
 const WINDOW_START_MINUTES = -30;
-const WINDOW_END_MINUTES = 15;
+const WINDOW_END_MINUTES = 20;
 
 function formatFechaLarga(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", {
@@ -64,7 +66,10 @@ export async function GET(req: NextRequest) {
 
     let liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
     const reservas = await getReservationsDetailForClase(clase.id);
-    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation);
+    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation, {
+      tipoA: gym.porcentajeTipoA,
+      tipoB: gym.porcentajeTipoB,
+    });
 
     if (!liquidacion) {
       // No debería pasar (la liquidación ya se genera a las 24h), pero por
@@ -89,23 +94,28 @@ export async function GET(req: NextRequest) {
     }
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
-    const rtf = buildReservationRtf({
-      title: "Reservas finales",
+    const pdf = await buildReservasFinalesPdf({
+      variant: "20min",
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
-      claseName: clase.name,
-      horario: formatHora(clase.fecha),
-      reservas: confirmadas.map((r) => ({ tipo: r.tipo, nombre: r.userName, cedula: r.cedula })),
+      clase: clase.name,
+      hora: formatHora(clase.fecha),
+      reservas: confirmadas.map((r) => ({
+        tipo: r.tipo,
+        nombre: r.userName,
+        cedula: r.cedula,
+        correo: r.correo,
+      })),
     });
 
     try {
       await sendReservasFinalesEmail({
         gymEmail: gym.email,
         ownerEmail: OWNER_EMAIL,
-        gimnasio: gym.name,
         clase: clase.name,
-        fecha,
-        rtf,
+        asistentes: confirmadas.map((r) => r.userName),
+        archivo: `${clase.name}-${fecha}`,
+        pdf,
       });
       await markReservasFinalesEnviadas(liquidacion.id);
       sent += 1;

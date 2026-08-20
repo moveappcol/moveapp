@@ -1,18 +1,30 @@
 import { getAirtableBase } from "./airtable";
+import type { TipoDocumento } from "./documento";
 
 export type UserCredits = {
   recordId: string;
   credits: number;
   vencimiento: string | null;
   cedula: string | null;
+  perfilCompleto: boolean;
 };
 
 /**
  * Esquema en Airtable — tabla "usuarios" (nombre en minúscula):
- *   - Correo       (texto, igual al correo de la cuenta de Clerk)
- *   - Creditos     (número)
- *   - Vencimiento  (fecha)
- *   - Cedula       (texto — se pide una sola vez, al crear la cuenta)
+ *   - Correo                          (texto, igual al correo de la cuenta de Clerk)
+ *   - Creditos                        (número)
+ *   - Vencimiento                     (fecha)
+ *   - Nombre                          (texto)
+ *   - Apellido                        (texto)
+ *   - "Teléfono"                      (texto — con tilde)
+ *   - "Tipo de documento"             (selección: ver TIPOS_DOCUMENTO en lib/documento.ts)
+ *   - "Número de documento"           (texto — el número del documento, sea cual sea el tipo;
+ *      OJO: en la tabla "Reservas" el campo equivalente sigue llamándose "Cedula")
+ *   - "Terminos aceptados"            (casilla)
+ *   - "Tratamiento de datos aceptado" (casilla)
+ *   - " Marketing aceptado"           (casilla — OJO: trae un espacio al inicio del nombre;
+ *      opcional, la persona puede no aceptar)
+ *   - "Perfil completo"               (casilla — true cuando ya llenó todo el formulario)
  */
 const USUARIOS_TABLE = "usuarios";
 
@@ -32,23 +44,49 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     recordId: record.id,
     credits: (record.get("Creditos") as number) ?? 0,
     vencimiento: (record.get("Vencimiento") as string) ?? null,
-    cedula: (record.get("Cedula") as string) || null,
+    cedula: (record.get("Número de documento") as string) || null,
+    perfilCompleto: Boolean(record.get("Perfil completo")),
   };
 }
 
-/** Guarda la cédula de la persona — crea el registro en "usuarios" si
- * todavía no existe (pasa justo después de crear la cuenta, antes de
- * comprar cualquier plan). */
-export async function setUserCedula(email: string, cedula: string): Promise<void> {
+export type CompleteProfileParams = {
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  tipoDocumento: TipoDocumento;
+  cedula: string;
+  terminosAceptados: boolean;
+  tratamientoDatosAceptado: boolean;
+  marketingAceptado: boolean;
+};
+
+/** Guarda el perfil completo de la persona (nombre, teléfono, documento,
+ * consentimientos) — crea el registro en "usuarios" si todavía no existe.
+ * Pasa justo después de crear la cuenta, antes de comprar cualquier plan. */
+export async function completeProfile(params: CompleteProfileParams): Promise<void> {
   const base = getAirtableBase();
-  const existing = await getUserCreditsByEmail(email);
+  const existing = await getUserCreditsByEmail(params.email);
+
+  const fields = {
+    Correo: params.email,
+    Nombre: params.nombre,
+    Apellido: params.apellido,
+    "Teléfono": params.telefono,
+    "Tipo de documento": params.tipoDocumento,
+    "Número de documento": params.cedula,
+    "Terminos aceptados": params.terminosAceptados,
+    "Tratamiento de datos aceptado": params.tratamientoDatosAceptado,
+    " Marketing aceptado": params.marketingAceptado,
+    "Perfil completo": true,
+  };
 
   if (existing) {
-    await base(USUARIOS_TABLE).update([{ id: existing.recordId, fields: { Cedula: cedula } }]);
+    await base(USUARIOS_TABLE).update([{ id: existing.recordId, fields }], { typecast: true });
     return;
   }
 
-  await base(USUARIOS_TABLE).create([{ fields: { Correo: email, Creditos: 0, Cedula: cedula } }]);
+  await base(USUARIOS_TABLE).create([{ fields: { ...fields, Creditos: 0 } }], { typecast: true });
 }
 
 export async function deductCredits(recordId: string, amount: number): Promise<number> {

@@ -84,6 +84,10 @@ export type LiquidacionCounts = {
   reservasTipoA: number;
   reservasTipoB: number;
   precioPorReserva: number | null;
+  /** Fracción (0.4 = 40%) — ya resuelta al default si el gimnasio no tiene
+   * un porcentaje propio configurado en Airtable. */
+  porcentajeTipoA: number;
+  porcentajeTipoB: number;
   detalle: string;
 };
 
@@ -95,8 +99,8 @@ export type LiquidacionTotals = {
 
 function computeTotals(counts: LiquidacionCounts): LiquidacionTotals {
   const precio = counts.precioPorReserva ?? 0;
-  const totalTipoA = Math.round(counts.reservasTipoA * precio * PORCENTAJE_TIPO_A);
-  const totalTipoB = Math.round(counts.reservasTipoB * precio * PORCENTAJE_TIPO_B);
+  const totalTipoA = Math.round(counts.reservasTipoA * precio * counts.porcentajeTipoA);
+  const totalTipoB = Math.round(counts.reservasTipoB * precio * counts.porcentajeTipoB);
   return { totalTipoA, totalTipoB, totalAPagar: totalTipoA + totalTipoB };
 }
 
@@ -167,7 +171,8 @@ type ReservaComoRecord = { estado: string; tipo: "A" | "B" | null; userName: str
 export function buildCountsFromReservas(
   reservas: ReservaComoRecord[],
   claseCredits: number,
-  precioPorReserva: number | null
+  precioPorReserva: number | null,
+  porcentajes?: { tipoA: number | null; tipoB: number | null }
 ): LiquidacionCounts {
   const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
   const reservasTipoA = confirmadas.filter((r) => r.tipo === "A").length;
@@ -179,6 +184,8 @@ export function buildCountsFromReservas(
     reservasTipoA,
     reservasTipoB,
     precioPorReserva,
+    porcentajeTipoA: porcentajes?.tipoA ?? PORCENTAJE_TIPO_A,
+    porcentajeTipoB: porcentajes?.tipoB ?? PORCENTAJE_TIPO_B,
     detalle,
   };
 }

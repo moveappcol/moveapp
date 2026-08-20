@@ -1,12 +1,11 @@
-import { getGyms } from "@/lib/gyms";
+import { getGyms, GYMS_COMING_SOON } from "@/lib/gyms";
 import GymsExplorer from "./gyms-explorer";
 
-// Cuando los gimnasios afiliados estén confirmados, cambiar a false para
-// volver a mostrar el buscador y la grilla real.
-const GYMS_COMING_SOON = true;
-
 export default async function GymsSection() {
-  if (GYMS_COMING_SOON) {
+  // En local (npm run dev) se ve la grilla real para poder probarla; en
+  // producción sigue mostrando "Coming soon" mientras GYMS_COMING_SOON siga
+  // en true.
+  if (GYMS_COMING_SOON && process.env.NODE_ENV !== "development") {
     return (
       <section id="gimnasios" className="bg-background">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">

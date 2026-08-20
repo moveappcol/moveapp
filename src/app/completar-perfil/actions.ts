@@ -3,7 +3,12 @@
 import { redirect } from "next/navigation";
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { completeProfile } from "@/lib/users";
-import { isTipoDocumento, validateDocumentNumber, validatePhone } from "@/lib/documento";
+import {
+  isTipoDocumento,
+  validateDocumentNumber,
+  validatePhone,
+  validateFechaNacimiento,
+} from "@/lib/documento";
 
 export async function saveCompletarPerfil(_prevState: { error: string } | null, formData: FormData) {
   const { userId } = await auth();
@@ -14,6 +19,7 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
   const telefono = String(formData.get("telefono") ?? "").trim();
   const tipoDocumento = String(formData.get("tipoDocumento") ?? "").trim();
   const cedula = String(formData.get("cedula") ?? "").trim();
+  const fechaNacimiento = String(formData.get("fechaNacimiento") ?? "").trim();
   const terminosAceptados = formData.get("terminosAceptados") === "on";
   const tratamientoDatosAceptado = formData.get("tratamientoDatosAceptado") === "on";
   const marketingAceptado = formData.get("marketingAceptado") === "on";
@@ -30,6 +36,9 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
 
   const documentError = validateDocumentNumber(tipoDocumento, cedula);
   if (documentError) return { error: documentError };
+
+  const fechaNacimientoError = validateFechaNacimiento(fechaNacimiento);
+  if (fechaNacimientoError) return { error: fechaNacimientoError };
 
   if (!terminosAceptados) {
     return { error: "Debes aceptar los términos y condiciones para continuar." };
@@ -54,6 +63,7 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
     telefono,
     tipoDocumento,
     cedula,
+    fechaNacimiento,
     terminosAceptados,
     tratamientoDatosAceptado,
     marketingAceptado,

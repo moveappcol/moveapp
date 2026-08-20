@@ -9,6 +9,14 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral";
 const labelClass = "font-heading text-sm font-medium text-move-green";
 
+/** "YYYY-MM-DD" de hace 18 años, para no dejar elegir una fecha que ya de
+ * entrada no cumpliría la edad mínima. La validación real es del servidor. */
+function maxBirthDate(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 18);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function CompletarPerfilForm({
   defaultNombre,
   defaultApellido,
@@ -55,6 +63,14 @@ export default function CompletarPerfilForm({
       <label className="block">
         <span className={labelClass}>Número de documento</span>
         <input type="text" name="cedula" required inputMode="text" className={inputClass} />
+      </label>
+
+      <label className="block">
+        <span className={labelClass}>Fecha de nacimiento</span>
+        <input type="date" name="fechaNacimiento" required max={maxBirthDate()} className={inputClass} />
+        <span className="mt-1 block font-body text-xs text-move-green/60">
+          UNIQUE es solo para mayores de 18 años.
+        </span>
       </label>
 
       <div className="space-y-3 pt-2">

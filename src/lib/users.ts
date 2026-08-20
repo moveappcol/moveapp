@@ -20,6 +20,7 @@ export type UserCredits = {
  *   - "Tipo de documento"             (selección: ver TIPOS_DOCUMENTO en lib/documento.ts)
  *   - "Número de documento"           (texto — el número del documento, sea cual sea el tipo;
  *      OJO: en la tabla "Reservas" el campo equivalente sigue llamándose "Cedula")
+ *   - "Fecha de nacimiento "           (fecha — se valida que sea mayor de 18 años al guardar)
  *   - "Terminos aceptados"            (casilla)
  *   - "Tratamiento de datos aceptado" (casilla)
  *   - " Marketing aceptado"           (casilla — OJO: trae un espacio al inicio del nombre;
@@ -56,6 +57,7 @@ export type CompleteProfileParams = {
   telefono: string;
   tipoDocumento: TipoDocumento;
   cedula: string;
+  fechaNacimiento: string;
   terminosAceptados: boolean;
   tratamientoDatosAceptado: boolean;
   marketingAceptado: boolean;
@@ -75,6 +77,7 @@ export async function completeProfile(params: CompleteProfileParams): Promise<vo
     "Teléfono": params.telefono,
     "Tipo de documento": params.tipoDocumento,
     "Número de documento": params.cedula,
+    "Fecha de nacimiento ": params.fechaNacimiento,
     "Terminos aceptados": params.terminosAceptados,
     "Tratamiento de datos aceptado": params.tratamientoDatosAceptado,
     " Marketing aceptado": params.marketingAceptado,

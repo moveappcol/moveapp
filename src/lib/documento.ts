@@ -44,3 +44,26 @@ export function validatePhone(telefono: string): string | null {
   }
   return null;
 }
+
+const MIN_AGE_YEARS = 18;
+
+/** La Plataforma está reservada a mayores de edad (ver Términos y
+ * Condiciones, cláusula 2) — se valida siempre en el servidor. */
+export function validateFechaNacimiento(fecha: string): string | null {
+  if (!fecha) return "Ingresa tu fecha de nacimiento.";
+
+  const nacimiento = new Date(fecha);
+  if (Number.isNaN(nacimiento.getTime())) return "Esa fecha de nacimiento no es válida.";
+
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const aunNoCumple =
+    hoy.getMonth() < nacimiento.getMonth() ||
+    (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate());
+  if (aunNoCumple) edad -= 1;
+
+  if (edad < MIN_AGE_YEARS) {
+    return "Debes ser mayor de 18 años para usar UNIQUE.";
+  }
+  return null;
+}

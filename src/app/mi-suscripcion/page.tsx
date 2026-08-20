@@ -5,6 +5,7 @@ import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
 import { cancelMySubscription, changeMyPlan } from "@/app/suscripcion/actions";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
+import CancelSubscriptionButton from "@/components/pagos/cancel-subscription-button";
 
 export default async function MiSuscripcionPage({
   searchParams,
@@ -37,7 +38,7 @@ export default async function MiSuscripcionPage({
         <div className="mt-8 rounded-2xl border border-move-green/10 bg-white p-6">
           <p className="font-body text-sm text-move-green/70">
             {subscription?.estado === "Cancelada"
-              ? "Tu suscripción está cancelada. Tus créditos siguen disponibles hasta que venzan."
+              ? "Tu suscripción quedó cancelada — no se te va a cobrar el siguiente mes. Tus créditos ya comprados siguen disponibles hasta que venzan."
               : subscription?.estado === "Pago fallido"
                 ? "No pudimos cobrar tu última renovación. Vuelve a suscribirte para seguir recibiendo créditos cada mes."
                 : "Todavía no tienes una suscripción activa."}
@@ -100,14 +101,7 @@ export default async function MiSuscripcionPage({
             </div>
           </div>
 
-          <form action={cancelMySubscription}>
-            <button
-              type="submit"
-              className="font-heading text-sm font-semibold text-move-coral hover:underline"
-            >
-              Cancelar suscripción
-            </button>
-          </form>
+          <CancelSubscriptionButton action={cancelMySubscription} />
         </div>
       )}
     </section>

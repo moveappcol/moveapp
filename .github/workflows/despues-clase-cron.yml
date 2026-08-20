@@ -1,0 +1,15 @@
+name: Correo after class
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # cada 5 minutos
+  workflow_dispatch: {}
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger despues-clase cron
+        run: |
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/despues-clase" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

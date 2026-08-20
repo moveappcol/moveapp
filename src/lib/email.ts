@@ -52,6 +52,55 @@ function attendeesListHtml(nombres: string[]): string {
   return `<ul>${nombres.map((n) => `<li>${escapeHtml(n)}</li>`).join("")}</ul>`;
 }
 
+/** Recordatorio de clase, 3 horas antes — va directo a la persona que
+ * reservó (no al gimnasio ni al dueño), con el mismo diseño de la
+ * plantilla "CLASS REMINDER". */
+export async function sendClassReminderEmail(params: {
+  userEmail: string;
+  nombre: string;
+  clase: string;
+  fechaLarga: string;
+  hora: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">CLASS REMINDER</p>
+      <p>¡Hola, ${escapeHtml(params.nombre)}! Esperamos que estés muy bien.</p>
+      <p>Te recordamos que tu clase de <strong>${escapeHtml(params.clase)}</strong> es hoy, <strong>${escapeHtml(params.fechaLarga)}</strong> a las <strong>${escapeHtml(params.hora)}</strong>.</p>
+      <p>Te esperamos para que disfrutes mucho la clase y tengas un espacio para moverte, desconectarte y disfrutar.</p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.userEmail],
+    subject: "Class reminder — tu clase es en 3 horas",
+    html,
+  });
+}
+
+/** Correo "AFTER CLASS" — se manda a la persona apenas termina su clase,
+ * invitándola (sin obligar) a calificarla desde "Mis reservas". */
+export async function sendAfterClassEmail(params: { userEmail: string }): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">AFTER CLASS</p>
+      <p>¡Esperamos que hayas disfrutado mucho de tu entrenamiento!</p>
+      <p>Nos encanta que seas parte de <strong>UNIQUE</strong> y que estés disfrutando de esta experiencia con nosotros.</p>
+      <p>Si quieres calificar tu experiencia y dejarnos algún comentario, puedes hacerlo fácilmente desde <strong>TUS RESERVAS</strong> en nuestra página web.</p>
+      <p>¡Gracias por ser parte de UNIQUE!</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.userEmail],
+    subject: "¿Cómo estuvo tu clase?",
+    html,
+  });
+}
+
 /** Correo de las 24h antes: adjunta el PDF "RESERVAS FINALES (24 h antes)".
  * No incluye el total a pagar (ese queda solo en el form de pagos). */
 export async function sendLiquidacionEmail(params: {

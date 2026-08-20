@@ -8,6 +8,7 @@ export type Clase = {
   cuposDisponibles: number;
   fecha: string | null;
   gimnasioId: string | null;
+  duracionMinutos: number;
 };
 
 /**
@@ -18,6 +19,9 @@ export type Clase = {
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
  *   - "Gimnasio "    (link a Gimnasios — OJO: el nombre real trae un espacio al final)
+ *   - Duración        (número, en minutos, opcional — si está vacío se asume
+ *      60 min; se usa para saber cuándo termina la clase: calificaciones y
+ *      el correo "AFTER CLASS")
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
  *
@@ -25,6 +29,7 @@ export type Clase = {
  * número de Reservas activas (Estado = "Reservado") para esa clase.
  */
 const GIMNASIO_FIELD = "Gimnasio ";
+const DEFAULT_DURACION_MINUTOS = 60;
 
 async function getActiveReservationCounts(): Promise<Map<string, number>> {
   const base = getAirtableBase();
@@ -57,6 +62,7 @@ function mapRecordToClase(
 ): Clase {
   const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
   const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
+  const duracion = record.get("Duración") as number | undefined;
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
@@ -65,6 +71,7 @@ function mapRecordToClase(
     cuposDisponibles: Math.max(0, cuposTotales - reservados),
     fecha: (record.get("Horario") as string) ?? null,
     gimnasioId: gimnasio?.[0] ?? null,
+    duracionMinutos: duracion && duracion > 0 ? duracion : DEFAULT_DURACION_MINUTOS,
   };
 }
 

@@ -16,16 +16,22 @@ export type Reservation = {
   gimnasioId: string | null;
   fecha: string | null;
   estado: string | null;
+  correo: string | null;
+  calificacion: number | null;
+  comentario: string | null;
 };
 
 export type TipoReserva = "A" | "B" | null;
 
 export type ReservaDetalle = {
+  id: string;
   userName: string;
   estado: string;
   cedula: string;
   correo: string;
   tipo: TipoReserva;
+  recordatorioEnviado: boolean;
+  correoDespuesClaseEnviado: boolean;
 };
 
 /** Todas las reservas de una clase (cualquier estado), para armar el
@@ -40,13 +46,35 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
     .map((r) => {
       const tipo = ((r.get("Tipo") as string) ?? "").trim();
       return {
+        id: r.id,
         userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
         estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
         cedula: ((r.get("Cedula") as string) ?? "").trim(),
         correo: ((r.get("Correo") as string) ?? "").trim(),
         tipo: tipo === "A" || tipo === "B" ? tipo : null,
+        recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
+        correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
       };
     });
+}
+
+/** Marca que ya se le mandó el recordatorio de 3h antes a esta reserva —
+ * evita reenviarlo si el cron corre varias veces dentro de la ventana. */
+export async function markRecordatorioEnviado(reservationId: string): Promise<void> {
+  const base = getAirtableBase();
+  await base("Reservas").update([{ id: reservationId, fields: { "Recordatorio enviado": true } }], {
+    typecast: true,
+  });
+}
+
+/** Marca que ya se le mandó el correo "AFTER CLASS" a esta reserva — evita
+ * reenviarlo si el cron corre varias veces dentro de la ventana. */
+export async function markCorreoDespuesClaseEnviado(reservationId: string): Promise<void> {
+  const base = getAirtableBase();
+  await base("Reservas").update(
+    [{ id: reservationId, fields: { "Correo despues clase enviado": true } }],
+    { typecast: true }
+  );
 }
 
 const CANCELLATION_WINDOW_HOURS = 24;
@@ -105,6 +133,13 @@ async function countMonthlyReservationsAtGym(
  *   - Correo     (texto — copiado de la cuenta del usuario al reservar)
  *   - Tipo       (selección: "A" | "B" — la llena el staff a mano según
  *      cuándo el gimnasio dio esos cupos; vacío hasta que se clasifique)
+ *   - "Recordatorio enviado" (casilla — evita reenviar el correo de 3h antes
+ *      cuando el cron corre varias veces dentro de la ventana)
+ *   - "Correo despues clase enviado" (casilla — evita reenviar el correo
+ *      "AFTER CLASS" cuando el cron corre varias veces dentro de la ventana)
+ *   - Calificación (número 1–5 — opcional, la pone el usuario desde "Mis
+ *      reservas" hasta 24h después de terminada la clase)
+ *   - Comentario    (texto largo, opcional — junto con la calificación)
  */
 export async function createReservation(params: {
   userEmail: string;
@@ -189,6 +224,9 @@ export async function getReservationsForUser(userName: string): Promise<Reservat
       gimnasioId: (record.get("Gimnasios") as string[] | undefined)?.[0] ?? null,
       fecha: (record.get("Fecha") as string) ?? null,
       estado: (record.get("Estado") as string) ?? null,
+      correo: (record.get("Correo") as string) ?? null,
+      calificacion: (record.get("Calificación") as number) ?? null,
+      comentario: (record.get("Comentario") as string) ?? null,
     }))
     .sort((a, b) => (b.fecha ?? "").localeCompare(a.fecha ?? ""));
 }
@@ -244,4 +282,67 @@ export async function cancelReservation(params: {
   }
 
   return { ok: true, refunded: onTime };
+}
+
+export type RatingResult = { ok: true } | { ok: false; error: string };
+
+const RATING_WINDOW_HOURS = 24;
+
+/** Califica una clase ya tomada (1–5 estrellas, comentario opcional) —
+ * solo dentro de las 24h siguientes a que terminó la clase (fecha + la
+ * duración de la clase). Es opcional, no bloquea nada más. */
+export async function submitRating(params: {
+  reservationId: string;
+  userEmail: string;
+  calificacion: number;
+  comentario: string;
+}): Promise<RatingResult> {
+  if (!Number.isInteger(params.calificacion) || params.calificacion < 1 || params.calificacion > 5) {
+    return { ok: false, error: "La calificación debe ser de 1 a 5 estrellas." };
+  }
+
+  const base = getAirtableBase();
+  const record = await base("Reservas").find(params.reservationId);
+
+  const correoReserva = ((record.get("Correo") as string) ?? "").trim().toLowerCase();
+  if (!correoReserva || correoReserva !== params.userEmail.trim().toLowerCase()) {
+    return { ok: false, error: "Esta reserva no te pertenece." };
+  }
+
+  const estado = ((record.get("Estado") as string) ?? "").trim();
+  if (estado.startsWith("Cancelado")) {
+    return { ok: false, error: "No puedes calificar una clase cancelada." };
+  }
+
+  const fecha = record.get("Fecha") as string | undefined;
+  const claseId = (record.get("Clase") as string[] | undefined)?.[0];
+  if (!fecha || !claseId) {
+    return { ok: false, error: "Esta reserva no tiene información suficiente." };
+  }
+
+  const clase = await getClaseById(claseId);
+  if (!clase) {
+    return { ok: false, error: "No se encontró la clase de esta reserva." };
+  }
+
+  const finClase = new Date(fecha).getTime() + clase.duracionMinutos * 60_000;
+  const now = Date.now();
+  if (now < finClase) {
+    return { ok: false, error: "Todavía no termina la clase." };
+  }
+  if (now > finClase + RATING_WINDOW_HOURS * 60 * 60 * 1000) {
+    return { ok: false, error: "Ya pasaron las 24 horas para calificar esta clase." };
+  }
+
+  await base("Reservas").update(
+    [
+      {
+        id: params.reservationId,
+        fields: { "Calificación": params.calificacion, Comentario: params.comentario },
+      },
+    ],
+    { typecast: true }
+  );
+
+  return { ok: true };
 }

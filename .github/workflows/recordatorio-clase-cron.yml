@@ -1,0 +1,15 @@
+name: Recordatorio de clase 3h antes
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # cada 5 minutos
+  workflow_dispatch: {}
+
+jobs:
+  recordar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger recordatorio-clase cron
+        run: |
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/recordatorio-clase" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

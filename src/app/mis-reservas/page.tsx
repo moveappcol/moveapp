@@ -3,11 +3,13 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { getReservationsForUser } from "@/lib/reservations";
 import { getClaseById } from "@/lib/classes";
 import { getGymById } from "@/lib/gyms";
+import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import CancelReservationButton from "@/components/gym/cancel-reservation-button";
 
 export default async function MisReservasPage() {
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
+  await requireCompleteProfileIfSignedIn();
 
   const user = await currentUser();
   const userName =

@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
 import { formatCOP } from "@/lib/credits-pricing";
 import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
+import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import SubscribeForm from "@/components/pagos/subscribe-form";
 
 export default async function SuscribirsePage({
@@ -13,6 +14,7 @@ export default async function SuscribirsePage({
   const { planId } = await params;
   const { userId } = await auth();
   if (!userId) redirect(`/iniciar-sesion`);
+  await requireCompleteProfileIfSignedIn();
 
   const plan = findCatalogItem("plan", planId);
   if (!plan) notFound();

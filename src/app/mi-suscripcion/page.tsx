@@ -4,6 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
 import { cancelMySubscription, changeMyPlan } from "@/app/suscripcion/actions";
+import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 
 export default async function MiSuscripcionPage({
   searchParams,
@@ -12,6 +13,7 @@ export default async function MiSuscripcionPage({
 }) {
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
+  await requireCompleteProfileIfSignedIn();
 
   const { requiere_plan } = await searchParams;
   const user = await currentUser();

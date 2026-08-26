@@ -3,6 +3,7 @@ import { verifyEventChecksum } from "@/lib/wompi";
 import { findCatalogItem, parseReference } from "@/lib/orders";
 import { findPagoByReferencia, updatePagoEstado, type PagoEstado } from "@/lib/pagos";
 import { addCreditsByEmail } from "@/lib/users";
+import { sendMetaPurchaseEvent } from "@/lib/meta-conversions-api";
 
 function statusToEstado(status: string): PagoEstado {
   if (status === "APPROVED") return "Aprobado";
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
 
   if (nextEstado === "Aprobado") {
     await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
+    await sendMetaPurchaseEvent({ eventId: tx.id, value: item.price, email: pago.correo });
   }
 
   return NextResponse.json({ ok: true });

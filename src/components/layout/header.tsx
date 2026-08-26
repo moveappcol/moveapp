@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getUserCreditsByEmail } from "@/lib/users";
 import UserMenu from "./user-menu";
+import MobileNav from "./mobile-nav";
 
 const NAV_LINKS = [
   { href: "/#gimnasios", label: "Gimnasios" },
@@ -32,7 +33,8 @@ export default async function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-move-green/10 bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-50 border-b border-move-green/10 bg-background/95 backdrop-blur relative">
+      {/* relative: ancla el panel del menú móvil (ver mobile-nav.tsx) */}
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
         <Link
           href="/"
@@ -92,6 +94,7 @@ export default async function Header() {
               </Link>
             </>
           )}
+          <MobileNav links={NAV_LINKS} />
         </div>
       </div>
     </header>

@@ -7,9 +7,9 @@ export type CreditPackage = {
 };
 
 export const CREDIT_PLANS: CreditPackage[] = [
-  { id: "plan-starter", name: "Starter", label: "30 créditos", credits: 30, price: 210_000 },
-  { id: "plan-balance", name: "Balance", label: "52 créditos", credits: 52, price: 335_000 },
-  { id: "plan-volume", name: "Volume", label: "84 créditos", credits: 84, price: 500_000 },
+  { id: "plan-starter", name: "Starter", label: "32 créditos", credits: 32, price: 230_000 },
+  { id: "plan-balance", name: "Balance", label: "64 créditos", credits: 64, price: 415_000 },
+  { id: "plan-volume", name: "Volume", label: "100 créditos", credits: 100, price: 600_000 },
 ];
 
 export const CREDIT_TOPUPS: CreditPackage[] = [

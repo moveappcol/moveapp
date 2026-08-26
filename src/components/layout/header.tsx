@@ -6,6 +6,7 @@ import UserMenu from "./user-menu";
 const NAV_LINKS = [
   { href: "/#gimnasios", label: "Gimnasios" },
   { href: "/#planes", label: "Planes" },
+  { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/#contacto", label: "Contacto" },
 ];
 
@@ -41,15 +42,25 @@ export default async function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
-            >
-              {link.label}
-            </a>
-          ))}
+          {NAV_LINKS.map((link) =>
+            link.href.startsWith("/#") ? (
+              <a
+                key={link.href}
+                href={link.href}
+                className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
+              >
+                {link.label}
+              </Link>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-3">

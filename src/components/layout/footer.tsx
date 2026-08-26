@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const CONTACT_EMAIL = "uniqueappcol@gmail.com";
 
 export default function Footer() {
@@ -49,6 +51,9 @@ export default function Footer() {
             <a href="/#planes" className="hover:text-white">
               Planes
             </a>
+            <Link href="/sobre-nosotros" className="hover:text-white">
+              Sobre nosotros
+            </Link>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/#contacto" className="hover:text-white">
               Contacto

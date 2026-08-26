@@ -24,6 +24,16 @@ export default async function GymsSection() {
               Estamos confirmando los primeros gimnasios afiliados. Muy pronto
               podrás verlos y reservar clases aquí.
             </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              {["Boxing", "Indoor Cycling", "Pilates", "Funcional"].map((activity) => (
+                <span
+                  key={activity}
+                  className="rounded-full border border-move-green/15 bg-white px-4 py-2 font-heading text-xs font-medium text-move-green/70"
+                >
+                  {activity}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>

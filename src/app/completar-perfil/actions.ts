@@ -69,5 +69,5 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
     marketingAceptado,
   });
 
-  redirect("/");
+  redirect("/?perfil=completo");
 }

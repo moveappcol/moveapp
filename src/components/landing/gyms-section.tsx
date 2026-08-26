@@ -1,5 +1,11 @@
 import { getGyms, GYMS_COMING_SOON } from "@/lib/gyms";
 import GymsExplorer from "./gyms-explorer";
+import ViewTracker from "@/components/analytics/view-tracker";
+
+const GYMS_VIEW_EVENT_PARAMS = {
+  content_name: "Gimnasios afiliados",
+  content_category: "Gimnasios",
+};
 
 export default async function GymsSection() {
   // En local (npm run dev) se ve la grilla real para poder probarla; en
@@ -9,6 +15,7 @@ export default async function GymsSection() {
     return (
       <section id="gimnasios" className="bg-background">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <ViewTracker event="ViewContent" params={GYMS_VIEW_EVENT_PARAMS} />
           <h2 className="font-heading text-3xl font-bold text-move-green">
             Gimnasios afiliados
           </h2>
@@ -45,6 +52,7 @@ export default async function GymsSection() {
   return (
     <section id="gimnasios" className="bg-background">
       <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <ViewTracker event="ViewContent" params={GYMS_VIEW_EVENT_PARAMS} />
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-heading text-3xl font-bold text-move-green">

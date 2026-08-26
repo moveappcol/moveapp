@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { fetchTransaction } from "@/lib/wompi";
+import PurchaseTracker from "@/components/analytics/purchase-tracker";
 
 const STATUS_COPY: Record<string, { title: string; body: string }> = {
   APPROVED: {
@@ -35,6 +36,9 @@ export default async function PagoResultadoPage({
 
   return (
     <section className="mx-auto max-w-lg px-4 py-24 text-center sm:px-6">
+      {tx?.status === "APPROVED" && (
+        <PurchaseTracker transactionId={tx.id} value={tx.amountInCents / 100} />
+      )}
       <h1 className="font-heading text-2xl font-bold text-move-green">
         {copy?.title ?? "No encontramos esa transacción"}
       </h1>

@@ -1,13 +1,18 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { sendContactMessage, type ContactResult } from "@/app/contacto/actions";
+import { trackMetaEvent } from "@/lib/meta-pixel-events";
 
 export default function ContactForm() {
   const [state, formAction, isPending] = useActionState<ContactResult | null, FormData>(
     sendContactMessage,
     null
   );
+
+  useEffect(() => {
+    if (state?.ok) trackMetaEvent("Lead");
+  }, [state]);
 
   if (state?.ok) {
     return (

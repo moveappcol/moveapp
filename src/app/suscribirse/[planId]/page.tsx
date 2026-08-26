@@ -5,6 +5,7 @@ import { formatCOP } from "@/lib/credits-pricing";
 import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import SubscribeForm from "@/components/pagos/subscribe-form";
+import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
 
 export default async function SuscribirsePage({
   params,
@@ -23,6 +24,7 @@ export default async function SuscribirsePage({
 
   return (
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
+      <CheckoutViewTracker planId={plan.id} planName={plan.name ?? plan.label} value={plan.price} />
       <h1 className="font-heading text-2xl font-bold text-move-green">
         Suscribirme a {plan.name} ({plan.label})
       </h1>

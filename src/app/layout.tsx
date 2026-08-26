@@ -4,6 +4,7 @@ import { esES } from "@clerk/localizations";
 import { poppins, inter } from "@/lib/fonts";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import MetaPixel from "@/components/analytics/meta-pixel";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,6 +37,7 @@ export default function RootLayout({
         className={`${poppins.variable} ${inter.variable} h-full antialiased`}
       >
         <body className="flex min-h-full flex-col">
+          <MetaPixel />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

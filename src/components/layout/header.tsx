@@ -79,7 +79,7 @@ export default async function Header() {
               <UserMenu />
             </>
           ) : (
-            <>
+            <div className="hidden items-center gap-3 md:flex">
               <Link
                 href="/iniciar-sesion"
                 className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
@@ -92,9 +92,9 @@ export default async function Header() {
               >
                 Crear cuenta
               </Link>
-            </>
+            </div>
           )}
-          <MobileNav links={NAV_LINKS} />
+          <MobileNav links={NAV_LINKS} showAuthLinks={!userId} />
         </div>
       </div>
     </header>

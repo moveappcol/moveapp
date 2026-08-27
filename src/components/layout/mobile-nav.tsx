@@ -5,7 +5,13 @@ import Link from "next/link";
 
 type NavLink = { href: string; label: string };
 
-export default function MobileNav({ links }: { links: NavLink[] }) {
+export default function MobileNav({
+  links,
+  showAuthLinks,
+}: {
+  links: NavLink[];
+  showAuthLinks?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -55,6 +61,25 @@ export default function MobileNav({ links }: { links: NavLink[] }) {
               )
             )}
           </div>
+
+          {showAuthLinks && (
+            <div className="flex flex-col gap-2 border-t border-move-green/10 py-3">
+              <Link
+                href="/iniciar-sesion"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-3 font-heading text-sm font-medium text-move-green hover:bg-move-green/5"
+              >
+                Iniciar sesión
+              </Link>
+              <Link
+                href="/crear-cuenta"
+                onClick={() => setOpen(false)}
+                className="rounded-full bg-move-coral px-5 py-3 text-center font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                Crear cuenta
+              </Link>
+            </div>
+          )}
         </nav>
       )}
     </div>

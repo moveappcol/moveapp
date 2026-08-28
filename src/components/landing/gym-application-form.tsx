@@ -55,8 +55,8 @@ export default function GymApplicationForm() {
       </label>
 
       <label className="block">
-        <span className={labelClass}>Correo o teléfono de contacto</span>
-        <input type="text" name="contacto" required className={inputClass} />
+        <span className={labelClass}>Correo de contacto</span>
+        <input type="email" name="correo" required className={inputClass} />
       </label>
 
       {state && !state.ok && <p className="font-body text-sm text-move-coral">{state.error}</p>}

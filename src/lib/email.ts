@@ -211,7 +211,7 @@ export async function sendGymApplicationEmail(params: {
   instagram: string;
   disciplina: string;
   descripcion: string;
-  contacto: string;
+  correo: string;
 }): Promise<void> {
   const html = `
     <p>Nueva solicitud de afiliación de gimnasio:</p>
@@ -221,7 +221,7 @@ export async function sendGymApplicationEmail(params: {
       <strong>Ciudad:</strong> ${escapeHtml(params.ciudad)}<br/>
       <strong>Instagram:</strong> ${escapeHtml(params.instagram)}<br/>
       <strong>Disciplina:</strong> ${escapeHtml(params.disciplina)}<br/>
-      <strong>Contacto:</strong> ${escapeHtml(params.contacto)}
+      <strong>Correo:</strong> ${escapeHtml(params.correo)}
     </p>
     <p><strong>Descripción:</strong><br/>${escapeHtml(params.descripcion).replace(/\n/g, "<br/>")}</p>
   `;

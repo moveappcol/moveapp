@@ -36,10 +36,13 @@ export async function sendGymApplication(
   const instagram = String(formData.get("instagram") ?? "").trim();
   const disciplina = String(formData.get("disciplina") ?? "").trim();
   const descripcion = String(formData.get("descripcion") ?? "").trim();
-  const contacto = String(formData.get("contacto") ?? "").trim();
+  const correo = String(formData.get("correo") ?? "").trim();
 
-  if (!nombre || !direccion || !ciudad || !disciplina || !descripcion || !contacto) {
+  if (!nombre || !direccion || !ciudad || !disciplina || !descripcion || !correo) {
     return { ok: false, error: "Completa todos los campos obligatorios." };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    return { ok: false, error: "Ingresa un correo válido." };
   }
 
   try {
@@ -51,7 +54,7 @@ export async function sendGymApplication(
       instagram,
       disciplina,
       descripcion,
-      contacto,
+      correo,
     });
     return { ok: true };
   } catch {

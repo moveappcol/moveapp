@@ -33,6 +33,9 @@ export default async function SuscribirsePage({
         la misma tarjeta hasta que canceles. Puedes cancelar o cambiar de
         plan cuando quieras desde &ldquo;Mi suscripción&rdquo;.
       </p>
+      <p className="mt-2 font-body text-xs text-move-green/50">
+        Puedes acceder a cada gimnasio un máximo de 3 veces al mes.
+      </p>
 
       <div className="mt-8">
         <SubscribeForm

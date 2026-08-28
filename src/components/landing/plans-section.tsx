@@ -145,7 +145,9 @@ export default async function PlansSection() {
         </div>
 
         <p className="mt-6 font-body text-sm text-move-green/60">
-          Puedes cancelar las clases hasta 24h antes sin costo.
+          Puedes cancelar las clases hasta 24h antes sin costo. Para promover
+          la diversidad de la red, puedes acceder a cada gimnasio un máximo
+          de 3 veces al mes.
         </p>
       </div>
     </section>

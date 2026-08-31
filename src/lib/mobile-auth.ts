@@ -7,7 +7,7 @@ export class MobileAuthError extends Error {}
  * cookie de sesión del navegador como con un header "Authorization: Bearer
  * <token>" (el que manda la app con getToken() de Clerk Expo) — auth() de
  * Clerk verifica ambos de la misma forma. */
-export async function requireMobileUser(): Promise<{ userId: string; email: string }> {
+export async function requireMobileUser(): Promise<{ userId: string; email: string; userName: string }> {
   const { userId } = await auth();
   if (!userId) throw new MobileAuthError("No autenticado");
 
@@ -15,7 +15,9 @@ export async function requireMobileUser(): Promise<{ userId: string; email: stri
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) throw new MobileAuthError("La cuenta no tiene correo asociado");
 
-  return { userId, email };
+  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || email;
+
+  return { userId, email, userName };
 }
 
 export function mobileAuthErrorResponse() {

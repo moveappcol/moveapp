@@ -41,7 +41,7 @@ export type Gym = {
  *   - Latitud                                    (número)
  *   - Longitud                                   (número)
  *   - Foto                                       (adjunto — se ve en la grilla)
- *   - "Foto detalle"                             (adjunto — hasta 3 fotos, se ven dentro del gimnasio)
+ *   - "Foto Detalle"                             (adjunto — hasta 3 fotos, se ven dentro del gimnasio)
  *   - Género                                     (selección: vacío = sin restricción; "Mujeres" = solo
  *      mujeres; "Hombres" = solo hombres; "Mujeres, Hombres" = sin restricción)
  *   - "Descripción "                             (texto largo)
@@ -219,7 +219,7 @@ function normalizeGymGenero(raw: unknown): GymGenero {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRecordToGym(record: any): Gym {
   const photos = record.get("Foto") as { url: string }[] | undefined;
-  const photosDetail = record.get("Foto detalle") as { url: string }[] | undefined;
+  const photosDetail = record.get("Foto Detalle") as { url: string }[] | undefined;
   const activities = (record.get("Actividades") as string[]) ?? [];
   const servicios = (record.get("Servicios y amenidades ") as string[]) ?? [];
   return {

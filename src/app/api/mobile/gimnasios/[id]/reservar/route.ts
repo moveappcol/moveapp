@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClaseById } from "@/lib/classes";
+import { getClaseById, precioEfectivo } from "@/lib/classes";
 import { createReservation } from "@/lib/reservations";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 
@@ -38,7 +38,7 @@ export async function POST(
     userName: user.userName,
     claseId,
     gimnasioId,
-    claseCredits: clase.credits,
+    claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
   });
 

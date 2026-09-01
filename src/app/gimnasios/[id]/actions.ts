@@ -2,7 +2,7 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { getClaseById } from "@/lib/classes";
+import { getClaseById, precioEfectivo } from "@/lib/classes";
 import { createReservation, type BookingResult } from "@/lib/reservations";
 
 export async function bookClass(
@@ -41,7 +41,7 @@ export async function bookClass(
     userName,
     claseId,
     gimnasioId,
-    claseCredits: clase.credits,
+    claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
   });
 

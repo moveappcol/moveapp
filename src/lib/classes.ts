@@ -4,6 +4,9 @@ export type Clase = {
   id: string;
   name: string;
   credits: number;
+  /** Créditos con descuento, si el staff le puso una promoción a esta
+   * clase — menor que `credits`. null si no tiene descuento. */
+  descuentoCreditos: number | null;
   cuposTotales: number;
   cuposDisponibles: number;
   fecha: string | null;
@@ -11,10 +14,20 @@ export type Clase = {
   duracionMinutos: number;
 };
 
+/** Los créditos que realmente se cobran al reservar — el descuento si
+ * aplica, si no el precio normal. */
+export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos">): number {
+  return clase.descuentoCreditos !== null && clase.descuentoCreditos < clase.credits
+    ? clase.descuentoCreditos
+    : clase.credits;
+}
+
 /**
  * Esquema en Airtable — tabla "Clases":
  *   - Clase          (texto, nombre de la clase)
  *   - Creditos       (número)
+ *   - "Descuento creditos" (número, opcional — precio promocional en
+ *      créditos, menor que Creditos; vacío = sin descuento)
  *   - Cupos totales  (número)
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
@@ -63,10 +76,12 @@ function mapRecordToClase(
   const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
   const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
   const duracion = record.get("Duración") as number | undefined;
+  const descuento = record.get("Descuento creditos") as number | undefined;
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
     credits: (record.get("Creditos") as number) ?? 0,
+    descuentoCreditos: descuento !== undefined && descuento !== null ? descuento : null,
     cuposTotales,
     cuposDisponibles: Math.max(0, cuposTotales - reservados),
     fecha: (record.get("Horario") as string) ?? null,

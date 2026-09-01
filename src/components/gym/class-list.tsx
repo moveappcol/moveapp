@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
-import type { Clase } from "@/lib/classes";
+import { precioEfectivo, type Clase } from "@/lib/classes";
 import ClassBookingForm from "./class-booking-form";
 
 const BOOKING_CUTOFF_MINUTES = 20;
@@ -73,7 +73,10 @@ export default function ClassList({
               />
             </div>
             <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
-              {clase.credits} créditos
+              {precioEfectivo(clase) < clase.credits && (
+                <span className="mr-1 text-move-green/40 line-through">{clase.credits}</span>
+              )}
+              {precioEfectivo(clase)} créditos
             </span>
           </div>
 

@@ -64,3 +64,53 @@ export async function chargeSubscriptionPlan(params: {
   await addCreditsByEmail(params.correo, item.credits, true);
   return { ok: true, transactionId: tx.id, credits: item.credits };
 }
+
+/** Cobra un paquete de créditos adicionales contra una fuente de pago
+ * guardada. El llamador debe validar antes que la persona tenga un plan
+ * activo — los adicionales no son una suscripción en sí mismos. */
+export async function chargeTopup(params: {
+  correo: string;
+  topupId: string;
+  paymentSourceId: number;
+  ownerRef: string;
+}): Promise<ChargeResult> {
+  const item = findCatalogItem("topup", params.topupId);
+  if (!item) return { ok: false, error: "Paquete de créditos desconocido." };
+
+  const reference = buildReference("topup", params.topupId, params.ownerRef);
+  const pagoId = await createPendingPago({
+    referencia: reference,
+    correo: params.correo,
+    tipo: "topup",
+    item: params.topupId,
+    creditos: item.credits,
+  });
+
+  let tx;
+  try {
+    tx = await chargeWithPaymentSource({
+      amountInCents: item.price * 100,
+      customerEmail: params.correo,
+      paymentSourceId: params.paymentSourceId,
+      reference,
+    });
+  } catch (err) {
+    await updatePagoEstado(pagoId, "Rechazado", "");
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos cobrar la tarjeta." };
+  }
+
+  if (tx.status === "PENDING") {
+    await updatePagoEstado(pagoId, "Pendiente", tx.id);
+    return { ok: false, pending: true, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
+  }
+
+  const estado = tx.status === "APPROVED" ? "Aprobado" : "Rechazado";
+  await updatePagoEstado(pagoId, estado, tx.id);
+
+  if (estado !== "Aprobado") {
+    return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
+  }
+
+  await addCreditsByEmail(params.correo, item.credits, false);
+  return { ok: true, transactionId: tx.id, credits: item.credits };
+}

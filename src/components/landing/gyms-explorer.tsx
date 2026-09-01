@@ -169,6 +169,13 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
               <p className="mt-0.5 font-body text-sm text-move-green/50">
                 {gym.address}
               </p>
+              {gym.genero !== "todos" && (
+                <span className="mt-2 inline-block rounded-full bg-move-coral/10 px-2.5 py-0.5 font-heading text-[11px] font-semibold uppercase tracking-wide text-move-coral">
+                  {gym.genero === "solo_mujeres"
+                    ? "Gimnasio exclusivo para mujeres"
+                    : "Gimnasio exclusivo para hombres"}
+                </span>
+              )}
             </div>
           </Link>
         ))}

@@ -1,4 +1,6 @@
-import { getGyms, GYMS_COMING_SOON } from "@/lib/gyms";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { getGyms, GYMS_COMING_SOON, filterGymsByGenero } from "@/lib/gyms";
+import { getUserCreditsByEmail } from "@/lib/users";
 import GymsExplorer from "./gyms-explorer";
 import ViewTracker from "@/components/analytics/view-tracker";
 
@@ -47,7 +49,19 @@ export default async function GymsSection() {
     );
   }
 
-  const { gyms, usingMockData } = await getGyms();
+  const { gyms: allGyms, usingMockData } = await getGyms();
+
+  let userGenero: string | null = null;
+  const { userId } = await auth();
+  if (userId) {
+    const user = await currentUser();
+    const email = user?.primaryEmailAddress?.emailAddress;
+    if (email) {
+      const account = await getUserCreditsByEmail(email);
+      userGenero = account?.genero ?? null;
+    }
+  }
+  const gyms = filterGymsByGenero(allGyms, userGenero);
 
   return (
     <section id="gimnasios" className="bg-background">

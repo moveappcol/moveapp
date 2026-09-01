@@ -11,6 +11,14 @@ export function isTipoDocumento(value: string): value is TipoDocumento {
   return (TIPOS_DOCUMENTO as readonly string[]).includes(value);
 }
 
+export const GENEROS = ["Hombre", "Mujer", "Otro"] as const;
+
+export type Genero = (typeof GENEROS)[number];
+
+export function isGenero(value: string): value is Genero {
+  return (GENEROS as readonly string[]).includes(value);
+}
+
 /** Valida el número de documento según el tipo — reglas simples, no
  * exhaustivas: solo buscan atrapar errores obvios de digitación. */
 export function validateDocumentNumber(tipo: TipoDocumento, numero: string): string | null {

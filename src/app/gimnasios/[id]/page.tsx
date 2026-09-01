@@ -29,6 +29,13 @@ export default async function GymPage({
 
   const classes = await getClassesForGym(id);
 
+  const generoLabel =
+    gym.genero === "solo_mujeres"
+      ? "Gimnasio exclusivo para mujeres"
+      : gym.genero === "solo_hombres"
+        ? "Gimnasio exclusivo para hombres"
+        : null;
+
   return (
     <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <p className="font-heading text-sm font-medium text-move-green/60">
@@ -41,13 +48,24 @@ export default async function GymPage({
         {[gym.address, gym.city].filter(Boolean).join(", ")}
       </p>
 
-      {gym.photoDetailUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={gym.photoDetailUrl}
-          alt={gym.name}
-          className="mt-6 aspect-[16/9] w-full rounded-2xl object-cover"
-        />
+      {generoLabel && (
+        <span className="mt-3 inline-block rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-coral">
+          {generoLabel}
+        </span>
+      )}
+
+      {gym.photoDetailUrls.length > 0 && (
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {gym.photoDetailUrls.map((url) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={gym.name}
+              className="aspect-square w-full rounded-2xl object-cover"
+            />
+          ))}
+        </div>
       )}
 
       <InfoSection title="Descripción" text={gym.description} />

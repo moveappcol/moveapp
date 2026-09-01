@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { saveCompletarPerfil } from "@/app/completar-perfil/actions";
-import { TIPOS_DOCUMENTO } from "@/lib/documento";
+import { TIPOS_DOCUMENTO, GENEROS } from "@/lib/documento";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral";
@@ -71,6 +71,20 @@ export default function CompletarPerfilForm({
         <span className="mt-1 block font-body text-xs text-move-green/60">
           UNIQUE es solo para mayores de 18 años.
         </span>
+      </label>
+
+      <label className="block">
+        <span className={labelClass}>Género</span>
+        <select name="genero" required defaultValue="" className={inputClass}>
+          <option value="" disabled>
+            Selecciona una opción
+          </option>
+          {GENEROS.map((genero) => (
+            <option key={genero} value={genero}>
+              {genero}
+            </option>
+          ))}
+        </select>
       </label>
 
       <div className="space-y-3 pt-2">

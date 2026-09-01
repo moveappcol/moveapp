@@ -1,11 +1,12 @@
 import { getAirtableBase } from "./airtable";
-import type { TipoDocumento } from "./documento";
+import type { TipoDocumento, Genero } from "./documento";
 
 export type UserCredits = {
   recordId: string;
   credits: number;
   vencimiento: string | null;
   cedula: string | null;
+  genero: string | null;
   perfilCompleto: boolean;
 };
 
@@ -26,6 +27,8 @@ export type UserCredits = {
  *   - " Marketing aceptado"           (casilla — OJO: trae un espacio al inicio del nombre;
  *      opcional, la persona puede no aceptar)
  *   - "Perfil completo"               (casilla — true cuando ya llenó todo el formulario)
+ *   - Género                          (selección: ver GENEROS en lib/documento.ts — usada para
+ *      filtrar gimnasios "solo_mujeres"/"solo_hombres" en la grilla)
  */
 const USUARIOS_TABLE = "usuarios";
 
@@ -46,6 +49,7 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     credits: (record.get("Creditos") as number) ?? 0,
     vencimiento: (record.get("Vencimiento") as string) ?? null,
     cedula: (record.get("Número de documento") as string) || null,
+    genero: (record.get("Género") as string) || null,
     perfilCompleto: Boolean(record.get("Perfil completo")),
   };
 }
@@ -58,6 +62,7 @@ export type CompleteProfileParams = {
   tipoDocumento: TipoDocumento;
   cedula: string;
   fechaNacimiento: string;
+  genero: Genero;
   terminosAceptados: boolean;
   tratamientoDatosAceptado: boolean;
   marketingAceptado: boolean;
@@ -78,6 +83,7 @@ export async function completeProfile(params: CompleteProfileParams): Promise<vo
     "Tipo de documento": params.tipoDocumento,
     "Número de documento": params.cedula,
     "Fecha de nacimiento ": params.fechaNacimiento,
+    "Género": params.genero,
     "Terminos aceptados": params.terminosAceptados,
     "Tratamiento de datos aceptado": params.tratamientoDatosAceptado,
     " Marketing aceptado": params.marketingAceptado,

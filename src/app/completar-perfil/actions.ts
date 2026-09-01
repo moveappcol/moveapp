@@ -5,6 +5,7 @@ import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { completeProfile } from "@/lib/users";
 import {
   isTipoDocumento,
+  isGenero,
   validateDocumentNumber,
   validatePhone,
   validateFechaNacimiento,
@@ -20,6 +21,7 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
   const tipoDocumento = String(formData.get("tipoDocumento") ?? "").trim();
   const cedula = String(formData.get("cedula") ?? "").trim();
   const fechaNacimiento = String(formData.get("fechaNacimiento") ?? "").trim();
+  const genero = String(formData.get("genero") ?? "").trim();
   const terminosAceptados = formData.get("terminosAceptados") === "on";
   const tratamientoDatosAceptado = formData.get("tratamientoDatosAceptado") === "on";
   const marketingAceptado = formData.get("marketingAceptado") === "on";
@@ -39,6 +41,10 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
 
   const fechaNacimientoError = validateFechaNacimiento(fechaNacimiento);
   if (fechaNacimientoError) return { error: fechaNacimientoError };
+
+  if (!isGenero(genero)) {
+    return { error: "Selecciona tu género." };
+  }
 
   if (!terminosAceptados) {
     return { error: "Debes aceptar los términos y condiciones para continuar." };
@@ -64,6 +70,7 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
     tipoDocumento,
     cedula,
     fechaNacimiento,
+    genero,
     terminosAceptados,
     tratamientoDatosAceptado,
     marketingAceptado,

@@ -4,6 +4,9 @@ import { getAirtableBase } from "./airtable";
 // que la grilla y las páginas de detalle sean públicas.
 export const GYMS_COMING_SOON = true;
 
+/** Restricción de acceso por género. "todos" = sin restricción. */
+export type GymGenero = "todos" | "solo_mujeres" | "solo_hombres";
+
 export type Gym = {
   id: string;
   name: string;
@@ -14,8 +17,9 @@ export type Gym = {
   lng: number | null;
   /** Foto que se ve en la grilla (antes de entrar al gimnasio). */
   photoUrl: string | null;
-  /** Foto que se ve dentro de la página del gimnasio (distinta a la de la grilla). */
-  photoDetailUrl: string | null;
+  /** Hasta 3 fotos que se ven dentro de la página del gimnasio. */
+  photoDetailUrls: string[];
+  genero: GymGenero;
   description: string | null;
   puntualidad: string | null;
   politicaCancelacion: string | null;
@@ -37,7 +41,9 @@ export type Gym = {
  *   - Latitud                                    (número)
  *   - Longitud                                   (número)
  *   - Foto                                       (adjunto — se ve en la grilla)
- *   - "Foto detalle"                             (adjunto — se ve dentro del gimnasio, distinta a la de la grilla)
+ *   - "Foto detalle"                             (adjunto — hasta 3 fotos, se ven dentro del gimnasio)
+ *   - Género                                     (selección: vacío = sin restricción; "Mujeres" = solo
+ *      mujeres; "Hombres" = solo hombres; "Mujeres, Hombres" = sin restricción)
  *   - "Descripción "                             (texto largo)
  *   - Puntualidad                                (texto largo)
  *   - "Politica de cancelación "                 (texto largo)
@@ -64,7 +70,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6486,
     lng: -74.0628,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: "Clases de cycling con música en vivo y luces LED.",
     puntualidad: "Llega 10 minutos antes de tu clase.",
     politicaCancelacion: "Cancela con 24h de anticipación para no perder tus créditos.",
@@ -84,7 +91,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6946,
     lng: -74.0307,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: null,
     puntualidad: null,
     politicaCancelacion: null,
@@ -104,7 +112,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.2088,
     lng: -75.5679,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: null,
     puntualidad: null,
     politicaCancelacion: null,
@@ -124,7 +133,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 4.6707,
     lng: -74.0479,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: null,
     puntualidad: null,
     politicaCancelacion: null,
@@ -144,7 +154,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.2447,
     lng: -75.5916,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: null,
     puntualidad: null,
     politicaCancelacion: null,
@@ -164,7 +175,8 @@ const MOCK_GYMS: Gym[] = [
     lat: 6.1719,
     lng: -75.5636,
     photoUrl: null,
-    photoDetailUrl: null,
+    photoDetailUrls: [],
+    genero: "todos",
     description: null,
     puntualidad: null,
     politicaCancelacion: null,
@@ -190,6 +202,20 @@ function textField(
   return value || null;
 }
 
+/** El campo "Género" puede venir como texto único ("Mujeres", "Hombres",
+ * "Mujeres, Hombres") o como selección múltiple (array). En cualquier caso,
+ * si aparecen los dos géneros mencionados (o el campo está vacío) no hay
+ * restricción. */
+function normalizeGymGenero(raw: unknown): GymGenero {
+  const text = (Array.isArray(raw) ? raw.join(", ") : ((raw as string) ?? "")).toLowerCase();
+  const mencionaMujeres = text.includes("mujer");
+  const mencionaHombres = text.includes("hombre");
+  if (mencionaMujeres && mencionaHombres) return "todos";
+  if (mencionaMujeres) return "solo_mujeres";
+  if (mencionaHombres) return "solo_hombres";
+  return "todos";
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRecordToGym(record: any): Gym {
   const photos = record.get("Foto") as { url: string }[] | undefined;
@@ -205,7 +231,8 @@ function mapRecordToGym(record: any): Gym {
     lat: (record.get("Latitud") as number) ?? null,
     lng: (record.get("Longitud") as number) ?? null,
     photoUrl: photos?.[0]?.url ?? null,
-    photoDetailUrl: photosDetail?.[0]?.url ?? null,
+    photoDetailUrls: (photosDetail ?? []).slice(0, 3).map((p) => p.url),
+    genero: normalizeGymGenero(record.get("Género")),
     description: textField(record, "Descripción "),
     puntualidad: textField(record, "Puntualidad"),
     politicaCancelacion: textField(record, "Politica de cancelación "),
@@ -216,6 +243,14 @@ function mapRecordToGym(record: any): Gym {
     nivelRecomendado: textField(record, "Nivel recomendado (principiante/avanzado)"),
     recomendaciones: textField(record, "Recomendaciones adicionales"),
   };
+}
+
+/** Un hombre no ve gimnasios "solo_mujeres" y viceversa. Sin género definido
+ * (invitado sin cuenta, o "Otro") ve todos los gimnasios, sin filtrar. */
+export function filterGymsByGenero(gyms: Gym[], userGenero: string | null): Gym[] {
+  if (userGenero === "Hombre") return gyms.filter((g) => g.genero !== "solo_mujeres");
+  if (userGenero === "Mujer") return gyms.filter((g) => g.genero !== "solo_hombres");
+  return gyms;
 }
 
 export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }> {

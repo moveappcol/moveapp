@@ -118,7 +118,7 @@ export async function sendLiquidacionEmail(params: {
     <p>Les compartimos las reservas confirmadas para la clase de <strong>${escapeHtml(params.clase)}</strong>, programada para el ${escapeHtml(params.fechaLarga)} a las ${escapeHtml(params.hora)}.</p>
     <p>A continuación encontrarán el listado de personas que, hasta este momento, tienen su reserva confirmada:</p>
     ${attendeesListHtml(params.asistentes)}
-    <p>Esta información se envía 24 horas antes del inicio de la clase para facilitar su organización. Si se presentan nuevas reservas o cancelaciones, recibirán una actualización antes del inicio de la clase.</p>
+    <p>Esta información se envía 24 horas antes del inicio de la clase para facilitar su organización.</p>
     <p>¡Gracias por ser parte de UNIQUE!</p>
   `;
 

@@ -89,7 +89,6 @@ export async function GET(req: NextRequest) {
         tipo: r.tipo,
         nombre: r.userName,
         cedula: r.cedula,
-        correo: r.correo,
       })),
     });
 

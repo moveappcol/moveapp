@@ -59,7 +59,7 @@ function Table({ headers, rows, widths }: { headers: string[]; rows: string[][];
   );
 }
 
-export type ReservaFinalRow = { tipo: "A" | "B" | null; nombre: string; cedula: string; correo: string };
+export type ReservaFinalRow = { tipo: "A" | "B" | null; nombre: string; cedula: string };
 
 /** PDF de "reservas finales" — mismo documento para 24h antes y 20 min
  * antes, solo cambia el título y el color del texto (negro para 20 min,
@@ -88,8 +88,8 @@ export async function buildReservasFinalesPdf(params: {
         <Text style={{ ...styles.title, color }}>{titulo}</Text>
 
         <Table
-          headers={["TIPO", "NOMBRE", "CÉDULA", "CORREO"]}
-          rows={params.reservas.map((r) => [r.tipo ?? "—", r.nombre, r.cedula, r.correo])}
+          headers={["TIPO", "NOMBRE", "CÉDULA"]}
+          rows={params.reservas.map((r) => [r.tipo ?? "—", r.nombre, r.cedula])}
         />
 
         <Text style={{ ...styles.footer, color }}>¡ Gracias por ser parte de UNIQUE !</Text>

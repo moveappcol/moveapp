@@ -2,7 +2,7 @@ import { getAirtableBase } from "./airtable";
 
 // Cuando los gimnasios afiliados estén confirmados, cambiar a false para
 // que la grilla y las páginas de detalle sean públicas.
-export const GYMS_COMING_SOON = false;
+export const GYMS_COMING_SOON = true;
 
 /** Restricción de acceso por género. "todos" = sin restricción. */
 export type GymGenero = "todos" | "solo_mujeres" | "solo_hombres";

@@ -128,3 +128,16 @@ export async function getClaseById(id: string): Promise<Clase | null> {
     return null;
   }
 }
+
+/** Igual que getClaseById pero sin calcular cuposDisponibles (evita un
+ * escaneo completo de "Reservas" por cada llamada) — para listas como "Mis
+ * reservas" que no muestran cupos, solo nombre/fecha/duración. */
+export async function getClaseByIdBasic(id: string): Promise<Clase | null> {
+  const base = getAirtableBase();
+  try {
+    const record = await base("Clases").find(id);
+    return mapRecordToClase(record, 0);
+  } catch {
+    return null;
+  }
+}

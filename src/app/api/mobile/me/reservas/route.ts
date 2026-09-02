@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getReservationsForUser } from "@/lib/reservations";
-import { getClaseById } from "@/lib/classes";
+import { getClaseByIdBasic } from "@/lib/classes";
 import { getGymById } from "@/lib/gyms";
 import { requireMobileUser, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 
@@ -15,15 +15,21 @@ export async function GET() {
   const reservations = await getReservationsForUser(user.userName);
 
   const enriched = await Promise.all(
-    reservations.map(async (r) => ({
-      id: r.id,
-      fecha: r.fecha,
-      estado: r.estado,
-      calificacion: r.calificacion,
-      comentario: r.comentario,
-      clase: r.claseId ? await getClaseById(r.claseId) : null,
-      gym: r.gimnasioId ? await getGymById(r.gimnasioId) : null,
-    }))
+    reservations.map(async (r) => {
+      const [clase, gym] = await Promise.all([
+        r.claseId ? getClaseByIdBasic(r.claseId) : Promise.resolve(null),
+        r.gimnasioId ? getGymById(r.gimnasioId) : Promise.resolve(null),
+      ]);
+      return {
+        id: r.id,
+        fecha: r.fecha,
+        estado: r.estado,
+        calificacion: r.calificacion,
+        comentario: r.comentario,
+        clase,
+        gym,
+      };
+    })
   );
 
   return NextResponse.json({ reservations: enriched });

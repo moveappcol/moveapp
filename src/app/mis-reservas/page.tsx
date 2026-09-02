@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getReservationsForUser, type Reservation } from "@/lib/reservations";
-import { getClaseById, type Clase } from "@/lib/classes";
+import { getClaseByIdBasic, type Clase } from "@/lib/classes";
 import { getGymById } from "@/lib/gyms";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import CancelReservationButton from "@/components/gym/cancel-reservation-button";
@@ -35,11 +35,13 @@ export default async function MisReservasPage() {
   const reservations = await getReservationsForUser(userName);
 
   const enriched = await Promise.all(
-    reservations.map(async (r) => ({
-      ...r,
-      clase: r.claseId ? await getClaseById(r.claseId) : null,
-      gym: r.gimnasioId ? await getGymById(r.gimnasioId) : null,
-    }))
+    reservations.map(async (r) => {
+      const [clase, gym] = await Promise.all([
+        r.claseId ? getClaseByIdBasic(r.claseId) : Promise.resolve(null),
+        r.gimnasioId ? getGymById(r.gimnasioId) : Promise.resolve(null),
+      ]);
+      return { ...r, clase, gym };
+    })
   );
 
   return (

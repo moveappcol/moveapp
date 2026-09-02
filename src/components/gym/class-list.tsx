@@ -22,17 +22,15 @@ function isBookingClosed(fecha: string): boolean {
   return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
 }
 
-/** No mostramos el conteo exacto de cupos: si queda más de la mitad no se
- * dice nada, y si queda la mitad o menos se avisa en rojo sin dar el
- * número. Si ya no queda ninguno, el mensaje de "clase llena" de abajo ya
- * lo cubre. */
-function CuposAviso({ cuposDisponibles, cuposTotales }: { cuposDisponibles: number; cuposTotales: number }) {
-  if (cuposDisponibles <= 0 || cuposTotales <= 0) return null;
-  if (cuposDisponibles / cuposTotales > 0.5) return null;
+/** No mostramos el conteo de cupos en ningún otro caso — solo cuando quedan
+ * 2 o menos se avisa, sin decir el total. Si ya no queda ninguno, el
+ * mensaje de "clase llena" de abajo ya lo cubre. */
+function CuposAviso({ cuposDisponibles }: { cuposDisponibles: number }) {
+  if (cuposDisponibles <= 0 || cuposDisponibles > 2) return null;
 
   return (
-    <p className="mt-1 font-body text-sm font-medium text-red-600">
-      Quedan pocos cupos disponibles
+    <p className="mt-1 font-heading text-sm font-bold uppercase tracking-wide text-red-600">
+      {cuposDisponibles === 1 ? "Último cupo disponible" : "Últimos 2 cupos disponibles"}
     </p>
   );
 }
@@ -67,10 +65,7 @@ export default function ClassList({
               <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
                 {formatFecha(clase.fecha)}
               </p>
-              <CuposAviso
-                cuposDisponibles={clase.cuposDisponibles}
-                cuposTotales={clase.cuposTotales}
-              />
+              <CuposAviso cuposDisponibles={clase.cuposDisponibles} />
             </div>
             <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
               {precioEfectivo(clase) < clase.credits && (

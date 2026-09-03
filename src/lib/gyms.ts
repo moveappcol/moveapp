@@ -219,10 +219,21 @@ function normalizeGymGenero(raw: unknown): GymGenero {
   return "todos";
 }
 
+type Attachment = { url: string; thumbnails?: { full?: { url: string } } };
+
+/** Muchos gimnasios suben fotos directo desde iPhone en formato HEIC, que
+ * casi ningún navegador sabe mostrar en un <img> (sale como imagen rota).
+ * Airtable genera un thumbnail "full" ya convertido a JPEG/PNG para
+ * cualquier adjunto de imagen — lo preferimos siempre que exista y solo
+ * caemos al archivo original si no hay thumbnail (adjunto no-imagen). */
+function attachmentDisplayUrl(attachment: Attachment): string {
+  return attachment.thumbnails?.full?.url ?? attachment.url;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapRecordToGym(record: any): Gym {
-  const photos = record.get("Foto") as { url: string }[] | undefined;
-  const photosDetail = record.get("Foto Detalle") as { url: string }[] | undefined;
+  const photos = record.get("Foto") as Attachment[] | undefined;
+  const photosDetail = record.get("Foto Detalle") as Attachment[] | undefined;
   const activities = (record.get("Actividades") as string[]) ?? [];
   const servicios = (record.get("Servicios y amenidades ") as string[]) ?? [];
   return {
@@ -233,8 +244,8 @@ function mapRecordToGym(record: any): Gym {
     address: ((record.get("Dirección") as string) ?? "").trim(),
     lat: (record.get("Latitud") as number) ?? null,
     lng: (record.get("Longitud") as number) ?? null,
-    photoUrl: photos?.[0]?.url ?? null,
-    photoDetailUrls: (photosDetail ?? []).slice(0, 3).map((p) => p.url),
+    photoUrl: photos?.[0] ? attachmentDisplayUrl(photos[0]) : null,
+    photoDetailUrls: (photosDetail ?? []).slice(0, 3).map(attachmentDisplayUrl),
     genero: normalizeGymGenero(record.get("Género")),
     description: textField(record, "Descripción "),
     puntualidad: textField(record, "Puntualidad"),

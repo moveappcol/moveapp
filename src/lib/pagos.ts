@@ -10,6 +10,9 @@ import type { PurchaseKind } from "./orders";
  *   - item          (texto, minúscula — id del catálogo, ej. "plan-starter")
  *   - Creditos      (número)
  *   - Estado        (selección: "Pendiente" | "Aprobado" | "Rechazado")
+ *   - PaymentSourceId (número, opcional — solo para "Plan": la fuente de
+ *      pago de Wompi que se cobró, para poder activar/renovar la
+ *      suscripción desde el webhook si Wompi confirma la aprobación tarde)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -23,12 +26,14 @@ export type Pago = {
   item: string;
   creditos: number;
   estado: PagoEstado;
+  paymentSourceId: number | null;
 };
 
 function mapRecordToPago(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   record: any
 ): Pago {
+  const paymentSourceId = record.get("PaymentSourceId") as number | undefined;
   return {
     id: record.id,
     referencia: (record.get("Referencia") as string) ?? "",
@@ -37,6 +42,7 @@ function mapRecordToPago(
     item: (record.get("item") as string) ?? "",
     creditos: (record.get("Creditos") as number) ?? 0,
     estado: ((record.get("Estado") as string) ?? "Pendiente") as PagoEstado,
+    paymentSourceId: paymentSourceId !== undefined && paymentSourceId !== null ? paymentSourceId : null,
   };
 }
 
@@ -46,6 +52,7 @@ export async function createPendingPago(params: {
   tipo: PurchaseKind;
   item: string;
   creditos: number;
+  paymentSourceId?: number;
 }): Promise<string> {
   const base = getAirtableBase();
   const created = await base(PAGOS_TABLE).create(
@@ -58,6 +65,7 @@ export async function createPendingPago(params: {
           item: params.item,
           Creditos: params.creditos,
           Estado: "Pendiente",
+          ...(params.paymentSourceId !== undefined ? { PaymentSourceId: params.paymentSourceId } : {}),
         },
       },
     ],

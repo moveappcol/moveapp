@@ -32,6 +32,7 @@ export async function chargeSubscriptionPlan(params: {
     tipo: "plan",
     item: params.planId,
     creditos: item.credits,
+    paymentSourceId: params.paymentSourceId,
   });
 
   let tx;

@@ -4,6 +4,7 @@ import { findCatalogItem, parseReference } from "@/lib/orders";
 import { findPagoByReferencia, updatePagoEstado, type PagoEstado } from "@/lib/pagos";
 import { addCreditsByEmail } from "@/lib/users";
 import { sendMetaPurchaseEvent } from "@/lib/meta-conversions-api";
+import { getSubscriptionByEmail, upsertSubscription, markSubscriptionRenewed } from "@/lib/subscriptions";
 
 function statusToEstado(status: string): PagoEstado {
   if (status === "APPROVED") return "Aprobado";
@@ -49,6 +50,22 @@ export async function POST(req: NextRequest) {
 
   if (nextEstado === "Aprobado") {
     await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
+    if (pago.tipo === "plan") {
+      // El pago quedó "Pendiente" del lado de Wompi y se aprobó tarde (por
+      // eso llegamos por webhook y no por la respuesta síncrona del cobro):
+      // hay que activar o renovar la suscripción acá porque el llamador
+      // original ya recibió `pending: true` y nunca llamó upsertSubscription.
+      const existing = await getSubscriptionByEmail(pago.correo);
+      if (existing && existing.estado === "Activa") {
+        await markSubscriptionRenewed(existing);
+      } else {
+        await upsertSubscription({
+          correo: pago.correo,
+          plan: pago.item,
+          paymentSourceId: pago.paymentSourceId ?? existing?.paymentSourceId ?? 0,
+        });
+      }
+    }
     await sendMetaPurchaseEvent({ eventId: tx.id, value: item.price, email: pago.correo });
   }
 

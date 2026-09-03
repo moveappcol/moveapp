@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
       });
 
       const porcentaje = r.tipo === "A" ? porcentajeA : r.tipo === "B" ? porcentajeB : null;
-      const valorClase = gym.pricePerReservation;
+      const valorClase = clase.precio ?? gym.pricePerReservation;
       const totalPorReserva = porcentaje !== null && valorClase !== null ? valorClase * porcentaje : null;
 
       entry.reservasPago.push({

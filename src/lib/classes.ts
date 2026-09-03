@@ -7,6 +7,9 @@ export type Clase = {
   /** Créditos con descuento, si el staff le puso una promoción a esta
    * clase — menor que `credits`. null si no tiene descuento. */
   descuentoCreditos: number | null;
+  /** Precio en pesos de esta clase específica, para liquidaciones — nunca
+   * se le muestra al usuario. null = usa el precio del gimnasio. */
+  precio: number | null;
   cuposTotales: number;
   cuposDisponibles: number;
   fecha: string | null;
@@ -28,6 +31,8 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *   - Creditos       (número)
  *   - "Descuento creditos" (número, opcional — precio promocional en
  *      créditos, menor que Creditos; vacío = sin descuento)
+ *   - Precio         (número, opcional — precio en pesos de esta clase para
+ *      liquidaciones; vacío = usa "Precio por reserva" del gimnasio)
  *   - Cupos totales  (número)
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
@@ -77,11 +82,13 @@ function mapRecordToClase(
   const cuposTotales = (record.get("Cupos totales") as number) ?? 0;
   const duracion = record.get("Duración") as number | undefined;
   const descuento = record.get("Descuento creditos") as number | undefined;
+  const precio = record.get("Precio") as number | undefined;
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
     credits: (record.get("Creditos") as number) ?? 0,
     descuentoCreditos: descuento !== undefined && descuento !== null ? descuento : null,
+    precio: precio !== undefined && precio !== null ? precio : null,
     cuposTotales,
     cuposDisponibles: Math.max(0, cuposTotales - reservados),
     fecha: (record.get("Horario") as string) ?? null,

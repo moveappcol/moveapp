@@ -63,7 +63,8 @@ export async function GET(req: NextRequest) {
     }
 
     const reservas = await getReservationsDetailForClase(clase.id);
-    const counts = buildCountsFromReservas(reservas, clase.credits, gym.pricePerReservation, {
+    const precio = clase.precio ?? gym.pricePerReservation;
+    const counts = buildCountsFromReservas(reservas, clase.credits, precio, {
       tipoA: gym.porcentajeTipoA,
       tipoB: gym.porcentajeTipoB,
     });

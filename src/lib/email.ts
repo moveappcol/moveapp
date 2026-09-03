@@ -101,6 +101,35 @@ export async function sendAfterClassEmail(params: { userEmail: string }): Promis
   });
 }
 
+/** Alerta interna cuando alguien califica una clase con 3 estrellas o
+ * menos — se manda solo al dueño de la plataforma, nunca al gimnasio ni
+ * al usuario. */
+export async function sendLowRatingAlertEmail(params: {
+  ownerEmail: string;
+  gimnasio: string;
+  clase: string;
+  userName: string;
+  calificacion: number;
+  comentario: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">⚠️ URGENTE — CALIFICACIÓN BAJA</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(params.clase)}</p>
+      <p><strong>Usuario:</strong> ${escapeHtml(params.userName)}</p>
+      <p><strong>Calificación:</strong> ${"★".repeat(params.calificacion)}${"☆".repeat(5 - params.calificacion)} (${params.calificacion}/5)</p>
+      <p><strong>Comentario:</strong> ${params.comentario ? escapeHtml(params.comentario) : "(sin comentario)"}</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `URGENTE CALIFICACIÓN — ${params.calificacion}★ en ${params.clase}`,
+    html,
+  });
+}
+
 /** Correo de las 24h antes: adjunta el PDF "RESERVAS FINALES (24 h antes)".
  * No incluye el total a pagar (ese queda solo en el form de pagos). */
 export async function sendLiquidacionEmail(params: {

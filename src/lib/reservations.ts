@@ -1,6 +1,11 @@
 import { getAirtableBase } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById } from "./classes";
+import { getGymById } from "./gyms";
+import { sendLowRatingAlertEmail } from "./email";
+
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =
   | { ok: true; reservationId: string; remainingCredits: number }
@@ -343,6 +348,23 @@ export async function submitRating(params: {
     ],
     { typecast: true }
   );
+
+  if (params.calificacion <= LOW_RATING_THRESHOLD) {
+    try {
+      const gym = clase.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+      const userName = ((record.get("Usuario") as string) ?? "Desconocido").trim();
+      await sendLowRatingAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        gimnasio: gym?.name ?? "Gimnasio desconocido",
+        clase: clase.name,
+        userName,
+        calificacion: params.calificacion,
+        comentario: params.comentario,
+      });
+    } catch {
+      // no bloqueamos la calificación si falla el aviso interno
+    }
+  }
 
   return { ok: true };
 }

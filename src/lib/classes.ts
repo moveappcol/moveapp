@@ -1,4 +1,7 @@
 import { getAirtableBase } from "./airtable";
+import { cached } from "./server-cache";
+
+const CACHE_TTL_MS = 5_000;
 
 export type Clase = {
   id: string;
@@ -97,19 +100,30 @@ function mapRecordToClase(
   };
 }
 
-export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
-  const base = getAirtableBase();
-  // Se filtra en JS en vez de con filterByFormula: ARRAYJOIN sobre un campo
-  // de enlace concatena los nombres de los registros vinculados, no sus IDs,
-  // así que no se puede buscar el gimnasioId directamente en una fórmula.
-  const [records, activeCounts] = await Promise.all([
-    base("Clases").select().all(),
-    getActiveReservationCounts(),
-  ]);
+/** Trae TODAS las clases con sus cupos calculados — es lo mismo sin
+ * importar de qué gimnasio se pida, así que se cachea una sola vez (unos
+ * segundos) y cada gimnasio filtra sobre el mismo resultado en vez de
+ * repetir 2 escaneos completos de Airtable por cada uno que se visite. */
+async function getAllClasesConCupos(): Promise<Clase[]> {
+  return cached("classes:allWithCupos", CACHE_TTL_MS, async () => {
+    const base = getAirtableBase();
+    // Se filtra en JS en vez de con filterByFormula: ARRAYJOIN sobre un campo
+    // de enlace concatena los nombres de los registros vinculados, no sus IDs,
+    // así que no se puede buscar el gimnasioId directamente en una fórmula.
+    const [records, activeCounts] = await Promise.all([
+      base("Clases").select().all(),
+      getActiveReservationCounts(),
+    ]);
 
-  return records
-    .filter((record) => Boolean(record.get("Clase")))
-    .map((record) => mapRecordToClase(record, activeCounts.get(record.id) ?? 0))
+    return records
+      .filter((record) => Boolean(record.get("Clase")))
+      .map((record) => mapRecordToClase(record, activeCounts.get(record.id) ?? 0));
+  });
+}
+
+export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
+  const clases = await getAllClasesConCupos();
+  return clases
     .filter((clase) => clase.gimnasioId === gimnasioId)
     .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
 }

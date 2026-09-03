@@ -1,4 +1,7 @@
 import { getAirtableBase } from "./airtable";
+import { cached } from "./server-cache";
+
+const CACHE_TTL_MS = 10_000;
 
 // Cuando los gimnasios afiliados estén confirmados, cambiar a false para
 // que la grilla y las páginas de detalle sean públicas.
@@ -258,14 +261,16 @@ export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }
     return { gyms: MOCK_GYMS, usingMockData: true };
   }
 
-  const base = getAirtableBase();
-  const records = await base("Gimnasios")
-    .select({ filterByFormula: "{Activo} = 1" })
-    .all();
+  return cached("gyms:list", CACHE_TTL_MS, async () => {
+    const base = getAirtableBase();
+    const records = await base("Gimnasios")
+      .select({ filterByFormula: "{Activo} = 1" })
+      .all();
 
-  const gyms = records.filter((r) => Boolean(r.get("Nombre"))).map(mapRecordToGym);
+    const gyms = records.filter((r) => Boolean(r.get("Nombre"))).map(mapRecordToGym);
 
-  return { gyms, usingMockData: false };
+    return { gyms, usingMockData: false };
+  });
 }
 
 export async function getGymById(id: string): Promise<Gym | null> {
@@ -273,6 +278,10 @@ export async function getGymById(id: string): Promise<Gym | null> {
     return MOCK_GYMS.find((g) => g.id === id) ?? null;
   }
 
+  return cached(`gyms:byId:${id}`, CACHE_TTL_MS, () => fetchGymById(id));
+}
+
+async function fetchGymById(id: string): Promise<Gym | null> {
   const base = getAirtableBase();
   try {
     const record = await base("Gimnasios").find(id);

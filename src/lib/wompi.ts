@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { cached } from "./server-cache";
 
 export const WOMPI_CHECKOUT_URL = "https://checkout.wompi.co/p/";
 
@@ -102,22 +103,28 @@ export type AcceptanceTokens = {
   permalinkPersonalAuth: string;
 };
 
+const ACCEPTANCE_TOKENS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /** Los tokens de aceptación (términos + tratamiento de datos) que Wompi
  * exige mostrarle a la persona antes de guardar su tarjeta. Expiran a los
- * ~30 minutos, así que se piden justo antes de usarlos, nunca se cachean. */
+ * ~30 minutos — se cachean 5 minutos (bien dentro de ese margen) para no
+ * pedirle a Wompi los mismos tokens en cada apertura de la pantalla de
+ * pago o cada compra. */
 export async function fetchAcceptanceTokens(): Promise<AcceptanceTokens> {
-  const res = await fetch(`${wompiApiBase()}/merchants/${wompiPublicKey()}`, {
-    cache: "no-store",
+  return cached("wompi:acceptanceTokens", ACCEPTANCE_TOKENS_CACHE_TTL_MS, async () => {
+    const res = await fetch(`${wompiApiBase()}/merchants/${wompiPublicKey()}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error("No pudimos obtener los términos de Wompi.");
+    const json = await res.json();
+    const data = json.data;
+    return {
+      acceptanceToken: data.presigned_acceptance.acceptance_token,
+      personalAuthToken: data.presigned_personal_data_auth.acceptance_token,
+      permalinkAcceptance: data.presigned_acceptance.permalink,
+      permalinkPersonalAuth: data.presigned_personal_data_auth.permalink,
+    };
   });
-  if (!res.ok) throw new Error("No pudimos obtener los términos de Wompi.");
-  const json = await res.json();
-  const data = json.data;
-  return {
-    acceptanceToken: data.presigned_acceptance.acceptance_token,
-    personalAuthToken: data.presigned_personal_data_auth.acceptance_token,
-    permalinkAcceptance: data.presigned_acceptance.permalink,
-    permalinkPersonalAuth: data.presigned_personal_data_auth.permalink,
-  };
 }
 
 export type WompiPaymentSource = { id: number; status: string };

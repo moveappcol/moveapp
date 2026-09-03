@@ -101,6 +101,102 @@ export async function sendAfterClassEmail(params: { userEmail: string }): Promis
   });
 }
 
+export type AnalisisGymRow = {
+  gimnasio: string;
+  clases: number;
+  reservas: number;
+  cupos: number;
+  ocupacion: number;
+};
+
+export type AnalisisClaseRow = {
+  gimnasio: string;
+  clase: string;
+  horario: string;
+  reservas: number;
+  cupos: number;
+  ocupacion: number;
+};
+
+/** Análisis semanal de reservas por gimnasio — ranking, horarios con poca
+ * demanda y clases casi llenas que podrían necesitar más cupos. Solo para
+ * el dueño de la plataforma. */
+export async function sendWeeklyAnalysisEmail(params: {
+  ownerEmail: string;
+  periodo: string;
+  porGimnasio: AnalisisGymRow[];
+  pocaDemanda: AnalisisClaseRow[];
+  necesitanCupos: AnalisisClaseRow[];
+}): Promise<void> {
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+  const gymRows = params.porGimnasio
+    .map(
+      (g) =>
+        `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${escapeHtml(g.gimnasio)}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${g.clases}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${g.reservas}/${g.cupos}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${pct(g.ocupacion)}</td></tr>`
+    )
+    .join("");
+
+  const claseRow = (c: AnalisisClaseRow) =>
+    `<tr><td style="padding:6px 10px;border:1px solid #ddd;">${escapeHtml(c.gimnasio)}</td><td style="padding:6px 10px;border:1px solid #ddd;">${escapeHtml(c.clase)}</td><td style="padding:6px 10px;border:1px solid #ddd;">${escapeHtml(c.horario)}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${c.reservas}/${c.cupos}</td><td style="padding:6px 10px;border:1px solid #ddd;text-align:center;">${pct(c.ocupacion)}</td></tr>`;
+
+  const tableHeader = (cols: string[]) =>
+    `<tr>${cols.map((c) => `<th style="padding:6px 10px;border:1px solid #ddd;background:#063009;color:#fff;">${c}</th>`).join("")}</tr>`;
+
+  const html = `
+    <div style="font-family: sans-serif; color:#111;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 4px;">Análisis semanal de reservas</p>
+      <p style="margin:0 0 20px;color:#555;">Periodo: ${escapeHtml(params.periodo)}</p>
+
+      <p style="font-weight:700;margin:20px 0 8px;">Gimnasios con más reservas</p>
+      <table style="border-collapse:collapse;width:100%;font-size:13px;">
+        ${tableHeader(["Gimnasio", "Clases", "Reservas/Cupos", "Ocupación"])}
+        ${gymRows || `<tr><td colspan="4" style="padding:8px;">Sin datos esta semana.</td></tr>`}
+      </table>
+
+      <p style="font-weight:700;margin:24px 0 8px;">Horarios que casi no se mueven (≤30% de ocupación)</p>
+      <table style="border-collapse:collapse;width:100%;font-size:13px;">
+        ${tableHeader(["Gimnasio", "Clase", "Horario", "Reservas/Cupos", "Ocupación"])}
+        ${params.pocaDemanda.map(claseRow).join("") || `<tr><td colspan="5" style="padding:8px;">Ninguno esta semana.</td></tr>`}
+      </table>
+
+      <p style="font-weight:700;margin:24px 0 8px;">Gimnasios/horarios que podrían necesitar más cupos (≥90% de ocupación)</p>
+      <table style="border-collapse:collapse;width:100%;font-size:13px;">
+        ${tableHeader(["Gimnasio", "Clase", "Horario", "Reservas/Cupos", "Ocupación"])}
+        ${params.necesitanCupos.map(claseRow).join("") || `<tr><td colspan="5" style="padding:8px;">Ninguno esta semana.</td></tr>`}
+      </table>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `Análisis semanal de reservas — ${params.periodo}`,
+    html,
+  });
+}
+
+/** Backup diario de seguridad: todas las tablas de Airtable en un solo
+ * Excel adjunto, solo para el dueño de la plataforma. */
+export async function sendBackupEmail(params: {
+  ownerEmail: string;
+  fecha: string;
+  xlsx: Buffer;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">Backup diario — ${escapeHtml(params.fecha)}</p>
+      <p>Adjunto va el respaldo completo de toda la información de Airtable de este día.</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: `Backup - ${params.fecha}`,
+    html,
+    attachments: [toAttachment(`backup-${params.fecha}.xlsx`, params.xlsx)],
+  });
+}
+
 /** Alerta interna cuando alguien califica una clase con 3 estrellas o
  * menos — se manda solo al dueño de la plataforma, nunca al gimnasio ni
  * al usuario. */
@@ -109,6 +205,8 @@ export async function sendLowRatingAlertEmail(params: {
   gimnasio: string;
   clase: string;
   userName: string;
+  userEmail: string;
+  userTelefono: string | null;
   calificacion: number;
   comentario: string;
 }): Promise<void> {
@@ -118,6 +216,8 @@ export async function sendLowRatingAlertEmail(params: {
       <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
       <p><strong>Clase:</strong> ${escapeHtml(params.clase)}</p>
       <p><strong>Usuario:</strong> ${escapeHtml(params.userName)}</p>
+      <p><strong>Correo:</strong> ${escapeHtml(params.userEmail)}</p>
+      <p><strong>Teléfono:</strong> ${params.userTelefono ? escapeHtml(params.userTelefono) : "(sin registrar)"}</p>
       <p><strong>Calificación:</strong> ${"★".repeat(params.calificacion)}${"☆".repeat(5 - params.calificacion)} (${params.calificacion}/5)</p>
       <p><strong>Comentario:</strong> ${params.comentario ? escapeHtml(params.comentario) : "(sin comentario)"}</p>
     </div>

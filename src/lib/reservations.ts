@@ -351,13 +351,18 @@ export async function submitRating(params: {
 
   if (params.calificacion <= LOW_RATING_THRESHOLD) {
     try {
-      const gym = clase.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+      const [gym, account] = await Promise.all([
+        clase.gimnasioId ? getGymById(clase.gimnasioId) : Promise.resolve(null),
+        getUserCreditsByEmail(params.userEmail),
+      ]);
       const userName = ((record.get("Usuario") as string) ?? "Desconocido").trim();
       await sendLowRatingAlertEmail({
         ownerEmail: OWNER_EMAIL,
         gimnasio: gym?.name ?? "Gimnasio desconocido",
         clase: clase.name,
         userName,
+        userEmail: params.userEmail,
+        userTelefono: account?.telefono ?? null,
         calificacion: params.calificacion,
         comentario: params.comentario,
       });

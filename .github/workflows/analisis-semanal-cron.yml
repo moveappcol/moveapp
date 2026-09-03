@@ -1,0 +1,15 @@
+name: Análisis semanal de reservas por gimnasio
+
+on:
+  schedule:
+    - cron: "0 13 * * 1" # lunes 8am America/Bogota (UTC-5)
+  workflow_dispatch: {}
+
+jobs:
+  analizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger analisis-semanal cron
+        run: |
+          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/analisis-semanal" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

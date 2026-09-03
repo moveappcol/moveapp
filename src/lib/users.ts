@@ -6,6 +6,7 @@ export type UserCredits = {
   credits: number;
   vencimiento: string | null;
   cedula: string | null;
+  telefono: string | null;
   genero: string | null;
   perfilCompleto: boolean;
 };
@@ -49,6 +50,7 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     credits: (record.get("Creditos") as number) ?? 0,
     vencimiento: (record.get("Vencimiento") as string) ?? null,
     cedula: (record.get("Número de documento") as string) || null,
+    telefono: (record.get("Teléfono") as string) || null,
     genero: (record.get("Género") as string) || null,
     perfilCompleto: Boolean(record.get("Perfil completo")),
   };

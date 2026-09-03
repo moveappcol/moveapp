@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import type { TipoDocumento, Genero } from "./documento";
 
 export type UserCredits = {
@@ -37,7 +37,7 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
   const base = getAirtableBase();
   const records = await base(USUARIOS_TABLE)
     .select({
-      filterByFormula: `LOWER({Correo}) = LOWER("${email}")`,
+      filterByFormula: `LOWER({Correo}) = LOWER("${escapeFormulaValue(email)}")`,
       maxRecords: 1,
     })
     .all();

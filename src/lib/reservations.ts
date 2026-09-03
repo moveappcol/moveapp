@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById } from "./classes";
 import { getGymById } from "./gyms";
@@ -219,7 +219,7 @@ export async function createReservation(params: {
 export async function getReservationsForUser(userName: string): Promise<Reservation[]> {
   const base = getAirtableBase();
   const records = await base("Reservas")
-    .select({ filterByFormula: `{Usuario} = "${userName}"` })
+    .select({ filterByFormula: `{Usuario} = "${escapeFormulaValue(userName)}"` })
     .all();
 
   return records

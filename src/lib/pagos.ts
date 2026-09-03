@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import type { PurchaseKind } from "./orders";
 
 /**
@@ -70,7 +70,7 @@ export async function findPagoByReferencia(referencia: string): Promise<Pago | n
   const base = getAirtableBase();
   const records = await base(PAGOS_TABLE)
     .select({
-      filterByFormula: `{Referencia} = "${referencia}"`,
+      filterByFormula: `{Referencia} = "${escapeFormulaValue(referencia)}"`,
       maxRecords: 1,
     })
     .all();

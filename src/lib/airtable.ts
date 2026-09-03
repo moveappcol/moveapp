@@ -16,4 +16,14 @@ function getAirtableBase() {
   return new Airtable({ apiKey }).base(baseId);
 }
 
+/** Escapa un valor para meterlo dentro de un string literal de una fórmula
+ * de Airtable (filterByFormula). Sin esto, un nombre o correo con una
+ * comilla doble puede romper la consulta o, peor, alterar la lógica de la
+ * fórmula — igual que una inyección SQL, pero en el lenguaje de fórmulas
+ * de Airtable. Siempre usar esto al interpolar un valor del usuario dentro
+ * de un filterByFormula. */
+export function escapeFormulaValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 export { getAirtableBase };

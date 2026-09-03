@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 
 /**
  * Esquema en Airtable — tabla "Suscripciones" (una fila por persona con
@@ -43,7 +43,7 @@ function mapRecordToSubscription(
 export async function getSubscriptionByEmail(email: string): Promise<Subscription | null> {
   const base = getAirtableBase();
   const records = await base(SUSCRIPCIONES_TABLE)
-    .select({ filterByFormula: `LOWER({Correo}) = LOWER("${email}")`, maxRecords: 1 })
+    .select({ filterByFormula: `LOWER({Correo}) = LOWER("${escapeFormulaValue(email)}")`, maxRecords: 1 })
     .all();
   const record = records[0];
   return record ? mapRecordToSubscription(record) : null;

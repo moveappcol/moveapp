@@ -312,6 +312,10 @@ function toPorcentaje(value: number | string | undefined): number | null {
 /** Datos de facturación del gimnasio — no forman parte del Gym público
  * (no se muestran en el storefront), solo se usan para liquidaciones. */
 export async function getGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
+  return cached(`gyms:billingInfo:${id}`, CACHE_TTL_MS, () => fetchGymBillingInfo(id));
+}
+
+async function fetchGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
   const base = getAirtableBase();
   try {
     const record = await base("Gimnasios").find(id);

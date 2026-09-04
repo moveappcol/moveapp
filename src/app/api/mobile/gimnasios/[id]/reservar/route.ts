@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getClaseById, precioEfectivo } from "@/lib/classes";
 import { createReservation } from "@/lib/reservations";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
+import { getUserCreditsByEmail } from "@/lib/users";
+import { sendPushNotification } from "@/lib/push";
 
 export async function POST(
   req: Request,
@@ -41,6 +43,16 @@ export async function POST(
     claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
   });
+
+  if (result.ok) {
+    const persona = await getUserCreditsByEmail(user.email);
+    await sendPushNotification({
+      to: persona?.pushToken ?? null,
+      title: "¡Reserva confirmada! 🎉",
+      body: `${clase.name} — te esperamos.`,
+      data: { type: "reserva-confirmada", claseId },
+    });
+  }
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

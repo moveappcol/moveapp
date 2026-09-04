@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getReservationsDetailForClase, markRecordatorioEnviado } from "@/lib/reservations";
 import { sendClassReminderEmail } from "@/lib/email";
+import { getUserCreditsByEmail } from "@/lib/users";
+import { sendPushNotification } from "@/lib/push";
 
 // Ventana centrada en 3 horas antes de la clase — ancha porque el cron
 // corre cada pocos minutos y puede atrasarse. Cada reserva se marca como
@@ -65,6 +67,13 @@ export async function GET(req: NextRequest) {
           clase: clase.name,
           fechaLarga: formatFechaLarga(clase.fecha),
           hora: formatHora(clase.fecha),
+        });
+        const persona = await getUserCreditsByEmail(r.correo);
+        await sendPushNotification({
+          to: persona?.pushToken ?? null,
+          title: "Tu clase es en 3 horas ⏰",
+          body: `${clase.name} a las ${formatHora(clase.fecha)}.`,
+          data: { type: "recordatorio-clase", claseId: clase.id },
         });
         await markRecordatorioEnviado(r.id);
         sent += 1;

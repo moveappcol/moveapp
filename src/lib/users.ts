@@ -9,6 +9,7 @@ export type UserCredits = {
   telefono: string | null;
   genero: string | null;
   perfilCompleto: boolean;
+  pushToken: string | null;
 };
 
 /**
@@ -30,6 +31,8 @@ export type UserCredits = {
  *   - "Perfil completo"               (casilla — true cuando ya llenó todo el formulario)
  *   - Género                          (selección: ver GENEROS en lib/documento.ts — usada para
  *      filtrar gimnasios "solo_mujeres"/"solo_hombres" en la grilla)
+ *   - PushToken                       (texto — token de notificaciones push de Expo, se guarda
+ *      cuando la persona inicia sesión en la app móvil; null/vacío en la web)
  */
 const USUARIOS_TABLE = "usuarios";
 
@@ -53,7 +56,27 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     telefono: (record.get("Teléfono") as string) || null,
     genero: (record.get("Género") as string) || null,
     perfilCompleto: Boolean(record.get("Perfil completo")),
+    pushToken: (record.get("PushToken") as string) || null,
   };
+}
+
+/** Guarda (o borra, si `token` es null) el token de push de la persona.
+ * Crea el registro en "usuarios" si todavía no existe (puede pasar antes
+ * de completar el perfil). */
+export async function savePushToken(email: string, token: string | null): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+
+  if (existing) {
+    await base(USUARIOS_TABLE).update([
+      { id: existing.recordId, fields: { PushToken: token ?? "" } },
+    ]);
+    return;
+  }
+
+  await base(USUARIOS_TABLE).create([
+    { fields: { Correo: email, Creditos: 0, PushToken: token ?? "" } },
+  ]);
 }
 
 export type CompleteProfileParams = {

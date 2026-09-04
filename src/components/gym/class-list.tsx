@@ -1,9 +1,32 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
 import { precioEfectivo, type Clase } from "@/lib/classes";
 import ClassBookingForm from "./class-booking-form";
 
 const BOOKING_CUTOFF_MINUTES = 20;
+
+type Franja = "manana" | "tarde" | "noche";
+const FRANJAS: { key: Franja; label: string }[] = [
+  { key: "manana", label: "Mañana" },
+  { key: "tarde", label: "Tarde" },
+  { key: "noche", label: "Noche" },
+];
+
+const HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Bogota",
+  hour: "numeric",
+  hourCycle: "h23",
+});
+
+function franjaDeFecha(fecha: string): Franja {
+  const hora = parseInt(HOUR_FORMATTER.format(new Date(fecha)), 10);
+  if (hora < 12) return "manana";
+  if (hora < 18) return "tarde";
+  return "noche";
+}
 
 const DAY_KEY_FORMATTER = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" });
 const WEEKDAY_FORMATTER = new Intl.DateTimeFormat("es-CO", {
@@ -90,6 +113,13 @@ export default function ClassList({
   gimnasioId: string;
   classes: Clase[];
 }) {
+  const [franja, setFranja] = useState<Franja | null>(null);
+
+  const filtradas = useMemo(() => {
+    if (!franja) return classes;
+    return classes.filter((clase) => !clase.fecha || franjaDeFecha(clase.fecha) === franja);
+  }, [classes, franja]);
+
   if (classes.length === 0) {
     return (
       <p className="font-body text-sm text-move-green/60">
@@ -98,11 +128,46 @@ export default function ClassList({
     );
   }
 
-  const grupos = groupByDia(classes);
+  const grupos = groupByDia(filtradas);
 
   return (
-    <div className="space-y-8">
-      {grupos.map((grupo) => (
+    <div className="space-y-6">
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setFranja(null)}
+          className={`rounded-full px-4 py-1.5 font-heading text-xs font-semibold transition ${
+            franja === null
+              ? "bg-move-green text-white"
+              : "bg-move-green/5 text-move-green/70 hover:bg-move-green/10"
+          }`}
+        >
+          Todo el día
+        </button>
+        {FRANJAS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setFranja((prev) => (prev === f.key ? null : f.key))}
+            className={`rounded-full px-4 py-1.5 font-heading text-xs font-semibold transition ${
+              franja === f.key
+                ? "bg-move-green text-white"
+                : "bg-move-green/5 text-move-green/70 hover:bg-move-green/10"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {grupos.length === 0 && (
+        <p className="font-body text-sm text-move-green/60">
+          No hay clases en esa franja horaria — prueba con otro filtro.
+        </p>
+      )}
+
+      <div className="space-y-8">
+        {grupos.map((grupo) => (
         <section key={grupo.key}>
           <div className="mb-3 flex items-baseline gap-2">
             <h3 className="font-heading text-lg font-bold text-move-green">{grupo.titulo}</h3>
@@ -169,6 +234,7 @@ export default function ClassList({
           </ul>
         </section>
       ))}
+      </div>
     </div>
   );
 }

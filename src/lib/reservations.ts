@@ -1,8 +1,10 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
-import { getClaseById } from "./classes";
+import { getClaseById, precioEfectivo } from "./classes";
 import { getGymById } from "./gyms";
 import { sendLowRatingAlertEmail } from "./email";
+import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
+import { sendPushNotification } from "./push";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 const LOW_RATING_THRESHOLD = 3;
@@ -286,7 +288,54 @@ export async function cancelReservation(params: {
     await addCredits(account.recordId, clase.credits);
   }
 
+  const gimnasioId = (record.get("Gimnasios") as string[] | undefined)?.[0];
+  if (gimnasioId) {
+    await tryPromoteFromWaitlist({
+      claseId: clase.id,
+      gimnasioId,
+      claseCredits: precioEfectivo(clase),
+      fechaISO: fecha,
+    });
+  }
+
   return { ok: true, refunded: onTime };
+}
+
+/** Al cancelarse una reserva se libera un cupo — si hay alguien en la lista
+ * de espera, se le reserva automáticamente (cobrando créditos como una
+ * reserva normal) y se le avisa por push. Si a esa persona le falla la
+ * reserva (sin créditos, perfil incompleto, etc.) se prueba con la
+ * siguiente en la fila, sin bloquearse en una sola persona. */
+async function tryPromoteFromWaitlist(params: {
+  claseId: string;
+  gimnasioId: string;
+  claseCredits: number;
+  fechaISO: string;
+}): Promise<void> {
+  const waiting = await getWaitingInOrder(params.claseId);
+
+  for (const entry of waiting) {
+    const result = await createReservation({
+      userEmail: entry.correo,
+      userName: entry.nombre,
+      claseId: params.claseId,
+      gimnasioId: params.gimnasioId,
+      claseCredits: params.claseCredits,
+      fechaISO: params.fechaISO,
+    });
+
+    if (result.ok) {
+      await markWaitlistPromoted(entry.id);
+      const persona = await getUserCreditsByEmail(entry.correo);
+      await sendPushNotification({
+        to: persona?.pushToken ?? null,
+        title: "¡Se liberó un cupo! 🎉",
+        body: "Te inscribimos automáticamente en la clase de tu lista de espera.",
+        data: { type: "lista-espera-promovido", claseId: params.claseId },
+      });
+      return;
+    }
+  }
 }
 
 export type RatingResult = { ok: true } | { ok: false; error: string };

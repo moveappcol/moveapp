@@ -18,10 +18,15 @@ export type Gym = {
   address: string;
   lat: number | null;
   lng: number | null;
-  /** Foto que se ve en la grilla (antes de entrar al gimnasio). */
+  /** Foto que se ve en la grilla (antes de entrar al gimnasio). Versión
+   * liviana (thumbnail "large" de Airtable) — nunca se ve a tamaño completo. */
   photoUrl: string | null;
-  /** Hasta 3 fotos que se ven dentro de la página del gimnasio. */
+  /** Hasta 3 fotos que se ven dentro de la página del gimnasio. Versión
+   * liviana, para la grilla. */
   photoDetailUrls: string[];
+  /** Las mismas 3 fotos en resolución completa — solo para cuando la app
+   * abre el visor a pantalla completa (zoom). */
+  photoDetailFullUrls: string[];
   genero: GymGenero;
   description: string | null;
   puntualidad: string | null;
@@ -74,6 +79,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -74.0628,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: "Clases de cycling con música en vivo y luces LED.",
     puntualidad: "Llega 10 minutos antes de tu clase.",
@@ -95,6 +101,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -74.0307,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: null,
     puntualidad: null,
@@ -116,6 +123,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -75.5679,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: null,
     puntualidad: null,
@@ -137,6 +145,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -74.0479,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: null,
     puntualidad: null,
@@ -158,6 +167,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -75.5916,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: null,
     puntualidad: null,
@@ -179,6 +189,7 @@ const MOCK_GYMS: Gym[] = [
     lng: -75.5636,
     photoUrl: null,
     photoDetailUrls: [],
+    photoDetailFullUrls: [],
     genero: "todos",
     description: null,
     puntualidad: null,
@@ -219,14 +230,22 @@ function normalizeGymGenero(raw: unknown): GymGenero {
   return "todos";
 }
 
-type Attachment = { url: string; thumbnails?: { full?: { url: string } } };
+type Attachment = {
+  url: string;
+  thumbnails?: { large?: { url: string }; full?: { url: string } };
+};
 
 /** Muchos gimnasios suben fotos directo desde iPhone en formato HEIC, que
  * casi ningún navegador sabe mostrar en un <img> (sale como imagen rota).
- * Airtable genera un thumbnail "full" ya convertido a JPEG/PNG para
- * cualquier adjunto de imagen — lo preferimos siempre que exista y solo
- * caemos al archivo original si no hay thumbnail (adjunto no-imagen). */
-function attachmentDisplayUrl(attachment: Attachment): string {
+ * Airtable genera thumbnails ya convertidos a JPEG/PNG para cualquier
+ * adjunto de imagen — "large" (~512px, liviano, para grillas y listas) y
+ * "full" (resolución casi original, solo para cuando se hace zoom). Si no
+ * hay thumbnail del tamaño pedido, cae al siguiente más grande disponible,
+ * y por último al archivo original (adjuntos que no son imagen). */
+function attachmentDisplayUrl(attachment: Attachment, size: "large" | "full" = "full"): string {
+  if (size === "large") {
+    return attachment.thumbnails?.large?.url ?? attachment.thumbnails?.full?.url ?? attachment.url;
+  }
   return attachment.thumbnails?.full?.url ?? attachment.url;
 }
 
@@ -244,8 +263,9 @@ function mapRecordToGym(record: any): Gym {
     address: ((record.get("Dirección") as string) ?? "").trim(),
     lat: (record.get("Latitud") as number) ?? null,
     lng: (record.get("Longitud") as number) ?? null,
-    photoUrl: photos?.[0] ? attachmentDisplayUrl(photos[0]) : null,
-    photoDetailUrls: (photosDetail ?? []).slice(0, 3).map(attachmentDisplayUrl),
+    photoUrl: photos?.[0] ? attachmentDisplayUrl(photos[0], "large") : null,
+    photoDetailUrls: (photosDetail ?? []).slice(0, 3).map((p) => attachmentDisplayUrl(p, "large")),
+    photoDetailFullUrls: (photosDetail ?? []).slice(0, 3).map((p) => attachmentDisplayUrl(p, "full")),
     genero: normalizeGymGenero(record.get("Género")),
     description: textField(record, "Descripción "),
     puntualidad: textField(record, "Puntualidad"),

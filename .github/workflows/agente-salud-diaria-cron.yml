@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,8 +33,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          allowed_tools: "Bash,Read,Edit,Write,Grep,Glob"
-          max_turns: 60
+          claude_args: "--max-turns 60 --allowedTools Bash,Read,Edit,Write,Grep,Glob"
           prompt: |
             Eres el agente diario de salud de UNIQUE (www.uniqueappcol.com), un
             marketplace de créditos para gimnasios en Colombia. Next.js (App

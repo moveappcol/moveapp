@@ -1,0 +1,119 @@
+name: Agente diario de salud (revisa y arregla)
+
+on:
+  schedule:
+    - cron: "13 13 * * *" # ~8am America/Bogota (UTC-5)
+  workflow_dispatch: {}
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm ci --legacy-peer-deps
+
+      - name: Configurar git para poder commitear/pushear
+        run: |
+          git config user.name "Agente de salud UNIQUE"
+          git config user.email "uniqueappcol@gmail.com"
+
+      - name: Agente Claude — revisar y arreglar
+        id: agente
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_tools: "Bash,Read,Edit,Write,Grep,Glob"
+          max_turns: 60
+          prompt: |
+            Eres el agente diario de salud de UNIQUE (www.uniqueappcol.com), un
+            marketplace de créditos para gimnasios en Colombia. Next.js (App
+            Router) desplegado en Railway con auto-deploy al hacer push a
+            origin/main. Backend: Airtable, Clerk (auth), Wompi (pagos),
+            Resend (correo). Ya estás en un checkout completo del repo, en la
+            rama main, con permisos para hacer commit y push.
+
+            Tu trabajo, en este orden:
+
+            1. Chequeos básicos de salud:
+               - `curl -sf -o /dev/null -w "%{http_code}" https://www.uniqueappcol.com/`
+                 debe dar 200.
+               - Lo mismo contra `https://www.uniqueappcol.com/api/mobile/config`.
+               - `npx tsc --noEmit -p tsconfig.json` debe compilar sin errores.
+               - `gh run list --limit 20` (el token de GitHub Actions ya está
+                 disponible) para ver si algún cron de los últimos 1-2 días
+                 falló (recordatorio-clase, despues-clase, liquidaciones,
+                 reservas-finales, billing, analisis-semanal, backup-diario,
+                 reporte-quincenal).
+               - `curl -sf https://www.uniqueappcol.com/api/cron/salud-diaria
+                 -H "Authorization: Bearer $CRON_SECRET"` — devuelve hallazgos
+                 financieros (pagos atascados, suscripciones con pago
+                 fallido). CRON_SECRET está en el entorno.
+
+            2. Si encuentras un problema de FUNCIONAMIENTO (no financiero) que
+               puedas diagnosticar con confianza — un endpoint que rompe, un
+               bug de tipos, un error de lógica que ves en el código — arréglalo:
+               - Haz el cambio más pequeño y seguro posible, sin refactors ni
+                 "mejoras" de paso.
+               - NUNCA toques nada relacionado con pagos, suscripciones o
+                 dinero: no edites src/lib/pagos.ts, src/lib/subscriptions.ts,
+                 src/lib/billing.ts, src/app/api/wompi/**, ni nada que escriba
+                 en las tablas "Pagos" o "Suscripciones" de Airtable. Si el
+                 problema está ahí, repórtalo pero NO lo edites.
+               - Verifica con `npx tsc --noEmit -p tsconfig.json` antes de
+                 commitear.
+               - Si tienes duda razonable de que el arreglo sea correcto y
+                 seguro, NO lo hagas — repórtalo en vez de arriesgar producción.
+               - Haz commit (mensaje claro y corto, en español) y push directo
+                 a main. Railway hace auto-deploy — así que solo pushea
+                 cambios que ya verificaste con tsc.
+
+            3. Escribe tu reporte final en /tmp/reporte-agente.json, en este
+               formato exacto (JSON válido, una sola línea o formateado, da
+               igual):
+               {"cuerpo": "<reporte en español, tono directo, tú-form
+               'puedes/tienes' nunca voseo 'podés/tenés'>", "requiereAtencion":
+               true|false}
+
+               El campo "cuerpo" debe decir: qué revisaste, qué encontraste,
+               qué arreglaste (si algo) y qué necesita que Paula (la dueña)
+               revise personalmente. "requiereAtencion" debe ser true SIEMPRE
+               que haya algún hallazgo financiero (pagos/suscripciones) o
+               cualquier problema que no hayas podido arreglar con confianza.
+               Si todo está bien, cuerpo puede ser breve tipo "Todo revisado,
+               sin problemas." y requiereAtencion: false.
+
+            Reglas de seguridad, sin excepción:
+            - Nunca hagas force-push, nunca reescribas historia, nunca toques
+              ramas que no sean main.
+            - Nunca modifiques archivos .env ni nada bajo .github/workflows/.
+            - Nunca escribas ni modifiques datos en Airtable directamente
+              (solo lectura vía los endpoints de arriba).
+            - Si algo te parece ambiguo o riesgoso, repórtalo en vez de actuar.
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Enviar reporte por correo
+        if: always()
+        run: |
+          if [ -f /tmp/reporte-agente.json ]; then
+            curl -sf -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -H "Content-Type: application/json" \
+              -d @/tmp/reporte-agente.json
+          else
+            curl -sf -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
+              -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+              -H "Content-Type: application/json" \
+              -d '{"cuerpo":"El agente diario no terminó de correr (no dejó reporte). Revisa los logs de GitHub Actions.","requiereAtencion":true}'
+          fi

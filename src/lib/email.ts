@@ -362,6 +362,30 @@ export async function sendGymApplicationEmail(params: {
   });
 }
 
+/** Reporte del agente diario que revisa la salud de la web, la app y las
+ * integraciones (Airtable, Clerk, Wompi, los cron jobs). `requiereAtencion`
+ * resalta el asunto cuando el hallazgo es algo que el agente no debía
+ * arreglar solo (ej. cualquier cosa de pagos o suscripciones). */
+export async function sendAgentReportEmail(params: {
+  ownerEmail: string;
+  cuerpo: string;
+  requiereAtencion: boolean;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif; white-space: pre-wrap; line-height: 1.5;">
+      ${escapeHtml(params.cuerpo)}
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.ownerEmail],
+    subject: params.requiereAtencion
+      ? "🚨 Agente diario — necesita tu atención"
+      : "Agente diario — reporte de salud",
+    html,
+  });
+}
+
 /** Mensaje del formulario de contacto del sitio. */
 export async function sendContactEmail(params: {
   ownerEmail: string;

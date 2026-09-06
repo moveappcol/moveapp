@@ -16,18 +16,20 @@ const NOMBRES_MES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-type DiaSemana = { key: string; esHoy: boolean; nombre: string; fechaLabel: string };
+type DiaTab = { id: string; dateKey: string; label: string; fechaLabel: string };
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** Los 7 días de la semana calendario actual (lunes a domingo) en Bogotá,
- * con la fecha de cada uno — se recalcula solo con la fecha de hoy, así que
- * "rueda" a la semana siguiente sin ningún cambio de código. Se hace toda
- * la aritmética en UTC "de calendario" (sin horas) para no depender de la
- * zona horaria de quien ejecuta el código. */
-function semanaActual(): DiaSemana[] {
+/** "Hoy" fijo de primero, seguido de los 7 días de la semana calendario
+ * actual (lunes a domingo) en Bogotá, cada uno con su fecha — incluso el
+ * que coincide con hoy se muestra con su nombre real, no se fusiona con la
+ * pestaña "Hoy". Se recalcula solo con la fecha de hoy, así que "rueda" a
+ * la semana siguiente sin ningún cambio de código. Toda la aritmética es
+ * en UTC "de calendario" (sin horas) para no depender de la zona horaria
+ * de quien ejecuta el código. */
+function semanaActual(): DiaTab[] {
   const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
   const hoy = { y: Number(yStr), m: Number(mStr), d: Number(dStr) };
   const hoyKey = `${yStr}-${mStr}-${dStr}`;
@@ -36,19 +38,20 @@ function semanaActual(): DiaSemana[] {
   const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
   const lunesUTC = hoyUTC - diaSemanaISO * 86_400_000;
 
-  return Array.from({ length: 7 }, (_, i) => {
+  const dias: DiaTab[] = [
+    { id: "hoy", dateKey: hoyKey, label: "Hoy", fechaLabel: `${hoy.d} de ${NOMBRES_MES[hoy.m - 1]}` },
+  ];
+
+  for (let i = 0; i < 7; i++) {
     const fecha = new Date(lunesUTC + i * 86_400_000);
     const y = fecha.getUTCFullYear();
     const m = fecha.getUTCMonth() + 1;
     const d = fecha.getUTCDate();
-    const key = `${y}-${pad(m)}-${pad(d)}`;
-    return {
-      key,
-      esHoy: key === hoyKey,
-      nombre: NOMBRES_DIA[i],
-      fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}`,
-    };
-  });
+    const dateKey = `${y}-${pad(m)}-${pad(d)}`;
+    dias.push({ id: dateKey, dateKey, label: NOMBRES_DIA[i], fechaLabel: `${d} de ${NOMBRES_MES[m - 1]}` });
+  }
+
+  return dias;
 }
 
 function formatHora(fecha: string): string {
@@ -139,9 +142,7 @@ export default function ClassList({
   classes: Clase[];
 }) {
   const semana = useMemo(() => semanaActual(), []);
-  const [diaSeleccionado, setDiaSeleccionado] = useState(
-    () => semana.find((d) => d.esHoy)?.key ?? semana[0].key
-  );
+  const [diaSeleccionadoId, setDiaSeleccionadoId] = useState("hoy");
 
   if (classes.length === 0) {
     return (
@@ -151,28 +152,28 @@ export default function ClassList({
     );
   }
 
+  const diaActivo = semana.find((d) => d.id === diaSeleccionadoId) ?? semana[0];
   const clasesDelDia = classes.filter(
-    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaSeleccionado
+    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.dateKey
   );
   const sinFecha = classes.filter((c) => !c.fecha);
-  const diaActivo = semana.find((d) => d.key === diaSeleccionado);
 
   return (
     <div className="space-y-6">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {semana.map((dia) => (
           <button
-            key={dia.key}
+            key={dia.id}
             type="button"
-            onClick={() => setDiaSeleccionado(dia.key)}
+            onClick={() => setDiaSeleccionadoId(dia.id)}
             className={`flex shrink-0 flex-col items-center rounded-2xl px-3 py-2 font-heading transition ${
-              diaSeleccionado === dia.key
+              diaSeleccionadoId === dia.id
                 ? "bg-move-green text-white"
                 : "bg-move-green/5 text-move-green/70 hover:bg-move-green/10"
             }`}
           >
             <span className="text-xs font-semibold uppercase tracking-wide">
-              {dia.esHoy ? "Hoy" : dia.nombre.slice(0, 3)}
+              {dia.id === "hoy" ? "Hoy" : dia.label.slice(0, 3)}
             </span>
             <span className="mt-0.5 text-[11px] opacity-80">{dia.fechaLabel}</span>
           </button>
@@ -180,14 +181,12 @@ export default function ClassList({
       </div>
 
       <div className="space-y-4">
-        {diaActivo && (
-          <p className="font-heading text-lg font-bold text-move-green">
-            {diaActivo.esHoy ? "Hoy" : diaActivo.nombre}
-            <span className="ml-2 font-body text-sm font-normal text-move-green/50">
-              {diaActivo.fechaLabel}
-            </span>
-          </p>
-        )}
+        <p className="font-heading text-lg font-bold text-move-green">
+          {diaActivo.label}
+          <span className="ml-2 font-body text-sm font-normal text-move-green/50">
+            {diaActivo.fechaLabel}
+          </span>
+        </p>
 
         {clasesDelDia.length === 0 ? (
           <p className="font-body text-sm text-move-green/60">

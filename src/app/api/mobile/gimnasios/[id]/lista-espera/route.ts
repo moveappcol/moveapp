@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWaitlistStatus, joinWaitlist, leaveWaitlist } from "@/lib/waitlist";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
+import { getUserCreditsByEmail } from "@/lib/users";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -33,6 +34,17 @@ export async function POST(req: NextRequest) {
   const claseId = body?.claseId as string | undefined;
   if (!claseId) {
     return NextResponse.json({ ok: false, error: "Falta la clase." }, { status: 400 });
+  }
+
+  // Mismo requisito que reservar directo: sin cédula registrada, nunca se
+  // podría concretar la reserva si le toca el turno — mejor no dejarla
+  // "esperando" un cupo que nunca va a poder tomar.
+  const account = await getUserCreditsByEmail(user.email);
+  if (!account?.cedula) {
+    return NextResponse.json(
+      { ok: false, error: "Completa tu perfil (cédula) antes de unirte a la lista de espera." },
+      { status: 400 }
+    );
   }
 
   const { posicion } = await joinWaitlist({ claseId, correo: user.email, nombre: user.userName });

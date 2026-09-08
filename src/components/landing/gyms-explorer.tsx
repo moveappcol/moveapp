@@ -9,7 +9,7 @@ type GeoStatus = "idle" | "loading" | "denied" | "unsupported" | "success";
 
 export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
   const [query, setQuery] = useState("");
-  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [geoStatus, setGeoStatus] = useState<GeoStatus>("idle");
 
@@ -19,11 +19,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
   );
 
   function toggleActivity(activity: string) {
-    setSelectedActivities((prev) =>
-      prev.includes(activity)
-        ? prev.filter((a) => a !== activity)
-        : [...prev, activity]
-    );
+    setSelectedActivity((prev) => (prev === activity ? null : activity));
   }
 
   function useMyLocation() {
@@ -50,9 +46,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
 
     let list = gyms
       .filter((gym) =>
-        selectedActivities.length === 0
-          ? true
-          : selectedActivities.some((a) => gym.activities.includes(a))
+        selectedActivity === null ? true : gym.activities.includes(selectedActivity)
       )
       .filter((gym) =>
         q === ""
@@ -74,7 +68,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
     }
 
     return list;
-  }, [gyms, query, selectedActivities, userLocation]);
+  }, [gyms, query, selectedActivity, userLocation]);
 
   return (
     <>
@@ -98,7 +92,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
 
         <div className="flex flex-wrap gap-2">
           {activityOptions.map((activity) => {
-            const active = selectedActivities.includes(activity);
+            const active = selectedActivity === activity;
             return (
               <button
                 key={activity}

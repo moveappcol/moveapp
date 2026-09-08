@@ -65,7 +65,6 @@ export default function SobreNosotrosPage() {
       </h1>
 
       <div className="mt-4 space-y-4 font-body text-sm leading-relaxed text-move-green/80">
-        <p>Somos una plataforma que sabe que cada persona es única.</p>
         <p>
           Creemos que no existe una sola manera de entrenar. Por eso, a través de UNIQUE puedes
           explorar diferentes disciplinas en distintos gimnasios y estudios de la ciudad, hasta

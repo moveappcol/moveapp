@@ -10,6 +10,10 @@ export type UserCredits = {
   genero: string | null;
   perfilCompleto: boolean;
   pushToken: string | null;
+  /** false solo si la persona denegó explícitamente el permiso de App
+   * Tracking Transparency en la app — true por defecto (cuenta nunca
+   * preguntada, o vino de la web, donde ATT no aplica). */
+  trackingConsent: boolean;
 };
 
 /**
@@ -33,6 +37,10 @@ export type UserCredits = {
  *      filtrar gimnasios "solo_mujeres"/"solo_hombres" en la grilla)
  *   - PushToken                       (texto — token de notificaciones push de Expo, se guarda
  *      cuando la persona inicia sesión en la app móvil; null/vacío en la web)
+ *   - TrackingConsent                 (texto — "denied" solo si denegó el permiso de App Tracking
+ *      Transparency en la app; cualquier otro valor o vacío = se asume permitido. Es texto y no
+ *      casilla a propósito: una casilla sin marcar es indistinguible de "nunca se le preguntó",
+ *      y aquí sí importa la diferencia)
  */
 const USUARIOS_TABLE = "usuarios";
 
@@ -57,7 +65,28 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     genero: (record.get("Género") as string) || null,
     perfilCompleto: Boolean(record.get("Perfil completo")),
     pushToken: (record.get("PushToken") as string) || null,
+    trackingConsent: (record.get("TrackingConsent") as string) !== "denied",
   };
+}
+
+/** Guarda que la persona denegó (o volvió a permitir) el rastreo de App
+ * Tracking Transparency en la app. Crea el registro en "usuarios" si
+ * todavía no existe. */
+export async function saveTrackingConsent(email: string, granted: boolean): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+  const value = granted ? "" : "denied";
+
+  if (existing) {
+    await base(USUARIOS_TABLE).update([
+      { id: existing.recordId, fields: { TrackingConsent: value } },
+    ]);
+    return;
+  }
+
+  await base(USUARIOS_TABLE).create([
+    { fields: { Correo: email, Creditos: 0, TrackingConsent: value } },
+  ]);
 }
 
 /** Guarda (o borra, si `token` es null) el token de push de la persona.

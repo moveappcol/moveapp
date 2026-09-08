@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyEventChecksum } from "@/lib/wompi";
 import { findCatalogItem, parseReference } from "@/lib/orders";
 import { findPagoByReferencia, updatePagoEstado, type PagoEstado } from "@/lib/pagos";
-import { addCreditsByEmail } from "@/lib/users";
+import { addCreditsByEmail, getUserCreditsByEmail } from "@/lib/users";
 import { sendMetaPurchaseEvent } from "@/lib/meta-conversions-api";
 import { getSubscriptionByEmail, upsertSubscription, markSubscriptionRenewed } from "@/lib/subscriptions";
 
@@ -66,7 +66,15 @@ export async function POST(req: NextRequest) {
         });
       }
     }
-    await sendMetaPurchaseEvent({ eventId: tx.id, value: item.price, email: pago.correo });
+    // App Tracking Transparency (iOS): si la persona denegó el permiso en la
+    // app, no le mandamos su correo a Meta — igual mandamos el valor de la
+    // compra sin identificar a quién pertenece.
+    const persona = await getUserCreditsByEmail(pago.correo);
+    await sendMetaPurchaseEvent({
+      eventId: tx.id,
+      value: item.price,
+      email: persona?.trackingConsent === false ? undefined : pago.correo,
+    });
   }
 
   return NextResponse.json({ ok: true });

@@ -1,8 +1,13 @@
 import Airtable from "airtable";
 
-// Scaffold para el paso de "Gimnasios" (sección 2). Todavía no se usa en
-// ninguna página — se activa cuando exista AIRTABLE_API_KEY/AIRTABLE_BASE_ID
-// y la base tenga una tabla de gimnasios definida.
+// El SDK de Airtable trae por defecto un requestTimeout de 300 segundos —
+// si Airtable queda lenta o caída, cualquier llamada (de un cron o de un
+// usuario real reservando) se queda colgada hasta 5 minutos antes de
+// fallar. Lo bajamos a 30s: de sobra para una sola página de resultados en
+// operación normal, y falla mucho más rápido cuando Airtable de verdad
+// está teniendo problemas.
+const AIRTABLE_REQUEST_TIMEOUT_MS = 30_000;
+
 function getAirtableBase() {
   const apiKey = process.env.AIRTABLE_API_KEY;
   const baseId = process.env.AIRTABLE_BASE_ID;
@@ -13,7 +18,7 @@ function getAirtableBase() {
     );
   }
 
-  return new Airtable({ apiKey }).base(baseId);
+  return new Airtable({ apiKey, requestTimeout: AIRTABLE_REQUEST_TIMEOUT_MS }).base(baseId);
 }
 
 /** Escapa un valor para meterlo dentro de un string literal de una fórmula

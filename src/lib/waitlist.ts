@@ -1,10 +1,10 @@
 import { getAirtableBase } from "./airtable";
 
-const LISTA_ESPERA_TABLE = "ListaEspera";
+const LISTA_ESPERA_TABLE = "Lista de espera";
 
 /**
- * Esquema en Airtable — tabla "ListaEspera" (nueva, hay que crearla a mano):
- *   - Clase   (link a Clases)
+ * Esquema en Airtable — tabla "Lista de espera":
+ *   - Clase   (texto — el id del record de Clases, NO un link)
  *   - Correo  (texto)
  *   - Nombre  (texto)
  *   - Estado  (selección: "Esperando" | "Promovido" | "Cancelado")
@@ -22,7 +22,7 @@ export type WaitlistEntry = {
 function mapRecord(r: any): WaitlistEntry {
   return {
     id: r.id,
-    claseId: (r.get("Clase") as string[] | undefined)?.[0] ?? "",
+    claseId: (r.get("Clase") as string) ?? "",
     correo: ((r.get("Correo") as string) ?? "").trim(),
     nombre: ((r.get("Nombre") as string) ?? "").trim(),
     estado: ((r.get("Estado") as string) ?? "Esperando") as WaitlistEntry["estado"],
@@ -67,7 +67,7 @@ export async function joinWaitlist(params: {
     [
       {
         fields: {
-          Clase: [params.claseId],
+          Clase: params.claseId,
           Correo: params.correo,
           Nombre: params.nombre,
           Estado: "Esperando",

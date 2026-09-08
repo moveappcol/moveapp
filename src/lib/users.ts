@@ -5,9 +5,16 @@ export type UserCredits = {
   recordId: string;
   credits: number;
   vencimiento: string | null;
+  nombre: string | null;
+  apellido: string | null;
+  tipoDocumento: string | null;
   cedula: string | null;
+  fechaNacimiento: string | null;
   telefono: string | null;
   genero: string | null;
+  terminosAceptados: boolean;
+  tratamientoDatosAceptado: boolean;
+  marketingAceptado: boolean;
   perfilCompleto: boolean;
   pushToken: string | null;
   /** false solo si la persona denegó explícitamente el permiso de App
@@ -60,9 +67,16 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     recordId: record.id,
     credits: (record.get("Creditos") as number) ?? 0,
     vencimiento: (record.get("Vencimiento") as string) ?? null,
+    nombre: (record.get("Nombre") as string) || null,
+    apellido: (record.get("Apellido") as string) || null,
+    tipoDocumento: (record.get("Tipo de documento") as string) || null,
     cedula: (record.get("Número de documento") as string) || null,
+    fechaNacimiento: (record.get("Fecha de nacimiento ") as string) || null,
     telefono: (record.get("Teléfono") as string) || null,
     genero: (record.get("Género") as string) || null,
+    terminosAceptados: Boolean(record.get("Terminos aceptados")),
+    tratamientoDatosAceptado: Boolean(record.get("Tratamiento de datos aceptado")),
+    marketingAceptado: Boolean(record.get(" Marketing aceptado")),
     perfilCompleto: Boolean(record.get("Perfil completo")),
     pushToken: (record.get("PushToken") as string) || null,
     trackingConsent: (record.get("TrackingConsent") as string) !== "denied",

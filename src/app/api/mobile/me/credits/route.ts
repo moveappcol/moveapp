@@ -15,5 +15,15 @@ export async function GET() {
     credits: account?.credits ?? 0,
     vencimiento: account?.vencimiento ?? null,
     perfilCompleto: account?.perfilCompleto ?? false,
+    nombre: account?.nombre ?? null,
+    apellido: account?.apellido ?? null,
+    telefono: account?.telefono ?? null,
+    tipoDocumento: account?.tipoDocumento ?? null,
+    cedula: account?.cedula ?? null,
+    fechaNacimiento: account?.fechaNacimiento ?? null,
+    genero: account?.genero ?? null,
+    terminosAceptados: account?.terminosAceptados ?? false,
+    tratamientoDatosAceptado: account?.tratamientoDatosAceptado ?? false,
+    marketingAceptado: account?.marketingAceptado ?? false,
   });
 }

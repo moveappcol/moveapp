@@ -11,7 +11,7 @@ const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =
   | { ok: true; reservationId: string; remainingCredits: number }
-  | { ok: false; error: string };
+  | { ok: false; error: string; code?: "perfil_incompleto" };
 
 export type CancelResult =
   | { ok: true; refunded: boolean }
@@ -183,6 +183,7 @@ export async function createReservation(params: {
     return {
       ok: false,
       error: "Completa tu perfil (cédula) antes de reservar.",
+      code: "perfil_incompleto",
     };
   }
 

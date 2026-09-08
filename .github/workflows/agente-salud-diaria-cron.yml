@@ -108,12 +108,12 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/reporte-agente.json ]; then
-            curl -sf -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
+            curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
               -H "Content-Type: application/json" \
               -d @/tmp/reporte-agente.json
           else
-            curl -sf -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
+            curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X POST "https://www.uniqueappcol.com/api/cron/reporte-agente-diario" \
               -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
               -H "Content-Type: application/json" \
               -d '{"cuerpo":"El agente diario no terminó de correr (no dejó reporte). Revisa los logs de GitHub Actions.","requiereAtencion":true}'

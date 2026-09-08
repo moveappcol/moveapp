@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger backup-diario cron
         run: |
-          curl -sf -X GET "https://www.uniqueappcol.com/api/cron/backup-diario" \
+          curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X GET "https://www.uniqueappcol.com/api/cron/backup-diario" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

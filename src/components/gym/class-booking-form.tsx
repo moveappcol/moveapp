@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { bookClass } from "@/app/gimnasios/[id]/actions";
 import type { BookingResult } from "@/lib/reservations";
 
@@ -36,6 +37,14 @@ export default function ClassBookingForm({
       </button>
       {state && !state.ok && (
         <p className="w-full font-body text-sm text-move-coral">{state.error}</p>
+      )}
+      {state && !state.ok && state.code === "perfil_incompleto" && (
+        <Link
+          href="/completar-perfil"
+          className="w-full font-heading text-sm font-semibold text-move-coral hover:underline"
+        >
+          Completar perfil
+        </Link>
       )}
     </form>
   );

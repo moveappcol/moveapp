@@ -4,7 +4,7 @@ import { useState } from "react";
 import ContactForm from "./contact-form";
 import GymApplicationForm from "./gym-application-form";
 
-const CONTACT_EMAIL = "uniqueappcol@gmail.com";
+const CONTACT_EMAIL = "gerencia@uniqueappcol.com";
 
 type Tab = "cliente" | "gimnasio";
 

@@ -273,8 +273,8 @@ export default function TerminosPage() {
           Tratamiento de Datos Personales, constituyen el acuerdo íntegro entre las partes. Las
           peticiones, quejas o reclamos relacionados con la Plataforma podrán presentarse a través
           de{" "}
-          <a href="mailto:uniqueappcol@gmail.com" className="text-move-coral underline">
-            uniqueappcol@gmail.com
+          <a href="mailto:gerencia@uniqueappcol.com" className="text-move-coral underline">
+            gerencia@uniqueappcol.com
           </a>
           .
         </p>

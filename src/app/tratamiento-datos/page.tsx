@@ -29,8 +29,8 @@ export default function TratamientoDatosPage() {
         <p>Domicilio: Bogotá D.C., Colombia. Cll 128 A57c - 04.</p>
         <p>
           Correo electrónico de contacto para temas de datos personales:{" "}
-          <a href="mailto:uniqueappcol@gmail.com" className="text-move-coral underline">
-            uniqueappcol@gmail.com
+          <a href="mailto:gerencia@uniqueappcol.com" className="text-move-coral underline">
+            gerencia@uniqueappcol.com
           </a>
           . Teléfono: 3165351258.
         </p>

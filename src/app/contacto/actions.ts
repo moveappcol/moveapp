@@ -2,7 +2,7 @@
 
 import { sendContactEmail, sendGymApplicationEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 export type ContactResult = { ok: true } | { ok: false; error: string };
 

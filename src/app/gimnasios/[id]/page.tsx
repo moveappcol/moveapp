@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { getGymById, GYMS_COMING_SOON } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
-import ClassList from "@/components/gym/class-list";
+import { getWaitlistStatus } from "@/lib/waitlist";
+import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
 
 function InfoSection({ title, text }: { title: string; text: string | null }) {
   if (!text) return null;
@@ -28,6 +30,22 @@ export default async function GymPage({
   if (!gym) notFound();
 
   const classes = await getClassesForGym(id);
+
+  const waitlistStatus: WaitlistStatusMap = {};
+  const { userId } = await auth();
+  if (userId) {
+    const user = await currentUser();
+    const email = user?.primaryEmailAddress?.emailAddress;
+    if (email) {
+      const llenas = classes.filter((c) => c.cuposDisponibles <= 0);
+      const statuses = await Promise.all(
+        llenas.map((c) => getWaitlistStatus(c.id, email))
+      );
+      llenas.forEach((c, i) => {
+        waitlistStatus[c.id] = statuses[i];
+      });
+    }
+  }
 
   const generoLabel =
     gym.genero === "solo_mujeres"
@@ -100,7 +118,7 @@ export default async function GymPage({
         Clases disponibles
       </h2>
       <div className="mt-4">
-        <ClassList gimnasioId={id} classes={classes} />
+        <ClassList gimnasioId={id} classes={classes} waitlistStatus={waitlistStatus} />
       </div>
     </section>
   );

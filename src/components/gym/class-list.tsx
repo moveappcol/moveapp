@@ -5,6 +5,9 @@ import Link from "next/link";
 import { Show } from "@clerk/nextjs";
 import { precioEfectivo, type Clase } from "@/lib/classes";
 import ClassBookingForm from "./class-booking-form";
+import WaitlistForm from "./waitlist-form";
+
+export type WaitlistStatusMap = Record<string, { enEspera: boolean; posicion: number | null }>;
 
 const BOOKING_CUTOFF_MINUTES = 20;
 
@@ -75,9 +78,11 @@ function CuposAviso({ cuposDisponibles }: { cuposDisponibles: number }) {
 function ClaseCard({
   clase,
   gimnasioId,
+  waitlistStatus,
 }: {
   clase: Clase;
   gimnasioId: string;
+  waitlistStatus?: { enEspera: boolean; posicion: number | null };
 }) {
   return (
     <li className="rounded-2xl border border-move-green/10 bg-white p-5">
@@ -101,7 +106,25 @@ function ClaseCard({
         {!clase.fecha ? (
           <p className="font-body text-sm text-move-green/50">Todavía no tiene fecha confirmada.</p>
         ) : clase.cuposDisponibles <= 0 ? (
-          <p className="font-body text-sm text-move-green/50">Esta clase ya está llena.</p>
+          <>
+            <p className="mb-2 font-body text-sm text-move-green/50">Esta clase ya está llena.</p>
+            <Show when="signed-in">
+              <WaitlistForm
+                gimnasioId={gimnasioId}
+                claseId={clase.id}
+                initialEnEspera={waitlistStatus?.enEspera ?? false}
+                initialPosicion={waitlistStatus?.posicion ?? null}
+              />
+            </Show>
+            <Show when="signed-out">
+              <Link
+                href="/iniciar-sesion"
+                className="font-heading text-sm font-semibold text-move-coral hover:underline"
+              >
+                Inicia sesión para unirte a la lista de espera
+              </Link>
+            </Show>
+          </>
         ) : isBookingClosed(clase.fecha) ? (
           <p className="font-body text-sm text-move-green/50">
             Las reservas para esta clase ya cerraron.
@@ -129,9 +152,11 @@ function ClaseCard({
 export default function ClassList({
   gimnasioId,
   classes,
+  waitlistStatus,
 }: {
   gimnasioId: string;
   classes: Clase[];
+  waitlistStatus?: WaitlistStatusMap;
 }) {
   const semana = useMemo(() => semanaActual(), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
@@ -187,7 +212,12 @@ export default function ClassList({
         ) : (
           <ul className="space-y-4">
             {clasesDelDia.map((clase) => (
-              <ClaseCard key={clase.id} clase={clase} gimnasioId={gimnasioId} />
+              <ClaseCard
+                key={clase.id}
+                clase={clase}
+                gimnasioId={gimnasioId}
+                waitlistStatus={waitlistStatus?.[clase.id]}
+              />
             ))}
           </ul>
         )}
@@ -198,7 +228,12 @@ export default function ClassList({
           <h3 className="font-heading text-lg font-bold text-move-green">Fecha por confirmar</h3>
           <ul className="space-y-4">
             {sinFecha.map((clase) => (
-              <ClaseCard key={clase.id} clase={clase} gimnasioId={gimnasioId} />
+              <ClaseCard
+                key={clase.id}
+                clase={clase}
+                gimnasioId={gimnasioId}
+                waitlistStatus={waitlistStatus?.[clase.id]}
+              />
             ))}
           </ul>
         </div>

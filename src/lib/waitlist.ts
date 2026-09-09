@@ -9,6 +9,10 @@ const LISTA_ESPERA_TABLE = "Lista de espera";
  *   - Nombre  (texto)
  *   - Estado  (selección: "Esperando" | "Promovido" | "Cancelado")
  */
+export type JoinWaitlistResult =
+  | { ok: true; posicion: number }
+  | { ok: false; error: string; code?: "perfil_incompleto" };
+
 export type WaitlistEntry = {
   id: string;
   claseId: string;

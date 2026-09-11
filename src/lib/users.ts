@@ -122,6 +122,29 @@ export async function savePushToken(email: string, token: string | null): Promis
   ]);
 }
 
+/** Borra la cuenta de la persona: elimina su registro de "usuarios" en
+ * Airtable (créditos, perfil, todo) y su cuenta de Clerk (correo y
+ * contraseña dejan de funcionar para iniciar sesión). El historial de
+ * pagos vive en otra tabla y no se toca aquí — se conserva por obligación
+ * contable, como está descrito en /eliminar-cuenta. */
+export async function deleteUserAccount(clerkUserId: string, email: string): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+  if (existing) {
+    await base(USUARIOS_TABLE).destroy([existing.recordId]);
+  }
+
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Falta CLERK_SECRET_KEY.");
+  const res = await fetch(`https://api.clerk.com/v1/users/${clerkUserId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${secretKey}` },
+  });
+  if (!res.ok) {
+    throw new Error(`No se pudo borrar la cuenta de Clerk (status ${res.status}).`);
+  }
+}
+
 export type CompleteProfileParams = {
   email: string;
   nombre: string;

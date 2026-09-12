@@ -128,12 +128,9 @@ export async function savePushToken(email: string, token: string | null): Promis
  * pagos vive en otra tabla y no se toca aquí — se conserva por obligación
  * contable, como está descrito en /eliminar-cuenta. */
 export async function deleteUserAccount(clerkUserId: string, email: string): Promise<void> {
-  const base = getAirtableBase();
-  const existing = await getUserCreditsByEmail(email);
-  if (existing) {
-    await base(USUARIOS_TABLE).destroy([existing.recordId]);
-  }
-
+  // Primero Clerk: es lo que de verdad le "borra la cuenta" a la persona
+  // (deja de poder iniciar sesión). Si esto falla, no se tocó nada más —
+  // se puede reintentar sin dejar un estado a medias.
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) throw new Error("Falta CLERK_SECRET_KEY.");
   const res = await fetch(`https://api.clerk.com/v1/users/${clerkUserId}`, {
@@ -142,6 +139,15 @@ export async function deleteUserAccount(clerkUserId: string, email: string): Pro
   });
   if (!res.ok) {
     throw new Error(`No se pudo borrar la cuenta de Clerk (status ${res.status}).`);
+  }
+
+  // El acceso ya quedó revocado, que es lo esencial. Si esto falla, queda
+  // un registro huérfano en Airtable (créditos, perfil) sin dueño que
+  // pueda iniciar sesión — no afecta a la persona, se limpia aparte.
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+  if (existing) {
+    await base(USUARIOS_TABLE).destroy([existing.recordId]).catch(() => {});
   }
 }
 

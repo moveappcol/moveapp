@@ -11,9 +11,9 @@ const PAGO_PENDIENTE_HORAS = 3;
  * solo, solo avisar. */
 export async function findStuckPendingPagos(): Promise<HallazgoSalud[]> {
   const base = getAirtableBase();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const records = (await base("Pagos")
     .select({ filterByFormula: `{Estado} = "Pendiente"` })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .all()) as any[];
 
   const limite = Date.now() - PAGO_PENDIENTE_HORAS * 60 * 60 * 1000;
@@ -32,9 +32,9 @@ export async function findStuckPendingPagos(): Promise<HallazgoSalud[]> {
  * el cobro recurrente. Dato financiero: solo avisar, nunca arreglar solo. */
 export async function findFailedSubscriptions(): Promise<HallazgoSalud[]> {
   const base = getAirtableBase();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const records = (await base("Suscripciones")
     .select({ filterByFormula: `{Estado} = "Pago fallido"` })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .all()) as any[];
 
   return records.map((r) => ({

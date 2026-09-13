@@ -25,20 +25,22 @@ function pad(n: number): string {
   return String(n).padStart(2, "0");
 }
 
-/** "Hoy" primero, seguido de los días que faltan hasta el domingo de esta
- * semana (no toda la semana completa) — el lunes siguiente vuelve a
- * empezar en "Hoy" con los 7 días por delante. La fecha de hoy siempre es
- * la primera pestaña. Se recalcula solo con la fecha de hoy, así que rueda
- * sola sin ningún cambio de código. Toda la aritmética es en UTC "de
+const DIAS_VISIBLES = 7;
+
+/** Ventana rodante: "Hoy" primero, seguido de los siguientes 6 días —
+ * siempre 7 días hacia adelante sin importar qué día de la semana sea hoy
+ * (antes se cortaba en el domingo de esta semana, lo que escondía una
+ * clase cargada, por ejemplo, un miércoles para el martes siguiente hasta
+ * que llegara el lunes). Se recalcula solo con la fecha de hoy, así que
+ * rueda sola sin ningún cambio de código. Toda la aritmética es en UTC "de
  * calendario" (sin horas) para no depender de la zona horaria de quien
  * ejecuta el código. */
 function semanaActual(): DiaTab[] {
   const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
   const hoyUTC = Date.UTC(Number(yStr), Number(mStr) - 1, Number(dStr));
   const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
-  const diasHastaDomingo = 7 - diaSemanaISO; // incluye hoy
 
-  return Array.from({ length: diasHastaDomingo }, (_, i) => {
+  return Array.from({ length: DIAS_VISIBLES }, (_, i) => {
     const fecha = new Date(hoyUTC + i * 86_400_000);
     const y = fecha.getUTCFullYear();
     const m = fecha.getUTCMonth() + 1;

@@ -11,7 +11,7 @@ import {
   computeFechaDePago,
   toBogotaDateString,
 } from "@/lib/liquidaciones";
-import { sendReservasFinalesEmail } from "@/lib/email";
+import { sendReservasFinalesEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let skipped = 0;
   let emailFailed = 0;
+  const fallos: string[] = [];
 
   for (const clase of clases) {
     if (!clase.fecha || !clase.gimnasioId) continue;
@@ -119,9 +120,19 @@ export async function GET(req: NextRequest) {
       });
       await markReservasFinalesEnviadas(liquidacion.id);
       sent += 1;
-    } catch {
+    } catch (err) {
       emailFailed += 1;
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      fallos.push(`${gym.name} — ${clase.name} (${fecha}): ${motivo}`);
     }
+  }
+
+  if (fallos.length > 0) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo mandar la lista de 20 min antes",
+      detalle: `No se pudo avisar a estos gimnasios de su lista final de asistentes:\n\n${fallos.join("\n")}\n\nToca avisarles manual mientras se revisa qué pasó — la clase ya está por empezar.`,
+    });
   }
 
   return NextResponse.json({ processed: clases.length, sent, skipped, emailFailed });

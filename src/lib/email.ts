@@ -206,6 +206,36 @@ export async function sendBackupEmail(params: {
   });
 }
 
+/** Alerta operativa genérica al dueño de la plataforma — se usa en los
+ * crons críticos (24h antes, 20 min antes, reporte quincenal, recordatorio
+ * de clase) para avisar de inmediato si algo no se pudo mandar, en vez de
+ * que el fallo quede en silencio hasta que alguien lo note por accidente.
+ * Nunca lanza: si la alerta misma falla, no debe tumbar el cron que la
+ * disparó — ya bastante daño hace un fallo silencioso, dos no ayudan. */
+export async function sendOpsAlertEmail(params: {
+  ownerEmail: string;
+  asunto: string;
+  detalle: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">🚨 ALERTA — ${escapeHtml(params.asunto)}</p>
+      <pre style="white-space:pre-wrap;font-family:sans-serif;font-size:14px;">${escapeHtml(params.detalle)}</pre>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: [params.ownerEmail],
+      subject: `🚨 ALERTA UNIQUE — ${params.asunto}`,
+      html,
+    });
+  } catch {
+    // No hay a quién más avisarle si esto falla — se deja constancia en la
+    // respuesta JSON del cron (los llamadores igual devuelven el detalle).
+  }
+}
+
 /** Alerta interna cuando alguien califica una clase con 3 estrellas o
  * menos — se manda solo al dueño de la plataforma, nunca al gimnasio ni
  * al usuario. */

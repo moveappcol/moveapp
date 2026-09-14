@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getReservationsDetailForClase, markRecordatorioEnviado } from "@/lib/reservations";
-import { sendClassReminderEmail } from "@/lib/email";
+import { sendClassReminderEmail, sendOpsAlertEmail } from "@/lib/email";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { sendPushNotification } from "@/lib/push";
+
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
 // Ventana centrada en 3 horas antes de la clase — ancha porque el cron
 // corre cada pocos minutos y puede atrasarse. Cada reserva se marca como
@@ -42,6 +44,7 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   let skipped = 0;
   let emailFailed = 0;
+  const fallos: string[] = [];
 
   for (const clase of clases) {
     if (!clase.fecha || !clase.gimnasioId) continue;
@@ -77,10 +80,20 @@ export async function GET(req: NextRequest) {
         });
         await markRecordatorioEnviado(r.id);
         sent += 1;
-      } catch {
+      } catch (err) {
         emailFailed += 1;
+        const motivo = err instanceof Error ? err.message : "error desconocido";
+        fallos.push(`${r.userName} (${r.correo}) — ${clase.name}: ${motivo}`);
       }
     }
+  }
+
+  if (fallos.length > 0) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo mandar el recordatorio de clase",
+      detalle: `No se pudo avisar a estas personas que su clase es en 3 horas:\n\n${fallos.join("\n")}\n\nSu clase ya está por empezar — si quieres avisarles manual (WhatsApp/llamada), toca hacerlo ya.`,
+    });
   }
 
   return NextResponse.json({ processed: clases.length, sent, skipped, emailFailed });

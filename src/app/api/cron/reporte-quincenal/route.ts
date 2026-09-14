@@ -3,7 +3,7 @@ import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
 import { getReservationsDetailForClase } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
-import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail } from "@/lib/email";
+import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail, sendOpsAlertEmail } from "@/lib/email";
 import { reporteQuincenalYaEnviado, marcarReporteQuincenalEnviado } from "@/lib/reportes-quincenales";
 import {
   buildReservasTotalesPeriodoPdf,
@@ -70,10 +70,11 @@ type PeriodoResultado = {
   emailFailed: number;
 };
 
-/** Procesa y manda un periodo específico. Se marca como enviado en Airtable
- * al terminar, sin importar si algún correo individual falló (eso ya se
- * reporta en emailFailed) — lo que evita reintentar es haber completado el
- * proceso sin colgarse, no que cada correo puntual haya llegado. */
+/** Procesa y manda un periodo específico. El llamador decide si marcarlo
+ * como enviado según emailFailed — si algún gimnasio no recibió el suyo,
+ * se prefiere reintentar el periodo completo al día siguiente (aunque
+ * implique un duplicado para quien ya lo recibió bien) a arriesgarse a que
+ * alguien se quede sin el suyo para siempre. */
 async function procesarPeriodo(desde: string, hasta: string, periodo: string): Promise<PeriodoResultado> {
   const clases = await getAllClasesConFecha();
   const porGimnasio = new Map<string, GymAcumulado>();
@@ -141,6 +142,7 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
 
   let sentToGyms = 0;
   let emailFailed = 0;
+  const fallos: string[] = [];
 
   for (const gym of gyms) {
     try {
@@ -159,8 +161,10 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
         pdf,
       });
       sentToGyms += 1;
-    } catch {
+    } catch (err) {
       emailFailed += 1;
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      fallos.push(`${gym.gimnasio} — reporte del periodo: ${motivo}`);
     }
   }
 
@@ -176,9 +180,19 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
       const pdf = await buildFormPagosPdf({ periodo, gyms: gymsFormPagos });
       await sendFormPagosEmail({ ownerEmail: OWNER_EMAIL, periodo, pdf });
       formPagosSent = true;
-    } catch {
+    } catch (err) {
       emailFailed += 1;
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      fallos.push(`Form de pagos (copia interna) del periodo ${periodo}: ${motivo}`);
     }
+  }
+
+  if (fallos.length > 0) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: `Fallas en el reporte quincenal (${periodo})`,
+      detalle: `No se pudo mandar completo el reporte de "${periodo}":\n\n${fallos.join("\n")}\n\nSe reintenta mañana automáticamente, pero si es urgente puedes armarlo manual mientras tanto.`,
+    });
   }
 
   return { periodo, gyms: gyms.length, sentToGyms, formPagosSent, emailFailed };
@@ -229,9 +243,28 @@ export async function GET(req: NextRequest) {
     if (day < p.diaDeCorte) continue;
     if (await reporteQuincenalYaEnviado(p.key)) continue;
 
-    const resultado = await procesarPeriodo(p.desde, p.hasta, p.periodo);
-    await marcarReporteQuincenalEnviado(p.key);
-    resultados.push(resultado);
+    try {
+      const resultado = await procesarPeriodo(p.desde, p.hasta, p.periodo);
+      // Solo se marca "enviado" si no hubo ningún fallo — así, si algún
+      // gimnasio no recibió el suyo, mañana se reintenta el periodo
+      // completo en vez de darlo por hecho. Prioriza que sí llegue sobre
+      // evitar un duplicado ocasional a quien ya lo había recibido bien.
+      if (resultado.emailFailed === 0) {
+        await marcarReporteQuincenalEnviado(p.key);
+      }
+      resultados.push(resultado);
+    } catch (err) {
+      // Si esto revienta (no un correo puntual, sino algo antes de
+      // siquiera intentar mandar nada), procesarPeriodo() no llega a
+      // avisar por su cuenta — hay que avisar aquí para no quedar en
+      // silencio. Mañana se reintenta solo, porque nunca se marcó enviado.
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: `El reporte quincenal (${p.periodo}) no corrió`,
+        detalle: `El proceso del reporte "${p.periodo}" falló antes de poder mandar nada:\n\n${motivo}\n\nSe reintenta mañana automáticamente, pero si es urgente conviene revisarlo ya.`,
+      });
+    }
   }
 
   if (resultados.length === 0) {

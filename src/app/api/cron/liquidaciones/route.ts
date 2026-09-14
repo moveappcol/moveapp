@@ -9,7 +9,7 @@ import {
   computeFechaDePago,
   toBogotaDateString,
 } from "@/lib/liquidaciones";
-import { sendLiquidacionEmail } from "@/lib/email";
+import { sendLiquidacionEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
   let generated = 0;
   let skipped = 0;
   let emailFailed = 0;
+  const fallos: string[] = [];
 
   for (const clase of clases) {
     if (!clase.fecha || !clase.gimnasioId) continue;
@@ -104,9 +105,19 @@ export async function GET(req: NextRequest) {
         archivo: `${clase.name}-${fecha}`,
         pdf,
       });
-    } catch {
+    } catch (err) {
       emailFailed += 1;
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      fallos.push(`${gym.name} — ${clase.name} (${fecha}): ${motivo}`);
     }
+  }
+
+  if (fallos.length > 0) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo mandar la lista de 24h antes",
+      detalle: `No se pudo avisar a estos gimnasios de sus reservas 24h antes de la clase:\n\n${fallos.join("\n")}\n\nTodavía queda tiempo para avisarles manual mientras se revisa qué pasó.`,
+    });
   }
 
   return NextResponse.json({ processed: clases.length, generated, skipped, emailFailed });

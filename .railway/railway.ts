@@ -17,7 +17,7 @@ export default defineRailway(() => {
   // cada uno le pasa su propio CRON_PATH (ver cron/run.sh).
   const cronSource = github("moveappcol/moveapp", { rootDirectory: "cron" });
   const cronBuild = { builder: "DOCKERFILE" as const, dockerfilePath: "Dockerfile" };
-  const cronSchedule = { cronSchedule: "*/5 * * * *" };
+  const cronSchedule = { cronSchedule: "*/5 * * * *", restartPolicyType: "NEVER" as const };
 
   const cronRecordatorioClase = service("cron-recordatorio-clase", {
     source: cronSource,

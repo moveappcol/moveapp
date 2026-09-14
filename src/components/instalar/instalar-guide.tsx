@@ -219,7 +219,7 @@ const iphoneSteps: Step[] = [
     screen: <HomeScreen withNotch />,
   },
   {
-    title: "Abre UNIQUE desde el ícono, como cualquier app",
+    title: "Abre la app UNIQUE desde el ícono",
     screen: <HomeScreen withNotch opening />,
   },
 ];
@@ -251,7 +251,7 @@ const androidSteps: Step[] = [
     screen: <InstallingAndroid />,
   },
   {
-    title: "Abre UNIQUE desde el ícono en tu pantalla de inicio",
+    title: "Abre la app UNIQUE desde el ícono en tu pantalla de inicio",
     screen: <HomeScreen opening />,
   },
 ];
@@ -296,11 +296,11 @@ export default function InstalarGuide() {
       </div>
 
       <h1 className="mt-8 font-heading text-3xl font-bold text-move-green sm:text-4xl">
-        ¿Cómo instalar UNIQUE en tu {platform === "iphone" ? "iPhone" : "Android"}?
+        ¿Cómo instalar la app de UNIQUE en tu {platform === "iphone" ? "iPhone" : "Android"}?
       </h1>
       <p className="mt-2 max-w-xl font-body text-move-green/70">
-        Instálala en menos de un minuto y reserva tus clases como si fuera una app — directo desde
-        tu navegador, sin descargar nada de una tienda de aplicaciones.
+        Instálala en menos de un minuto y reserva tus clases directo desde tu celular — sin pasar
+        por el App Store ni Google Play.
       </p>
 
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

@@ -52,8 +52,20 @@ function toAttachment(filename: string, content: Buffer): EmailAttachment {
   return { filename, content: content.toString("base64") };
 }
 
+/** El campo "Correo" del gimnasio en Airtable puede traer más de una
+ * dirección separadas por coma o punto y coma (ej: "dueño@x.com,
+ * encargado@x.com") — Resend exige cada destinatario como un elemento
+ * separado de la lista, así que no basta con mandar el texto tal cual. */
+function parseGymEmails(gymEmail: string | null): string[] {
+  if (!gymEmail) return [];
+  return gymEmail
+    .split(/[,;]/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+}
+
 function recipients(gymEmail: string | null, ownerEmail: string): string[] {
-  return [ownerEmail, ...(gymEmail ? [gymEmail] : [])];
+  return [ownerEmail, ...parseGymEmails(gymEmail)];
 }
 
 function attendeesListHtml(nombres: string[]): string {

@@ -20,9 +20,17 @@ export default function ClassBookingForm({
 
   if (state?.ok) {
     return (
-      <p className="font-body text-sm font-medium text-move-green">
-        ¡Reserva confirmada! Créditos restantes: {state.remainingCredits}.
-      </p>
+      <div className="flex items-center gap-3 rounded-xl border border-move-green/20 bg-move-green/5 px-4 py-3">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-move-green">
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-white stroke-[3]">
+            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <p className="font-body text-sm font-medium text-move-green">
+          <span className="font-heading font-bold">Reserva confirmada.</span> Créditos restantes:{" "}
+          {state.remainingCredits}.
+        </p>
+      </div>
     );
   }
 

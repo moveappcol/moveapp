@@ -250,10 +250,12 @@ export async function getActiveReservationClaseIds(userEmail: string): Promise<S
   return ids;
 }
 
-export async function getReservationsForUser(userName: string): Promise<Reservation[]> {
+export async function getReservationsForUser(userEmail: string): Promise<Reservation[]> {
   const base = getAirtableBase();
   const records = await base("Reservas")
-    .select({ filterByFormula: `{Usuario} = "${escapeFormulaValue(userName)}"` })
+    .select({
+      filterByFormula: `LOWER({Correo}) = LOWER("${escapeFormulaValue(userEmail)}")`,
+    })
     .all();
 
   return records

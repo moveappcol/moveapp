@@ -12,7 +12,7 @@ export async function GET() {
     return mobileAuthErrorResponse();
   }
 
-  const reservations = await getReservationsForUser(user.userName);
+  const reservations = await getReservationsForUser(user.email);
 
   const enriched = await Promise.all(
     reservations.map(async (r) => {

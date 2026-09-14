@@ -27,12 +27,9 @@ export default async function MisReservasPage() {
   await requireCompleteProfileIfSignedIn();
 
   const user = await currentUser();
-  const userName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-    user?.primaryEmailAddress?.emailAddress ||
-    "";
+  const userEmail = user?.primaryEmailAddress?.emailAddress ?? "";
 
-  const reservations = await getReservationsForUser(userName);
+  const reservations = await getReservationsForUser(userEmail);
 
   const enriched = await Promise.all(
     reservations.map(async (r) => {

@@ -19,7 +19,7 @@ const OWNER_EMAIL = "uniqueappcol@gmail.com";
 // desde 30 min después de empezar la clase (por si acaso) hasta 20 min antes
 // (coincide con el cierre real de reservas, así que a los 20 min ya no puede
 // llegar gente nueva y la lista sí es final).
-const WINDOW_START_MINUTES = -30;
+const WINDOW_START_MINUTES = -120;
 const WINDOW_END_MINUTES = 20;
 
 function formatFechaLarga(iso: string): string {

@@ -4,6 +4,7 @@ import { esES } from "@clerk/localizations";
 import { poppins, inter } from "@/lib/fonts";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import WhatsappButton from "@/components/layout/whatsapp-button";
 import MetaPixel from "@/components/analytics/meta-pixel";
 import { GoogleTagManagerScript, GoogleTagManagerNoscript } from "@/components/analytics/google-tag-manager";
 import "./globals.css";
@@ -58,6 +59,7 @@ export default function RootLayout({
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />
+          <WhatsappButton />
         </body>
       </html>
     </ClerkProvider>

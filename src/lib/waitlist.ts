@@ -11,7 +11,7 @@ const LISTA_ESPERA_TABLE = "Lista de espera";
  */
 export type JoinWaitlistResult =
   | { ok: true; posicion: number }
-  | { ok: false; error: string; code?: "perfil_incompleto" };
+  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" };
 
 export type WaitlistEntry = {
   id: string;

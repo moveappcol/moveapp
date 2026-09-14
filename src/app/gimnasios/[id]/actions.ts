@@ -3,7 +3,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { getClaseById, precioEfectivo } from "@/lib/classes";
-import { createReservation, type BookingResult } from "@/lib/reservations";
+import { createReservation, getActiveReservationClaseIds, type BookingResult } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { joinWaitlist, leaveWaitlist, type JoinWaitlistResult } from "@/lib/waitlist";
 
@@ -79,6 +79,15 @@ export async function joinWaitlistAction(
       ok: false,
       error: "Completa tu perfil (cédula) antes de unirte a la lista de espera.",
       code: "perfil_incompleto",
+    };
+  }
+
+  const yaReservada = (await getActiveReservationClaseIds(email)).has(claseId);
+  if (yaReservada) {
+    return {
+      ok: false,
+      error: "Ya tienes una reserva activa para esta clase — no necesitas la lista de espera.",
+      code: "ya_reservada",
     };
   }
 

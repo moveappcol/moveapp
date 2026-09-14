@@ -11,7 +11,7 @@ const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =
   | { ok: true; reservationId: string; remainingCredits: number }
-  | { ok: false; error: string; code?: "perfil_incompleto" };
+  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" };
 
 export type CancelResult =
   | { ok: true; refunded: boolean }
@@ -199,6 +199,15 @@ export async function createReservation(params: {
     };
   }
 
+  const yaReservada = (await getActiveReservationClaseIds(userEmail)).has(claseId);
+  if (yaReservada) {
+    return {
+      ok: false,
+      error: "Ya tienes una reserva activa para esta clase.",
+      code: "ya_reservada",
+    };
+  }
+
   const base = getAirtableBase();
   const created = await base("Reservas").create([
     {
@@ -217,6 +226,28 @@ export async function createReservation(params: {
   const remainingCredits = await deductCredits(account.recordId, claseCredits);
 
   return { ok: true, reservationId: created[0].id, remainingCredits };
+}
+
+/** Ids de clase con una reserva "Reservado" activa de esta persona (por
+ * correo, no por nombre — dos personas pueden compartir nombre). Se filtra
+ * en JS porque ARRAYJOIN sobre un campo de link junta el nombre del link,
+ * no su id. Sirve tanto para no mostrar "Reservar"/lista de espera en una
+ * clase que ya se tiene reservada, como para bloquear que se reserve o se
+ * entre a la lista de espera dos veces para la misma clase. */
+export async function getActiveReservationClaseIds(userEmail: string): Promise<Set<string>> {
+  const base = getAirtableBase();
+  const records = await base("Reservas")
+    .select({
+      filterByFormula: `AND(LOWER({Correo}) = LOWER("${escapeFormulaValue(userEmail)}"), {Estado} = "Reservado")`,
+    })
+    .all();
+
+  const ids = new Set<string>();
+  for (const record of records) {
+    const claseId = (record.get("Clase") as string[] | undefined)?.[0];
+    if (claseId) ids.add(claseId);
+  }
+  return ids;
 }
 
 export async function getReservationsForUser(userName: string): Promise<Reservation[]> {

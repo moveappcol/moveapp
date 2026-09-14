@@ -3,6 +3,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { getGymById, GYMS_COMING_SOON } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
+import { getActiveReservationClaseIds } from "@/lib/reservations";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
 
 function InfoSection({ title, text }: { title: string; text: string | null }) {
@@ -32,12 +33,14 @@ export default async function GymPage({
   const classes = await getClassesForGym(id);
 
   const waitlistStatus: WaitlistStatusMap = {};
+  let reservedClaseIds: Set<string> = new Set();
   const { userId } = await auth();
   if (userId) {
     const user = await currentUser();
     const email = user?.primaryEmailAddress?.emailAddress;
     if (email) {
-      const llenas = classes.filter((c) => c.cuposDisponibles <= 0);
+      reservedClaseIds = await getActiveReservationClaseIds(email);
+      const llenas = classes.filter((c) => c.cuposDisponibles <= 0 && !reservedClaseIds.has(c.id));
       const statuses = await Promise.all(
         llenas.map((c) => getWaitlistStatus(c.id, email))
       );
@@ -118,7 +121,12 @@ export default async function GymPage({
         Clases disponibles
       </h2>
       <div className="mt-4">
-        <ClassList gimnasioId={id} classes={classes} waitlistStatus={waitlistStatus} />
+        <ClassList
+          gimnasioId={id}
+          classes={classes}
+          waitlistStatus={waitlistStatus}
+          reservedClaseIds={[...reservedClaseIds]}
+        />
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getWaitlistStatus, joinWaitlist, leaveWaitlist } from "@/lib/waitlist";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 import { getUserCreditsByEmail } from "@/lib/users";
+import { getActiveReservationClaseIds } from "@/lib/reservations";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -43,6 +44,14 @@ export async function POST(req: NextRequest) {
   if (!account?.cedula) {
     return NextResponse.json(
       { ok: false, error: "Completa tu perfil (cédula) antes de unirte a la lista de espera." },
+      { status: 400 }
+    );
+  }
+
+  const yaReservada = (await getActiveReservationClaseIds(user.email)).has(claseId);
+  if (yaReservada) {
+    return NextResponse.json(
+      { ok: false, error: "Ya tienes una reserva activa para esta clase — no necesitas la lista de espera." },
       { status: 400 }
     );
   }

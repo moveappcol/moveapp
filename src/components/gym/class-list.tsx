@@ -81,10 +81,12 @@ function ClaseCard({
   clase,
   gimnasioId,
   waitlistStatus,
+  yaReservada,
 }: {
   clase: Clase;
   gimnasioId: string;
   waitlistStatus?: { enEspera: boolean; posicion: number | null };
+  yaReservada: boolean;
 }) {
   return (
     <li className="rounded-2xl border border-move-green/10 bg-white p-5">
@@ -105,7 +107,11 @@ function ClaseCard({
       </div>
 
       <div className="mt-4">
-        {!clase.fecha ? (
+        {yaReservada ? (
+          <p className="font-body text-sm font-medium text-move-green">
+            Ya reservaste esta clase.
+          </p>
+        ) : !clase.fecha ? (
           <p className="font-body text-sm text-move-green/50">Todavía no tiene fecha confirmada.</p>
         ) : clase.cuposDisponibles <= 0 ? (
           <>
@@ -155,13 +161,16 @@ export default function ClassList({
   gimnasioId,
   classes,
   waitlistStatus,
+  reservedClaseIds,
 }: {
   gimnasioId: string;
   classes: Clase[];
   waitlistStatus?: WaitlistStatusMap;
+  reservedClaseIds?: string[];
 }) {
   const semana = useMemo(() => semanaActual(), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
+  const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);
 
   if (classes.length === 0) {
     return (
@@ -219,6 +228,7 @@ export default function ClassList({
                 clase={clase}
                 gimnasioId={gimnasioId}
                 waitlistStatus={waitlistStatus?.[clase.id]}
+                yaReservada={reservedSet.has(clase.id)}
               />
             ))}
           </ul>
@@ -235,6 +245,7 @@ export default function ClassList({
                 clase={clase}
                 gimnasioId={gimnasioId}
                 waitlistStatus={waitlistStatus?.[clase.id]}
+                yaReservada={reservedSet.has(clase.id)}
               />
             ))}
           </ul>

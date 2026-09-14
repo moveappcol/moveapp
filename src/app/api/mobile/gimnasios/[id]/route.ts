@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getGymById, GYMS_COMING_SOON } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
+import { requireMobileUser } from "@/lib/mobile-auth";
+import { getActiveReservationClaseIds } from "@/lib/reservations";
 
 export async function GET(
   _req: Request,
@@ -17,5 +19,16 @@ export async function GET(
   }
 
   const classes = await getClassesForGym(id);
-  return NextResponse.json({ gym, classes });
+
+  // Explorar gimnasios no requiere cuenta — solo se calculan las clases ya
+  // reservadas si hay sesión iniciada; sin cuenta, la lista queda vacía.
+  let reservedClaseIds: string[] = [];
+  try {
+    const user = await requireMobileUser();
+    reservedClaseIds = [...(await getActiveReservationClaseIds(user.email))];
+  } catch {
+    // sin sesión — se sigue mostrando el gimnasio igual, sin marcar nada
+  }
+
+  return NextResponse.json({ gym, classes, reservedClaseIds });
 }

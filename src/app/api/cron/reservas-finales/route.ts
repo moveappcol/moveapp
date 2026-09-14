@@ -19,11 +19,7 @@ const OWNER_EMAIL = "uniqueappcol@gmail.com";
 // desde 30 min después de empezar la clase (por si acaso) hasta 20 min antes
 // (coincide con el cierre real de reservas, así que a los 20 min ya no puede
 // llegar gente nueva y la lista sí es final).
-// TEMPORAL: ampliado de -30 a -420 para recoger de una vez "Tren superior"
-// (11:10 UTC de hoy), que se quedó sin mandar porque su ventana pasó justo
-// antes de que el cron de Railway quedara activo. Revertir a -30 apenas se
-// confirme que se mandó.
-const WINDOW_START_MINUTES = -420;
+const WINDOW_START_MINUTES = -30;
 const WINDOW_END_MINUTES = 20;
 
 function formatFechaLarga(iso: string): string {

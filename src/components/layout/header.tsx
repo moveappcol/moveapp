@@ -11,8 +11,14 @@ const NAV_LINKS = [
   { href: "/#contacto", label: "Contacto" },
 ];
 
+const SIGNED_IN_NAV_LINKS = [
+  { href: "/mis-reservas", label: "Mis reservas" },
+  { href: "/mi-suscripcion", label: "Mi suscripción" },
+];
+
 export default async function Header() {
   const { userId } = await auth();
+  const navLinks = userId ? [...NAV_LINKS, ...SIGNED_IN_NAV_LINKS] : NAV_LINKS;
 
   let displayName: string | null = null;
   let credits: number | null = null;
@@ -44,7 +50,7 @@ export default async function Header() {
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
-          {NAV_LINKS.map((link) =>
+          {navLinks.map((link) =>
             link.href.startsWith("/#") ? (
               <a
                 key={link.href}
@@ -94,7 +100,7 @@ export default async function Header() {
               </Link>
             </div>
           )}
-          <MobileNav links={NAV_LINKS} showAuthLinks={!userId} />
+          <MobileNav links={navLinks} showAuthLinks={!userId} />
         </div>
       </div>
     </header>

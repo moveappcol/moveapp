@@ -1,8 +1,10 @@
+# El disparo automático (cada 5 min) se movió al servicio cron-reservas-finales
+# en Railway — GitHub Actions no garantiza esa cadencia en repos de bajo
+# tráfico (se veían huecos de hasta 5 horas). Este workflow queda solo como
+# respaldo manual (workflow_dispatch).
 name: Reservas finales a gimnasios
 
 on:
-  schedule:
-    - cron: "*/5 * * * *" # cada 5 minutos
   workflow_dispatch: {}
 
 jobs:

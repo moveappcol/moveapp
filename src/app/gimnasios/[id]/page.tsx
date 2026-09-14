@@ -69,6 +69,25 @@ export default async function GymPage({
         {[gym.address, gym.city].filter(Boolean).join(", ")}
       </p>
 
+      {gym.lat !== null && gym.lng !== null && (
+        <div className="relative mt-4 h-48 overflow-hidden rounded-2xl border border-move-green/10">
+          <iframe
+            src={`https://www.google.com/maps?q=${gym.lat},${gym.lng}&z=15&output=embed`}
+            className="h-full w-full border-0"
+            loading="lazy"
+            title={`Ubicación de ${gym.name}`}
+          />
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${gym.lat},${gym.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-3 right-3 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
+          >
+            Ir
+          </a>
+        </div>
+      )}
+
       {generoLabel && (
         <span className="mt-3 inline-block rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-coral">
           {generoLabel}

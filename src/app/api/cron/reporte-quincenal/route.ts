@@ -4,6 +4,7 @@ import { getGymBillingInfo } from "@/lib/gyms";
 import { getReservationsDetailForClase } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
 import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail } from "@/lib/email";
+import { reporteQuincenalYaEnviado, marcarReporteQuincenalEnviado } from "@/lib/reportes-quincenales";
 import {
   buildReservasTotalesPeriodoPdf,
   buildFormPagosPdf,
@@ -61,41 +62,19 @@ type GymAcumulado = {
 const PORCENTAJE_DEFAULT_A = 0.4;
 const PORCENTAJE_DEFAULT_B = 0.3;
 
-/** Corre a diario (el workflow dispara todos los días), pero solo manda
- * correos el día 14 (reporta 1–14) y el último día del mes (reporta
- * 15–fin). Cualquier otro día no hace nada.
- *
- * Manda DOS tipos de documento distintos:
- *   - A cada gimnasio: "RESERVAS TOTALES DEL PERIODO" — solo cantidades,
- *     sin plata.
- *   - Solo a Unique: "form pagos" — con porcentaje, valor por reserva y
- *     total a pagar de cada gimnasio (nunca se manda a los gimnasios,
- *     porque cada uno maneja un porcentaje distinto). */
-export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+type PeriodoResultado = {
+  periodo: string;
+  gyms: number;
+  sentToGyms: number;
+  formPagosSent: boolean;
+  emailFailed: number;
+};
 
-  const { year, month, day, lastDay } = bogotaTodayParts();
-
-  let desde: string;
-  let hasta: string;
-  let periodo: string;
-
-  if (day === 14) {
-    desde = `${year}-${pad(month)}-01`;
-    hasta = `${year}-${pad(month)}-14`;
-    periodo = `1 al 14 de ${MESES[month - 1]} de ${year}`;
-  } else if (day === lastDay) {
-    desde = `${year}-${pad(month)}-15`;
-    hasta = `${year}-${pad(month)}-${pad(lastDay)}`;
-    periodo = `15 al ${lastDay} de ${MESES[month - 1]} de ${year}`;
-  } else {
-    return NextResponse.json({ skipped: true, reason: "no es día de reporte (14 o fin de mes)" });
-  }
-
+/** Procesa y manda un periodo específico. Se marca como enviado en Airtable
+ * al terminar, sin importar si algún correo individual falló (eso ya se
+ * reporta en emailFailed) — lo que evita reintentar es haber completado el
+ * proceso sin colgarse, no que cada correo puntual haya llegado. */
+async function procesarPeriodo(desde: string, hasta: string, periodo: string): Promise<PeriodoResultado> {
   const clases = await getAllClasesConFecha();
   const porGimnasio = new Map<string, GymAcumulado>();
 
@@ -202,5 +181,62 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ periodo, gyms: gyms.length, sentToGyms, formPagosSent, emailFailed });
+  return { periodo, gyms: gyms.length, sentToGyms, formPagosSent, emailFailed };
+}
+
+/** Corre a diario (el workflow dispara todos los días). Cada periodo (1–14
+ * y 15–fin de mes) se considera "pendiente" desde su día de corte (14, o
+ * el último día del mes) hasta que quede marcado como enviado en Airtable
+ * — así, si el día exacto falla (como pasó una vez: un correo colgado sin
+ * timeout trabó todo el envío), se reintenta solo al día siguiente en vez
+ * de perderse para siempre.
+ *
+ * Manda DOS tipos de documento distintos:
+ *   - A cada gimnasio: "RESERVAS TOTALES DEL PERIODO" — solo cantidades,
+ *     sin plata.
+ *   - Solo a Unique: "form pagos" — con porcentaje, valor por reserva y
+ *     total a pagar de cada gimnasio (nunca se manda a los gimnasios,
+ *     porque cada uno maneja un porcentaje distinto). */
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  const auth = req.headers.get("authorization");
+  if (!secret || auth !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
+
+  const { year, month, day, lastDay } = bogotaTodayParts();
+
+  const periodos = [
+    {
+      desde: `${year}-${pad(month)}-01`,
+      hasta: `${year}-${pad(month)}-14`,
+      periodo: `1 al 14 de ${MESES[month - 1]} de ${year}`,
+      key: `${year}-${pad(month)}-01_${year}-${pad(month)}-14`,
+      diaDeCorte: 14,
+    },
+    {
+      desde: `${year}-${pad(month)}-15`,
+      hasta: `${year}-${pad(month)}-${pad(lastDay)}`,
+      periodo: `15 al ${lastDay} de ${MESES[month - 1]} de ${year}`,
+      key: `${year}-${pad(month)}-15_${year}-${pad(month)}-${pad(lastDay)}`,
+      diaDeCorte: lastDay,
+    },
+  ];
+
+  const resultados: PeriodoResultado[] = [];
+
+  for (const p of periodos) {
+    if (day < p.diaDeCorte) continue;
+    if (await reporteQuincenalYaEnviado(p.key)) continue;
+
+    const resultado = await procesarPeriodo(p.desde, p.hasta, p.periodo);
+    await marcarReporteQuincenalEnviado(p.key);
+    resultados.push(resultado);
+  }
+
+  if (resultados.length === 0) {
+    return NextResponse.json({ skipped: true, reason: "nada pendiente de reportar hoy" });
+  }
+
+  return NextResponse.json({ periodos: resultados });
 }

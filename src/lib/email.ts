@@ -1,5 +1,13 @@
 type EmailAttachment = { filename: string; content: string };
 
+// Sin esto, un fetch que Resend deja colgado (así sea rara vez) se queda
+// esperando indefinidamente — y como varios crons mandan correos uno por
+// uno en un loop, uno solo trabado bloquea a todos los siguientes (incluida
+// la copia interna del dueño, que suele mandarse al final). Pasado este
+// tiempo, se aborta y se trata como un fallo normal de envío, sin frenar el
+// resto.
+const RESEND_TIMEOUT_MS = 20_000;
+
 async function sendEmail(params: {
   to: string[];
   subject: string;
@@ -23,6 +31,7 @@ async function sendEmail(params: {
       html: params.html,
       attachments: params.attachments,
     }),
+    signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   });
 
   if (!res.ok) {

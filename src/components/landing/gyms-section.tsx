@@ -1,7 +1,9 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getGyms, GYMS_COMING_SOON, filterGymsByGenero } from "@/lib/gyms";
 import { getUserCreditsByEmail } from "@/lib/users";
-import GymsExplorer from "./gyms-explorer";
+import { getAllClasesDeTodosLosGimnasios } from "@/lib/classes";
+import { getActiveReservationClaseIds } from "@/lib/reservations";
+import GymsExplorerToggle from "./gyms-explorer-toggle";
 import ViewTracker from "@/components/analytics/view-tracker";
 
 const GYMS_VIEW_EVENT_PARAMS = {
@@ -52,6 +54,7 @@ export default async function GymsSection() {
   const { gyms: allGyms, usingMockData } = await getGyms();
 
   let userGenero: string | null = null;
+  let reservedClaseIds: string[] | undefined;
   const { userId } = await auth();
   if (userId) {
     const user = await currentUser();
@@ -59,9 +62,14 @@ export default async function GymsSection() {
     if (email) {
       const account = await getUserCreditsByEmail(email);
       userGenero = account?.genero ?? null;
+      reservedClaseIds = [...(await getActiveReservationClaseIds(email))];
     }
   }
   const gyms = filterGymsByGenero(allGyms, userGenero);
+  const gymIds = new Set(gyms.map((g) => g.id));
+  const classes = (await getAllClasesDeTodosLosGimnasios()).filter(
+    (c) => c.gimnasioId && gymIds.has(c.gimnasioId)
+  );
 
   return (
     <section id="gimnasios" className="bg-background">
@@ -83,7 +91,7 @@ export default async function GymsSection() {
           )}
         </div>
 
-        <GymsExplorer gyms={gyms} />
+        <GymsExplorerToggle gyms={gyms} classes={classes} reservedClaseIds={reservedClaseIds} />
       </div>
     </section>
   );

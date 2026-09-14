@@ -128,6 +128,17 @@ export async function getClassesForGym(gimnasioId: string): Promise<Clase[]> {
     .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
 }
 
+/** Todas las clases de todos los gimnasios, con cupos — para la vista "Por
+ * día" que agrega clases de toda la red en una sola lista. Reutiliza el
+ * mismo resultado cacheado que getClassesForGym, así que no cuesta un
+ * escaneo extra de Airtable. */
+export async function getAllClasesDeTodosLosGimnasios(): Promise<Clase[]> {
+  const clases = await getAllClasesConCupos();
+  return clases
+    .filter((clase) => clase.gimnasioId !== null)
+    .sort((a, b) => (a.fecha ?? "").localeCompare(b.fecha ?? ""));
+}
+
 /** Todas las clases con fecha, de cualquier gimnasio — usado por el cron de
  * liquidaciones (no necesita cupos disponibles, así que no calcula reservas
  * activas por clase). */

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import InstallAppButton from "./install-app-button";
 
 export default function Hero() {
   return (
@@ -22,6 +23,7 @@ export default function Hero() {
               recargar y hacer scroll de forma confiable en todos los
               navegadores, sin depender del scroll-restoration de Next. */}
           <div className="mt-8 flex flex-wrap gap-4">
+            <InstallAppButton />
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/#planes"

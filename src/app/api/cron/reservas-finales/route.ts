@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     let liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
     const reservas = await getReservationsDetailForClase(clase.id);
     const precio = clase.precio ?? gym.pricePerReservation;
-    const counts = buildCountsFromReservas(reservas, clase.credits, precio, {
+    const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
       tipoA: gym.porcentajeTipoA,
       tipoB: gym.porcentajeTipoB,
     });
@@ -103,7 +103,7 @@ export async function GET(req: NextRequest) {
       clase: clase.name,
       hora: formatHora(clase.fecha),
       reservas: confirmadas.map((r) => ({
-        tipo: r.tipo,
+        tipo: clase.tipo,
         nombre: r.userName,
         cedula: r.cedula,
       })),

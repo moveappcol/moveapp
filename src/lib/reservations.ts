@@ -28,15 +28,12 @@ export type Reservation = {
   comentario: string | null;
 };
 
-export type TipoReserva = "A" | "B" | null;
-
 export type ReservaDetalle = {
   id: string;
   userName: string;
   estado: string;
   cedula: string;
   correo: string;
-  tipo: TipoReserva;
   recordatorioEnviado: boolean;
   correoDespuesClaseEnviado: boolean;
 };
@@ -50,19 +47,15 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
   const records = await base("Reservas").select().all();
   return records
     .filter((r) => (r.get("Clase") as string[] | undefined)?.[0] === claseId)
-    .map((r) => {
-      const tipo = ((r.get("Tipo") as string) ?? "").trim();
-      return {
-        id: r.id,
-        userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
-        estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
-        cedula: ((r.get("Cedula") as string) ?? "").trim(),
-        correo: ((r.get("Correo") as string) ?? "").trim(),
-        tipo: tipo === "A" || tipo === "B" ? tipo : null,
-        recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
-        correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
-      };
-    });
+    .map((r) => ({
+      id: r.id,
+      userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
+      estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
+      cedula: ((r.get("Cedula") as string) ?? "").trim(),
+      correo: ((r.get("Correo") as string) ?? "").trim(),
+      recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
+      correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
+    }));
 }
 
 /** Marca que ya se le mandó el recordatorio de 3h antes a esta reserva —
@@ -138,8 +131,6 @@ async function countMonthlyReservationsAtGym(
  *   - Estado     (selección: "Reservado", "Cancelado on time", "Asistió", "No asistió", ...)
  *   - Cedula     (texto — copiada del perfil del usuario al reservar)
  *   - Correo     (texto — copiado de la cuenta del usuario al reservar)
- *   - Tipo       (selección: "A" | "B" — la llena el staff a mano según
- *      cuándo el gimnasio dio esos cupos; vacío hasta que se clasifique)
  *   - "Recordatorio enviado" (casilla — evita reenviar el correo de 3h antes
  *      cuando el cron corre varias veces dentro de la ventana)
  *   - "Correo despues clase enviado" (casilla — evita reenviar el correo
@@ -147,6 +138,10 @@ async function countMonthlyReservationsAtGym(
  *   - Calificación (número 1–5 — opcional, la pone el usuario desde "Mis
  *      reservas" hasta 24h después de terminada la clase)
  *   - Comentario    (texto largo, opcional — junto con la calificación)
+ *
+ * Puede seguir existiendo un campo "Tipo" acá de cuando esta clasificación
+ * vivía por reserva — ya no se lee: el Tipo A/B es del cupo de la clase
+ * (ver TipoClase en classes.ts), no de cada persona que la reserva.
  */
 export async function createReservation(params: {
   userEmail: string;

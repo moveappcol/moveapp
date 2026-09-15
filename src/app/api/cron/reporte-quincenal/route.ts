@@ -106,21 +106,24 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
     const porcentajeA = gym.porcentajeTipoA ?? PORCENTAJE_DEFAULT_A;
     const porcentajeB = gym.porcentajeTipoB ?? PORCENTAJE_DEFAULT_B;
 
+    // El Tipo A/B es del cupo de la clase entera (ver TipoClase en
+    // classes.ts) -- todas las reservas confirmadas de esta clase caen en
+    // el mismo tipo, no varía persona por persona.
+    const porcentaje = clase.tipo === "A" ? porcentajeA : clase.tipo === "B" ? porcentajeB : null;
+    const valorClase = clase.precio ?? gym.pricePerReservation;
+    const totalPorReserva = porcentaje !== null && valorClase !== null ? valorClase * porcentaje : null;
+
     for (const r of confirmadas) {
       entry.reservasPeriodo.push({
-        tipo: r.tipo,
+        tipo: clase.tipo,
         nombre: r.userName,
         cedula: r.cedula,
         clase: clase.name,
         fecha: fechaCorta,
       });
 
-      const porcentaje = r.tipo === "A" ? porcentajeA : r.tipo === "B" ? porcentajeB : null;
-      const valorClase = clase.precio ?? gym.pricePerReservation;
-      const totalPorReserva = porcentaje !== null && valorClase !== null ? valorClase * porcentaje : null;
-
       entry.reservasPago.push({
-        tipo: r.tipo,
+        tipo: clase.tipo,
         nombre: r.userName,
         cedula: r.cedula,
         fecha: fechaCorta,
@@ -130,8 +133,8 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
         totalPorReserva,
       });
 
-      if (r.tipo === "A") entry.totalTipoA += 1;
-      if (r.tipo === "B") entry.totalTipoB += 1;
+      if (clase.tipo === "A") entry.totalTipoA += 1;
+      if (clase.tipo === "B") entry.totalTipoB += 1;
       if (totalPorReserva !== null) entry.totalAPagar += totalPorReserva;
     }
 

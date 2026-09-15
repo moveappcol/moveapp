@@ -3,6 +3,13 @@ import { cached } from "./server-cache";
 
 const CACHE_TTL_MS = 5_000;
 
+/** "A" (40%) o "B" (30%) — según cuándo el gimnasio le dio ese cupo a
+ * UNIQUE: a tiempo (A) o de último momento/el mismo día (B). Es del
+ * CUPO, no de la persona que reserva: si el gimnasio da un cupo tarde
+ * para un horario que normalmente es A, esa sesión se crea como una fila
+ * de Clase aparte marcada B, en vez de reutilizar la fila A existente. */
+export type TipoClase = "A" | "B" | null;
+
 export type Clase = {
   id: string;
   name: string;
@@ -13,6 +20,9 @@ export type Clase = {
   /** Precio en pesos de esta clase específica, para liquidaciones — nunca
    * se le muestra al usuario. null = usa el precio del gimnasio. */
   precio: number | null;
+  /** Ver TipoClase — null hasta que el staff lo clasifique en Airtable
+   * (la liquidación de esa clase queda en $0 hasta entonces). */
+  tipo: TipoClase;
   cuposTotales: number;
   cuposDisponibles: number;
   fecha: string | null;
@@ -36,6 +46,9 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *      créditos, menor que Creditos; vacío = sin descuento)
  *   - Precio         (número, opcional — precio en pesos de esta clase para
  *      liquidaciones; vacío = usa "Precio por reserva" del gimnasio)
+ *   - Tipo           (selección: "A" | "B", opcional — ver TipoClase arriba;
+ *      vacío = la liquidación de esta clase queda en $0 hasta que se
+ *      clasifique)
  *   - Cupos totales  (número)
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
@@ -86,12 +99,14 @@ function mapRecordToClase(
   const duracion = record.get("Duración") as number | undefined;
   const descuento = record.get("Descuento creditos") as number | undefined;
   const precio = record.get("Precio") as number | undefined;
+  const tipo = ((record.get("Tipo") as string) ?? "").trim();
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
     credits: (record.get("Creditos") as number) ?? 0,
     descuentoCreditos: descuento !== undefined && descuento !== null ? descuento : null,
     precio: precio !== undefined && precio !== null ? precio : null,
+    tipo: tipo === "A" || tipo === "B" ? tipo : null,
     cuposTotales,
     cuposDisponibles: Math.max(0, cuposTotales - reservados),
     fecha: (record.get("Horario") as string) ?? null,

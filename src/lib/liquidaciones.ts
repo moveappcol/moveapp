@@ -15,8 +15,10 @@ import { getAirtableBase } from "./airtable";
  *   - "Estado de pago "        (selección: "Pendiente" | "Pagado" — el
  *      nombre real del campo tiene un espacio al final)
  *   - Fecha de pago              (fecha, calculada con la regla de quincena)
- *   - "Reservas Tipo A"           (número — cupos que el gimnasio dio a tiempo)
- *   - "Reservas Tipo B "           (número — cupos dados el mismo día o tarde;
+ *   - "Reservas Tipo A"           (número — reservas confirmadas de esta clase,
+ *      si la clase es Tipo A; 0 si no. Ver TipoClase en classes.ts — el tipo
+ *      es del cupo de la clase entera, no de cada reserva)
+ *   - "Reservas Tipo B "           (número — igual que arriba, para Tipo B;
  *      el nombre real del campo trae un espacio al final)
  *   - "Total Tipo A"                (número — Reservas Tipo A × Precio × 40%)
  *   - "Total tipo B "                 (número — Reservas Tipo B × Precio × 30%;
@@ -161,22 +163,25 @@ export async function updateLiquidacionCounts(
   return totals;
 }
 
-type ReservaComoRecord = { estado: string; tipo: "A" | "B" | null; userName: string };
+type ReservaComoRecord = { estado: string; userName: string };
 
 /** Arma los conteos de una liquidación a partir de las reservas reales de
  * una clase. Solo cuentan como "confirmadas" (billables) las que no se
- * cancelaron a tiempo; el tipo A/B solo se cuenta entre esas — una reserva
- * sin Tipo asignado todavía no suma a ningún total hasta que el staff la
- * clasifique en Airtable. */
+ * cancelaron a tiempo. El Tipo A/B es del CUPO de la clase entera (ver
+ * TipoClase en classes.ts) — todas las confirmadas de esta clase caen en
+ * el mismo balde; si la clase todavía no tiene Tipo asignado, ninguna
+ * cuenta todavía y el total queda en $0 hasta que el staff la clasifique
+ * en Airtable. */
 export function buildCountsFromReservas(
   reservas: ReservaComoRecord[],
   claseCredits: number,
+  claseTipo: "A" | "B" | null,
   precioPorReserva: number | null,
   porcentajes?: { tipoA: number | null; tipoB: number | null }
 ): LiquidacionCounts {
   const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
-  const reservasTipoA = confirmadas.filter((r) => r.tipo === "A").length;
-  const reservasTipoB = confirmadas.filter((r) => r.tipo === "B").length;
+  const reservasTipoA = claseTipo === "A" ? confirmadas.length : 0;
+  const reservasTipoB = claseTipo === "B" ? confirmadas.length : 0;
   const detalle = reservas.map((r) => `${r.userName} - ${r.estado}`).join("\n") || "Sin reservas.";
   return {
     reservasConfirmadas: confirmadas.length,

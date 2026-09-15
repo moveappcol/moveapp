@@ -206,7 +206,9 @@ export default function SubscribeForm({
         {/* Solo cuenta como "Subscribe" si de verdad se cobró una tarjeta —
             reclamar créditos gratis (coupon.status "valid-gratis") no crea
             ninguna suscripción, ver el comentario en redeemFreeCoupon. */}
-        {coupon.status !== "valid-gratis" && <SubscribeTracker value={discountedPrice ?? planPrice} />}
+        {coupon.status !== "valid-gratis" && (
+          <SubscribeTracker value={discountedPrice ?? planPrice} planId={planId} />
+        )}
         <ApprovedModal
           title="Tu suscripción fue aprobada"
           message="Gracias por ser parte de UNIQUE."

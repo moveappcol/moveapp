@@ -7,9 +7,9 @@ import { trackMetaEvent } from "@/lib/meta-pixel-events";
  * aprueba una suscripción — no en la carga de la página de checkout (ahí
  * todavía no se sabe si la persona va a pagar), sino cuando el pago
  * realmente se confirma. */
-export default function SubscribeTracker({ value }: { value: number }) {
+export default function SubscribeTracker({ value, planId }: { value: number; planId: string }) {
   useEffect(() => {
-    trackMetaEvent("Subscribe", { value, currency: "COP" });
+    trackMetaEvent("Subscribe", { value, currency: "COP", subscription_id: planId });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

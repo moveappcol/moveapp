@@ -64,7 +64,6 @@ export default async function SuscribirsePage({
       <div className="mt-8">
         <SubscribeForm
           planId={plan.id}
-          planLabel={`${plan.name} (${plan.label})`}
           planPrice={plan.price}
           publicKey={wompiPublicKey()}
           permalinkAcceptance={tokens.permalinkAcceptance}

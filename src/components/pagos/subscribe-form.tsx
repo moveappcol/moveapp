@@ -1,9 +1,34 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
+
+function SubscriptionApprovedModal({ onClose }: { onClose: () => void }) {
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-move-green/45 px-6">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-xl">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-move-green">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-white stroke-[3]">
+            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <p className="mt-3 font-heading text-lg font-bold text-move-green">Tu suscripción fue aprobada</p>
+        <p className="mt-1 font-body text-sm text-move-green/70">Gracias por ser parte de UNIQUE.</p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 w-full rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Ver mi perfil
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -28,7 +53,6 @@ function formatFechaLarga(fechaISO: string): string {
 
 export default function SubscribeForm({
   planId,
-  planLabel,
   planPrice,
   publicKey,
   permalinkAcceptance,
@@ -36,7 +60,6 @@ export default function SubscribeForm({
   initialCouponCode,
 }: {
   planId: string;
-  planLabel: string;
   planPrice: number;
   publicKey: string;
   permalinkAcceptance: string;
@@ -135,7 +158,6 @@ export default function SubscribeForm({
         return;
       }
       setSuccess(result.credits);
-      setTimeout(() => router.push("/mi-suscripcion"), 1500);
     });
   }
 
@@ -188,7 +210,6 @@ export default function SubscribeForm({
           return;
         }
         setSuccess(result.credits);
-        setTimeout(() => router.push("/mi-suscripcion"), 1500);
       });
     } catch {
       setError("No pudimos conectar con Wompi. Intenta de nuevo.");
@@ -199,12 +220,7 @@ export default function SubscribeForm({
   }
 
   if (success !== null) {
-    return (
-      <p className="rounded-2xl border border-move-green/10 bg-white p-6 font-body text-sm font-medium text-move-green">
-        ¡Listo! Tu suscripción a {planLabel} quedó activa y ya tienes {success}{" "}
-        créditos disponibles.
-      </p>
-    );
+    return <SubscriptionApprovedModal onClose={() => router.push("/mi-suscripcion")} />;
   }
 
   if (pending) {

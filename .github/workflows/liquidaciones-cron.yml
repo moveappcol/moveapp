@@ -1,8 +1,11 @@
+# El disparo automático (cada 5 min) se movió al servicio
+# cron-liquidaciones en Railway — GitHub Actions no garantiza esa cadencia
+# en repos de bajo tráfico, y corriendo solo cada 4 horas el correo de 24h
+# antes podía salir con horas de diferencia. Este workflow queda solo como
+# respaldo manual (workflow_dispatch).
 name: Liquidaciones a gimnasios
 
 on:
-  schedule:
-    - cron: "0 */4 * * *" # cada 4 horas
   workflow_dispatch: {}
 
 jobs:

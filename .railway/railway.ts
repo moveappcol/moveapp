@@ -40,7 +40,23 @@ export default defineRailway(() => {
     env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/despues-clase" },
   });
 
+  // Este se había quedado fuera de la migración original — seguía en GitHub
+  // Actions corriendo solo cada 4 horas, así que el correo de 24h antes a
+  // veces salía con horas de diferencia (nunca "exactas" 24h antes).
+  const cronLiquidaciones = service("cron-liquidaciones", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: cronSchedule,
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/liquidaciones" },
+  });
+
   return project("resourceful-dream", {
-    resources: [moveWeb, cronRecordatorioClase, cronReservasFinales, cronDespuesClase],
+    resources: [
+      moveWeb,
+      cronRecordatorioClase,
+      cronReservasFinales,
+      cronDespuesClase,
+      cronLiquidaciones,
+    ],
   });
 });

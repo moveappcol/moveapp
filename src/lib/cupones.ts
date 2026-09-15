@@ -1,5 +1,19 @@
 import { getAirtableBase } from "./airtable";
 
+/** Mientras dure el lanzamiento, cualquier plan pagado ANTES de esta fecha
+ * empieza a correr ese día (no desde hoy) — nadie paga ahora y le vuelven a
+ * cobrar antes del lanzamiento, use o no un cupón. Borra/ajusta esto cuando
+ * termine la promo. */
+export const LANZAMIENTO_INICIO_DIFERIDO = "2026-09-28";
+
+/** Un `inicioDiferido` ya pasado (promo vencida, o ya pasamos la fecha de
+ * lanzamiento) se ignora — el plan simplemente empieza hoy, como siempre. */
+export function fechaInicioVigente(inicioDiferido: string | null): string | undefined {
+  if (!inicioDiferido) return undefined;
+  const hoy = new Date().toISOString().slice(0, 10);
+  return inicioDiferido >= hoy ? inicioDiferido : undefined;
+}
+
 export type TipoCupon = "Créditos gratis" | "Descuento";
 
 export type Cupon = {

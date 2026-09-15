@@ -11,7 +11,7 @@ import {
   getSubscriptionByEmail,
 } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
-import { validateCoupon, markCouponRedeemed } from "@/lib/cupones";
+import { validateCoupon, markCouponRedeemed, fechaInicioVigente, LANZAMIENTO_INICIO_DIFERIDO } from "@/lib/cupones";
 import { addCreditsByEmail } from "@/lib/users";
 
 export type SubscribeResult =
@@ -22,15 +22,6 @@ export type CouponPreview =
   | { ok: true; tipo: "Créditos gratis"; creditos: number }
   | { ok: true; tipo: "Descuento"; descuentoPorcentaje: number; fechaInicio?: string }
   | { ok: false; error: string };
-
-/** Un `inicioDiferido` ya pasado (promo vencida y el cupón se quedó con la
- * fecha vieja puesta) se ignora — el plan simplemente empieza hoy, como
- * siempre. */
-function fechaInicioVigente(inicioDiferido: string | null): string | undefined {
-  if (!inicioDiferido) return undefined;
-  const hoy = new Date().toISOString().slice(0, 10);
-  return inicioDiferido >= hoy ? inicioDiferido : undefined;
-}
 
 /** Valida un cupón para mostrarlo en la UI antes de cobrar — no lo marca
  * como usado todavía (eso pasa solo si la compra/canje tiene éxito). */
@@ -95,6 +86,11 @@ export async function subscribeToPlan(
     cuponRecordId = validated.cupon.recordId;
     cuponUsosActuales = validated.cupon.usosActuales;
   }
+
+  // Mientras dure el lanzamiento, el ciclo de cobro arranca el día del
+  // lanzamiento para cualquiera que pague antes, use o no un cupón — el
+  // cupón (si trae su propia fecha) manda sobre este default general.
+  fechaInicio = fechaInicio ?? fechaInicioVigente(LANZAMIENTO_INICIO_DIFERIDO);
 
   const tokens = await fetchFreshAcceptanceTokens();
 

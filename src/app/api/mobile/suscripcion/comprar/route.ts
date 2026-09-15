@@ -4,6 +4,7 @@ import { chargeSubscriptionPlan } from "@/lib/billing";
 import { upsertSubscription, getSubscriptionByEmail } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
+import { fechaInicioVigente, LANZAMIENTO_INICIO_DIFERIDO } from "@/lib/cupones";
 
 export async function POST(req: Request) {
   let user;
@@ -52,11 +53,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error }, { status: 400 });
   }
 
+  // Mientras dure el lanzamiento, el ciclo de cobro arranca el día del
+  // lanzamiento para cualquiera que pague antes (ver LANZAMIENTO_INICIO_DIFERIDO).
+  const fechaInicio = fechaInicioVigente(LANZAMIENTO_INICIO_DIFERIDO);
+
   const result = await chargeSubscriptionPlan({
     correo: user.email,
     planId,
     paymentSourceId: paymentSource.id,
     ownerRef: user.userId,
+    fechaInicio,
   });
 
   if (!result.ok) {
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
   // Si el webhook de Wompi ganó la carrera y ya activó la suscripción, no
   // la toques de nuevo acá — ver el comentario de `credited` en billing.ts.
   if (result.credited) {
-    await upsertSubscription({ correo: user.email, plan: planId, paymentSourceId: paymentSource.id });
+    await upsertSubscription({ correo: user.email, plan: planId, paymentSourceId: paymentSource.id, fechaInicio });
   }
 
   return NextResponse.json(result);

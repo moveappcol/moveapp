@@ -1,34 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
-
-function SubscriptionApprovedModal({ onClose }: { onClose: () => void }) {
-  return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-move-green/45 px-6">
-      <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-xl">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-move-green">
-          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-white stroke-[3]">
-            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </span>
-        <p className="mt-3 font-heading text-lg font-bold text-move-green">Tu suscripción fue aprobada</p>
-        <p className="mt-1 font-body text-sm text-move-green/70">Gracias por ser parte de UNIQUE.</p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-5 w-full rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          Ver mi perfil
-        </button>
-      </div>
-    </div>,
-    document.body
-  );
-}
+import CardFields from "./card-fields";
+import ApprovedModal from "./approved-modal";
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -220,7 +197,14 @@ export default function SubscribeForm({
   }
 
   if (success !== null) {
-    return <SubscriptionApprovedModal onClose={() => router.push("/mi-suscripcion")} />;
+    return (
+      <ApprovedModal
+        title="Tu suscripción fue aprobada"
+        message="Gracias por ser parte de UNIQUE."
+        buttonLabel="Ver mi perfil"
+        onClose={() => router.push("/mi-suscripcion")}
+      />
+    );
   }
 
   if (pending) {
@@ -301,90 +285,22 @@ export default function SubscribeForm({
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-move-green/10 bg-white p-6">
-          <label className="block">
-            <span className="font-heading text-sm font-medium text-move-green">Número de tarjeta</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              required
-              value={number}
-              onChange={(e) => setNumber(e.target.value)}
-              placeholder="4242 4242 4242 4242"
-              className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-            />
-          </label>
-
-          <label className="block">
-            <span className="font-heading text-sm font-medium text-move-green">Nombre en la tarjeta</span>
-            <input
-              type="text"
-              required
-              value={cardHolder}
-              onChange={(e) => setCardHolder(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-            />
-          </label>
-
-          <div className="grid grid-cols-3 gap-3">
-            <label className="block">
-              <span className="font-heading text-sm font-medium text-move-green">Mes</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                maxLength={2}
-                placeholder="MM"
-                value={expMonth}
-                onChange={(e) => setExpMonth(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-              />
-            </label>
-            <label className="block">
-              <span className="font-heading text-sm font-medium text-move-green">Año</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                maxLength={2}
-                placeholder="AA"
-                value={expYear}
-                onChange={(e) => setExpYear(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-              />
-            </label>
-            <label className="block">
-              <span className="font-heading text-sm font-medium text-move-green">CVC</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                required
-                maxLength={4}
-                value={cvc}
-                onChange={(e) => setCvc(e.target.value)}
-                className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-              />
-            </label>
-          </div>
-
-          <label className="flex items-start gap-2 font-body text-xs text-move-green/70">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>
-              Acepto los{" "}
-              <a href={permalinkAcceptance} target="_blank" rel="noopener noreferrer" className="underline">
-                términos y condiciones
-              </a>{" "}
-              y la{" "}
-              <a href={permalinkPersonalAuth} target="_blank" rel="noopener noreferrer" className="underline">
-                autorización de tratamiento de datos
-              </a>{" "}
-              de Wompi.
-            </span>
-          </label>
+          <CardFields
+            number={number}
+            setNumber={setNumber}
+            cardHolder={cardHolder}
+            setCardHolder={setCardHolder}
+            expMonth={expMonth}
+            setExpMonth={setExpMonth}
+            expYear={expYear}
+            setExpYear={setExpYear}
+            cvc={cvc}
+            setCvc={setCvc}
+            accepted={accepted}
+            setAccepted={setAccepted}
+            permalinkAcceptance={permalinkAcceptance}
+            permalinkPersonalAuth={permalinkPersonalAuth}
+          />
 
           {error && <p className="font-body text-sm text-move-coral">{error}</p>}
 

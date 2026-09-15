@@ -5,7 +5,6 @@ import {
   CREDIT_TOPUPS,
   formatCOP,
 } from "@/lib/credits-pricing";
-import { startCheckout } from "@/app/pagos/actions";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import CreditCalculator from "./credit-calculator";
 
@@ -119,14 +118,12 @@ export default async function PlansSection() {
                     Comprar
                   </Link>
                 ) : hasActiveSubscription ? (
-                  <form action={startCheckout.bind(null, "topup", topup.id)}>
-                    <button
-                      type="submit"
-                      className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                    >
-                      Comprar
-                    </button>
-                  </form>
+                  <Link
+                    href={`/comprar-creditos/${topup.id}`}
+                    className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    Comprar
+                  </Link>
                 ) : (
                   <span
                     title="Necesitas un plan activo para comprar adicionales"

@@ -341,6 +341,14 @@ export default function InstalarGuide() {
         por el App Store ni Google Play.
       </p>
 
+      {platform === "android" && (
+        <p className="mt-4 max-w-xl rounded-xl bg-move-lime/30 px-4 py-3 font-body text-sm text-move-green/80">
+          <strong className="font-heading">Importante:</strong> si tu celular es Samsung, abre este
+          enlace con Chrome (no con el navegador &ldquo;Internet&rdquo; que trae Samsung por
+          defecto) — si no, Android puede bloquear la instalación por error.
+        </p>
+      )}
+
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {steps.map((step, i) => (
           <div key={i} className="rounded-2xl border border-move-green/10 bg-white p-4">

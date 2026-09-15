@@ -25,6 +25,13 @@ export default function InstallAppButton() {
   useEffect(() => {
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
+      // Samsung Internet (y otros navegadores de fábrica en Android) generan
+      // su propio instalador con metadatos de una versión vieja de Android,
+      // y Play Protect lo bloquea como "app no segura" -- el de Chrome no
+      // tiene ese problema. Por eso acá no lo guardamos: dejamos que
+      // handleClick mande a esos navegadores directo a Chrome en vez de
+      // intentar el instalador roto.
+      if (/SamsungBrowser/i.test(navigator.userAgent)) return;
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
     const onInstalled = () => setInstalled(true);
@@ -45,6 +52,11 @@ export default function InstallAppButton() {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") setInstalled(true);
       setDeferredPrompt(null);
+      return;
+    }
+    if (/SamsungBrowser/i.test(navigator.userAgent)) {
+      const url = `${window.location.origin}/instalar`;
+      window.location.href = `intent://${url.replace(/^https?:\/\//, "")}#Intent;scheme=https;package=com.android.chrome;end;`;
       return;
     }
     router.push("/instalar");

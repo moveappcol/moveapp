@@ -6,6 +6,7 @@ import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } fr
 import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
+import SubscribeTracker from "@/components/analytics/subscribe-tracker";
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -196,14 +197,23 @@ export default function SubscribeForm({
     }
   }
 
+  const discountedPrice =
+    coupon.status === "valid-descuento" ? Math.round(planPrice * (1 - coupon.descuentoPorcentaje / 100)) : null;
+
   if (success !== null) {
     return (
-      <ApprovedModal
-        title="Tu suscripción fue aprobada"
-        message="Gracias por ser parte de UNIQUE."
-        buttonLabel="Ver mi perfil"
-        onClose={() => router.push("/mi-suscripcion")}
-      />
+      <>
+        {/* Solo cuenta como "Subscribe" si de verdad se cobró una tarjeta —
+            reclamar créditos gratis (coupon.status "valid-gratis") no crea
+            ninguna suscripción, ver el comentario en redeemFreeCoupon. */}
+        {coupon.status !== "valid-gratis" && <SubscribeTracker value={discountedPrice ?? planPrice} />}
+        <ApprovedModal
+          title="Tu suscripción fue aprobada"
+          message="Gracias por ser parte de UNIQUE."
+          buttonLabel="Ver mi perfil"
+          onClose={() => router.push("/mi-suscripcion")}
+        />
+      </>
     );
   }
 
@@ -215,9 +225,6 @@ export default function SubscribeForm({
       </p>
     );
   }
-
-  const discountedPrice =
-    coupon.status === "valid-descuento" ? Math.round(planPrice * (1 - coupon.descuentoPorcentaje / 100)) : null;
 
   return (
     <div className="space-y-4">

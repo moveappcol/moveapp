@@ -49,7 +49,17 @@ function MiniSiteHero() {
   );
 }
 
-function SafariChrome({ children, urlLabel }: { children: React.ReactNode; urlLabel: string }) {
+function SafariChrome({
+  children,
+  urlLabel,
+  toolbarIcon = "share",
+}: {
+  children: React.ReactNode;
+  urlLabel: string;
+  /** En Safari primero hay que tocar "•••" (más opciones) y ahí adentro
+   * aparece "Compartir" — no es un botón directo en la barra. */
+  toolbarIcon?: "more" | "share";
+}) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-1 bg-move-green/5 px-2 py-1">
@@ -59,11 +69,30 @@ function SafariChrome({ children, urlLabel }: { children: React.ReactNode; urlLa
       </div>
       <div className="flex flex-1 flex-col">{children}</div>
       <div className="flex items-center justify-around border-t border-move-green/10 bg-move-green/5 py-1.5">
-        <ShareIcon highlighted />
         <div className="h-2 w-2 rounded-sm border border-move-green/30" />
         <div className="h-2 w-3 rounded-sm border border-move-green/30" />
+        {toolbarIcon === "more" ? <MoreIcon highlighted /> : <MoreIcon />}
         <div className="h-2 w-2 rounded-full border border-move-green/30" />
       </div>
+      {toolbarIcon === "share" && (
+        <div className="flex justify-center border-t border-move-green/10 bg-white py-1">
+          <ShareIcon highlighted />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MoreIcon({ highlighted = false }: { highlighted?: boolean }) {
+  return (
+    <div
+      className={`flex h-4 w-4 items-center justify-center rounded-md ${highlighted ? "bg-move-coral/20 ring-2 ring-move-coral" : ""}`}
+    >
+      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 fill-move-green">
+        <circle cx="5" cy="12" r="1.8" />
+        <circle cx="12" cy="12" r="1.8" />
+        <circle cx="19" cy="12" r="1.8" />
+      </svg>
     </div>
   );
 }
@@ -198,9 +227,18 @@ const iphoneSteps: Step[] = [
     ),
   },
   {
-    title: "Toca el botón Compartir en la barra inferior de Safari",
+    title: "Toca el botón ••• en la barra inferior de Safari",
     screen: (
-      <SafariChrome urlLabel="uniqueappcol.com">
+      <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="more">
+        <MiniSiteHeader />
+        <MiniSiteHero />
+      </SafariChrome>
+    ),
+  },
+  {
+    title: "Ahora sí, toca el botón Compartir",
+    screen: (
+      <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="share">
         <MiniSiteHeader />
         <MiniSiteHero />
       </SafariChrome>

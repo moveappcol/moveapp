@@ -105,26 +105,44 @@ export type AcceptanceTokens = {
 
 const ACCEPTANCE_TOKENS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+async function requestAcceptanceTokens(): Promise<AcceptanceTokens> {
+  const res = await fetch(`${wompiApiBase()}/merchants/${wompiPublicKey()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("No pudimos obtener los términos de Wompi.");
+  const json = await res.json();
+  const data = json.data;
+  return {
+    acceptanceToken: data.presigned_acceptance.acceptance_token,
+    personalAuthToken: data.presigned_personal_data_auth.acceptance_token,
+    permalinkAcceptance: data.presigned_acceptance.permalink,
+    permalinkPersonalAuth: data.presigned_personal_data_auth.permalink,
+  };
+}
+
 /** Los tokens de aceptación (términos + tratamiento de datos) que Wompi
  * exige mostrarle a la persona antes de guardar su tarjeta. Expiran a los
  * ~30 minutos — se cachean 5 minutos (bien dentro de ese margen) para no
  * pedirle a Wompi los mismos tokens en cada apertura de la pantalla de
- * pago o cada compra. */
+ * pago.
+ *
+ * Solo para MOSTRAR los links de términos/tratamiento de datos en pantalla.
+ * Nunca uses el `acceptanceToken`/`personalAuthToken` de acá para crear una
+ * fuente de pago — Wompi los invalida ("ya fue usado") apenas se consumen
+ * una vez, y esta copia se comparte entre todas las compras que caigan
+ * dentro de la misma ventana de 5 minutos. Para eso usa
+ * `fetchFreshAcceptanceTokens`. */
 export async function fetchAcceptanceTokens(): Promise<AcceptanceTokens> {
-  return cached("wompi:acceptanceTokens", ACCEPTANCE_TOKENS_CACHE_TTL_MS, async () => {
-    const res = await fetch(`${wompiApiBase()}/merchants/${wompiPublicKey()}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error("No pudimos obtener los términos de Wompi.");
-    const json = await res.json();
-    const data = json.data;
-    return {
-      acceptanceToken: data.presigned_acceptance.acceptance_token,
-      personalAuthToken: data.presigned_personal_data_auth.acceptance_token,
-      permalinkAcceptance: data.presigned_acceptance.permalink,
-      permalinkPersonalAuth: data.presigned_personal_data_auth.permalink,
-    };
-  });
+  return cached("wompi:acceptanceTokens", ACCEPTANCE_TOKENS_CACHE_TTL_MS, requestAcceptanceTokens);
+}
+
+/** Igual que `fetchAcceptanceTokens`, pero sin caché — pide un par de
+ * tokens nuevo cada vez. Úsalo justo antes de `createPaymentSource`: como
+ * Wompi los invalida al primer uso, dos compras que compartieran el mismo
+ * token cacheado se pisarían la una a la otra con "El token de aceptación
+ * ya fue usado". */
+export async function fetchFreshAcceptanceTokens(): Promise<AcceptanceTokens> {
+  return requestAcceptanceTokens();
 }
 
 export type WompiPaymentSource = { id: number; status: string };

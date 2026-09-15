@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
+import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeSubscriptionPlan } from "@/lib/billing";
 import { upsertSubscription } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Plan desconocido." }, { status: 400 });
   }
 
-  const tokens = await fetchAcceptanceTokens();
+  const tokens = await fetchFreshAcceptanceTokens();
 
   let paymentSource;
   try {

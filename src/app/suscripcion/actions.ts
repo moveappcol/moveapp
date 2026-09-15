@@ -2,7 +2,7 @@
 
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { fetchAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
+import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeSubscriptionPlan } from "@/lib/billing";
 import { upsertSubscription, cancelSubscription, scheduleChangePlan } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
@@ -79,7 +79,7 @@ export async function subscribeToPlan(
     cuponUsosActuales = validated.cupon.usosActuales;
   }
 
-  const tokens = await fetchAcceptanceTokens();
+  const tokens = await fetchFreshAcceptanceTokens();
 
   let paymentSource;
   try {

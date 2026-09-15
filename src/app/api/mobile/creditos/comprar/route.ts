@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
+import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeTopup } from "@/lib/billing";
 import { findCatalogItem } from "@/lib/orders";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const tokens = await fetchAcceptanceTokens();
+  const tokens = await fetchFreshAcceptanceTokens();
 
   let paymentSource;
   try {

@@ -1,12 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useActionState, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
+import { bookClass } from "@/app/gimnasios/[id]/actions";
 import { precioEfectivo, type Clase } from "@/lib/classes";
 import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
-import ClassBookingForm from "./class-booking-form";
+import type { BookingResult } from "@/lib/reservations";
 import WaitlistForm from "./waitlist-form";
+
+function ConfirmModal({
+  remainingCredits,
+  onClose,
+}: {
+  remainingCredits: number;
+  onClose: () => void;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-move-green/45 px-6">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-xl">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-move-green">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-white stroke-[3]">
+            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <p className="mt-3 font-heading text-lg font-bold text-move-green">Reserva confirmada</p>
+        <p className="mt-1 font-body text-sm text-move-green/70">
+          Créditos restantes: {remainingCredits}.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-5 w-full rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          Listo
+        </button>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 export type WaitlistStatusMap = Record<string, { enEspera: boolean; posicion: number | null }>;
 
@@ -41,6 +75,21 @@ function ClaseCard({
   waitlistStatus?: { enEspera: boolean; posicion: number | null };
   yaReservada: boolean;
 }) {
+  /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
+   * revalidatePath, y ese revalidate llega en la MISMA transición en la que
+   * se resuelve el estado de la acción — si el formulario estuviera en un
+   * componente separado, ese componente se desmontaría (yaReservada pasa a
+   * true) antes de que su propio useEffect llegara a avisar del éxito.
+   * ClaseCard nunca se desmonta (misma key en la lista), así que su estado
+   * sobrevive al cambio. */
+  const bookAction = bookClass.bind(null, gimnasioId, clase.id);
+  const [bookState, bookFormAction, isBooking] = useActionState<BookingResult | null, FormData>(
+    bookAction,
+    null
+  );
+  const [dismissed, setDismissed] = useState(false);
+  const justBooked = bookState?.ok && !dismissed;
+
   return (
     <li className="rounded-2xl border border-move-green/10 bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -60,7 +109,12 @@ function ClaseCard({
       </div>
 
       <div className="mt-4">
-        {yaReservada ? (
+        {justBooked ? (
+          <ConfirmModal
+            remainingCredits={bookState.ok ? bookState.remainingCredits : 0}
+            onClose={() => setDismissed(true)}
+          />
+        ) : yaReservada ? (
           <p className="font-body text-sm font-medium text-move-green">
             Ya reservaste esta clase.
           </p>
@@ -93,7 +147,26 @@ function ClaseCard({
         ) : (
           <>
             <Show when="signed-in">
-              <ClassBookingForm gimnasioId={gimnasioId} claseId={clase.id} />
+              <form action={bookFormAction} className="flex flex-wrap items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={isBooking}
+                  className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {isBooking ? "Reservando…" : "Reservar"}
+                </button>
+                {bookState && !bookState.ok && (
+                  <p className="w-full font-body text-sm text-move-coral">{bookState.error}</p>
+                )}
+                {bookState && !bookState.ok && bookState.code === "perfil_incompleto" && (
+                  <Link
+                    href="/completar-perfil"
+                    className="w-full font-heading text-sm font-semibold text-move-coral hover:underline"
+                  >
+                    Completar perfil
+                  </Link>
+                )}
+              </form>
             </Show>
             <Show when="signed-out">
               <Link

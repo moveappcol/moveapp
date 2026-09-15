@@ -125,7 +125,11 @@ export async function subscribeToPlan(
     await markCouponRedeemed(cuponRecordId, cuponUsosActuales);
   }
 
-  await upsertSubscription({ correo: email, plan: planId, paymentSourceId: paymentSource.id, fechaInicio });
+  // Si el webhook de Wompi ganó la carrera y ya activó la suscripción, no
+  // la toques de nuevo acá — ver el comentario de `credited` en billing.ts.
+  if (result.credited) {
+    await upsertSubscription({ correo: email, plan: planId, paymentSourceId: paymentSource.id, fechaInicio });
+  }
   revalidatePath("/mi-suscripcion");
   return { ok: true, credits: result.credits };
 }

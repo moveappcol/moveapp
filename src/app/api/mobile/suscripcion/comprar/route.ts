@@ -63,7 +63,11 @@ export async function POST(req: Request) {
     return NextResponse.json(result, { status: 400 });
   }
 
-  await upsertSubscription({ correo: user.email, plan: planId, paymentSourceId: paymentSource.id });
+  // Si el webhook de Wompi ganó la carrera y ya activó la suscripción, no
+  // la toques de nuevo acá — ver el comentario de `credited` en billing.ts.
+  if (result.credited) {
+    await upsertSubscription({ correo: user.email, plan: planId, paymentSourceId: paymentSource.id });
+  }
 
   return NextResponse.json(result);
 }

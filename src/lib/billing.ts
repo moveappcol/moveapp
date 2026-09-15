@@ -1,10 +1,19 @@
 import { chargeWithPaymentSource } from "./wompi";
 import { findCatalogItem, buildReference } from "./orders";
-import { createPendingPago, updatePagoEstado } from "./pagos";
+import { createPendingPago, updatePagoEstado, claimPagoAprobado } from "./pagos";
 import { addCreditsByEmail } from "./users";
 
 export type ChargeResult =
-  | { ok: true; transactionId: string; credits: number }
+  | {
+      ok: true;
+      transactionId: string;
+      credits: number;
+      /** false si el webhook de Wompi ya había aprobado y acreditado este
+       * mismo pago un instante antes que esta respuesta síncrona — el
+       * llamador NO debe activar/renovar la suscripción de nuevo en ese
+       * caso, el webhook ya lo hizo. */
+      credited: boolean;
+    }
   | { ok: false; error: string; pending?: boolean };
 
 /** Cobra un plan contra una fuente de pago guardada y, si Wompi aprueba,
@@ -59,15 +68,19 @@ export async function chargeSubscriptionPlan(params: {
     return { ok: false, pending: true, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
   }
 
-  const estado = tx.status === "APPROVED" ? "Aprobado" : "Rechazado";
-  await updatePagoEstado(pagoId, estado, tx.id);
-
-  if (estado !== "Aprobado") {
+  if (tx.status !== "APPROVED") {
+    await updatePagoEstado(pagoId, "Rechazado", tx.id);
     return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
   }
 
-  await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
-  return { ok: true, transactionId: tx.id, credits: item.credits };
+  // El webhook de Wompi puede llegar y aprobar este mismo pago un instante
+  // antes que este punto — claimPagoAprobado decide quién de los dos queda
+  // a cargo de acreditar, para no hacerlo dos veces.
+  const credited = await claimPagoAprobado(reference, tx.id);
+  if (credited) {
+    await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
+  }
+  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }
 
 /** Cobra un paquete de créditos adicionales contra una fuente de pago
@@ -109,13 +122,14 @@ export async function chargeTopup(params: {
     return { ok: false, pending: true, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
   }
 
-  const estado = tx.status === "APPROVED" ? "Aprobado" : "Rechazado";
-  await updatePagoEstado(pagoId, estado, tx.id);
-
-  if (estado !== "Aprobado") {
+  if (tx.status !== "APPROVED") {
+    await updatePagoEstado(pagoId, "Rechazado", tx.id);
     return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
   }
 
-  await addCreditsByEmail(params.correo, item.credits, false);
-  return { ok: true, transactionId: tx.id, credits: item.credits };
+  const credited = await claimPagoAprobado(reference, tx.id);
+  if (credited) {
+    await addCreditsByEmail(params.correo, item.credits, false);
+  }
+  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }

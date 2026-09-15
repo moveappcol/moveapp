@@ -30,3 +30,25 @@ export function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Pro
   store.set(key, { promise, expires: Date.now() + ttlMs });
   return promise;
 }
+
+const locks = new Map<string, Promise<unknown>>();
+
+/** Mutex en memoria del proceso, por llave — mismo fundamento que `cached`
+ * (Railway corre esto como proceso persistente). Sirve para serializar dos
+ * caminos que pueden llegar casi al mismo tiempo para el MISMO recurso (ej.
+ * el webhook de Wompi y la respuesta síncrona del cobro confirmando el
+ * mismo pago), donde cada uno leería "todavía no procesado" si no espera
+ * al otro. `fn` corre solo cuando le toca el turno; el resultado (o el
+ * error) de `fn` es lo que recibe quien llamó. */
+export function withLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  const previous = locks.get(key) ?? Promise.resolve();
+  const turn = previous.then(fn, fn);
+  locks.set(
+    key,
+    turn.then(
+      () => undefined,
+      () => undefined
+    )
+  );
+  return turn;
+}

@@ -1,4 +1,5 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { withLock } from "./server-cache";
 import type { PurchaseKind } from "./orders";
 
 /**
@@ -84,6 +85,22 @@ export async function findPagoByReferencia(referencia: string): Promise<Pago | n
     .all();
   const record = records[0];
   return record ? mapRecordToPago(record) : null;
+}
+
+/** El cobro síncrono (justo al pagar) y el webhook de Wompi pueden confirmar
+ * la MISMA transacción casi al mismo tiempo — cada uno leería el pago
+ * todavía en "Pendiente" y los dos acreditarían créditos y activarían la
+ * suscripción por separado. Esto serializa: solo quien gana el lock con un
+ * pago que de verdad seguía sin aprobar queda a cargo de acreditar y
+ * activar/renovar — el otro debe no hacer nada (ver el `credited` que
+ * devuelve, o el llamador de este archivo). */
+export async function claimPagoAprobado(referencia: string, transaccionId: string): Promise<boolean> {
+  return withLock(`pago:${referencia}`, async () => {
+    const fresh = await findPagoByReferencia(referencia);
+    if (!fresh || fresh.estado === "Aprobado") return false;
+    await updatePagoEstado(fresh.id, "Aprobado", transaccionId);
+    return true;
+  });
 }
 
 export async function updatePagoEstado(

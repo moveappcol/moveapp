@@ -24,7 +24,11 @@ export async function GET(req: NextRequest) {
     });
 
     if (result.ok) {
-      await markSubscriptionRenewed(sub);
+      // Si el webhook de Wompi ganó la carrera y ya renovó esta suscripción,
+      // no la avances otra vez — ver el comentario de `credited` en billing.ts.
+      if (result.credited) {
+        await markSubscriptionRenewed(sub);
+      }
       approved += 1;
     } else if (result.pending) {
       // Sigue en proceso del lado de Wompi — el webhook la confirmará. No

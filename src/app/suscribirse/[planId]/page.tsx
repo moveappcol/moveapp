@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
@@ -6,6 +7,13 @@ import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import SubscribeForm from "@/components/pagos/subscribe-form";
 import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
+import { COUPON_COOKIE_NAME } from "@/components/landing/coupon-capture";
+
+/** Cupón que se intenta aplicar por defecto a cualquier persona que llegue
+ * al checkout, sin necesidad de un link de campaña — mientras siga activo
+ * en Airtable. Un ?cupon= capturado de la URL (ver coupon-capture.tsx)
+ * tiene prioridad sobre este default. */
+const DEFAULT_COUPON_CODE = "UNIQUE1";
 
 export default async function SuscribirsePage({
   params,
@@ -21,6 +29,8 @@ export default async function SuscribirsePage({
   if (!plan) notFound();
 
   const tokens = await fetchAcceptanceTokens();
+  const cookieStore = await cookies();
+  const initialCouponCode = cookieStore.get(COUPON_COOKIE_NAME)?.value || DEFAULT_COUPON_CODE;
 
   return (
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
@@ -45,6 +55,7 @@ export default async function SuscribirsePage({
           publicKey={wompiPublicKey()}
           permalinkAcceptance={tokens.permalinkAcceptance}
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}
+          initialCouponCode={initialCouponCode}
         />
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
@@ -7,6 +8,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import WhatsappButton from "@/components/layout/whatsapp-button";
 import MetaPixel from "@/components/analytics/meta-pixel";
+import CouponCapture from "@/components/landing/coupon-capture";
 import { GoogleTagManagerScript, GoogleTagManagerNoscript } from "@/components/analytics/google-tag-manager";
 import "./globals.css";
 
@@ -71,6 +73,9 @@ export default function RootLayout({
           <GoogleTagManagerNoscript />
           <GoogleTagManagerScript />
           <MetaPixel />
+          <Suspense fallback={null}>
+            <CouponCapture />
+          </Suspense>
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
@@ -33,6 +33,7 @@ export default function SubscribeForm({
   publicKey,
   permalinkAcceptance,
   permalinkPersonalAuth,
+  initialCouponCode,
 }: {
   planId: string;
   planLabel: string;
@@ -40,6 +41,11 @@ export default function SubscribeForm({
   publicKey: string;
   permalinkAcceptance: string;
   permalinkPersonalAuth: string;
+  /** Cupón que se intenta aplicar solo al cargar, sin que la persona escriba
+   * nada (ej. la promo UNIQUE1 por defecto). Si ya no está activo en
+   * Airtable, se falla en silencio y el campo queda vacío — no tiene
+   * sentido mostrar un error por un cupón que nadie escribió a mano. */
+  initialCouponCode?: string;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -54,20 +60,19 @@ export default function SubscribeForm({
   const [cardHolder, setCardHolder] = useState("");
   const [accepted, setAccepted] = useState(false);
 
-  const [couponInput, setCouponInput] = useState("");
+  const [couponInput, setCouponInput] = useState(initialCouponCode ?? "");
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
 
-  async function handleApplyCoupon() {
-    if (!couponInput.trim()) return;
+  async function tryApplyCoupon(code: string): Promise<CouponPreview> {
     setCoupon({ status: "loading" });
-    const result: CouponPreview = await applyCoupon(couponInput.trim());
+    const result: CouponPreview = await applyCoupon(code);
     if (!result.ok) {
       setCoupon({ status: "invalid", error: result.error });
       setCouponCode(null);
-      return;
+      return result;
     }
-    setCouponCode(couponInput.trim());
+    setCouponCode(code);
     if (result.tipo === "Créditos gratis") {
       setCoupon({ status: "valid-gratis", creditos: result.creditos });
     } else {
@@ -77,7 +82,40 @@ export default function SubscribeForm({
         fechaInicio: result.fechaInicio,
       });
     }
+    return result;
   }
+
+  async function handleApplyCoupon() {
+    if (!couponInput.trim()) return;
+    await tryApplyCoupon(couponInput.trim());
+  }
+
+  // Aplica el cupón por defecto (ej. UNIQUE1) apenas carga el formulario,
+  // sin que la persona tenga que escribirlo. No usa tryApplyCoupon (que
+  // marca "loading" de una) para no disparar un setState sincrónico dentro
+  // del efecto — si ya no está activo, se deshace en silencio, sin mostrar
+  // error por un cupón que nadie escribió a mano.
+  useEffect(() => {
+    if (!initialCouponCode) return;
+    applyCoupon(initialCouponCode).then((result) => {
+      if (!result.ok) {
+        setCouponInput("");
+        return;
+      }
+      setCouponCode(initialCouponCode);
+      if (result.tipo === "Créditos gratis") {
+        setCoupon({ status: "valid-gratis", creditos: result.creditos });
+      } else {
+        setCoupon({
+          status: "valid-descuento",
+          descuentoPorcentaje: result.descuentoPorcentaje,
+          fechaInicio: result.fechaInicio,
+        });
+      }
+    });
+    // Solo debe correr una vez, al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleRedeemFreeCoupon() {
     if (!couponCode) return;

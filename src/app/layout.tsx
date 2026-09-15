@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import { esES } from "@clerk/localizations";
 import { poppins, inter } from "@/lib/fonts";
@@ -53,6 +54,20 @@ export default function RootLayout({
         className={`${poppins.variable} ${inter.variable} h-full antialiased`}
       >
         <body className="flex min-h-full flex-col">
+          {/* beforeinstallprompt dispara una sola vez por carga de página y
+              a veces llega antes de que React hidrate el botón "Descargar
+              app" -- si eso pasa, se pierde para siempre y el botón cae al
+              modo "instrucciones" aunque el celular sí podía instalar
+              directo. beforeInteractive corre antes de la hidratación, así
+              que esto siempre alcanza a agarrarlo. */}
+          <Script id="capture-install-prompt" strategy="beforeInteractive">
+            {`
+              window.addEventListener('beforeinstallprompt', function (e) {
+                e.preventDefault();
+                window.__uniqueInstallPrompt = e;
+              });
+            `}
+          </Script>
           <GoogleTagManagerNoscript />
           <GoogleTagManagerScript />
           <MetaPixel />

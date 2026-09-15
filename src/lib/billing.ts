@@ -19,6 +19,10 @@ export async function chargeSubscriptionPlan(params: {
   /** Fracción entre 0 y 1 (0.2 = 20% de descuento) — ya validada por el
    * llamador contra un cupón real, nunca confiar en un valor del cliente. */
   descuento?: number;
+  /** Fecha (YYYY-MM-DD) desde la que empieza a correr el plan — solo para
+   * promos de prepago (ver Cupon.inicioDiferido). Si no se pasa, el plan
+   * empieza a correr desde hoy, como siempre. */
+  fechaInicio?: string;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("plan", params.planId);
   if (!item) return { ok: false, error: "Plan desconocido." };
@@ -62,7 +66,7 @@ export async function chargeSubscriptionPlan(params: {
     return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
   }
 
-  await addCreditsByEmail(params.correo, item.credits, true);
+  await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
   return { ok: true, transactionId: tx.id, credits: item.credits };
 }
 

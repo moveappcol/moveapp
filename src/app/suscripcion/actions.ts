@@ -15,8 +15,17 @@ export type SubscribeResult =
 
 export type CouponPreview =
   | { ok: true; tipo: "Créditos gratis"; creditos: number }
-  | { ok: true; tipo: "Descuento"; descuentoPorcentaje: number }
+  | { ok: true; tipo: "Descuento"; descuentoPorcentaje: number; fechaInicio?: string }
   | { ok: false; error: string };
+
+/** Un `inicioDiferido` ya pasado (promo vencida y el cupón se quedó con la
+ * fecha vieja puesta) se ignora — el plan simplemente empieza hoy, como
+ * siempre. */
+function fechaInicioVigente(inicioDiferido: string | null): string | undefined {
+  if (!inicioDiferido) return undefined;
+  const hoy = new Date().toISOString().slice(0, 10);
+  return inicioDiferido >= hoy ? inicioDiferido : undefined;
+}
 
 /** Valida un cupón para mostrarlo en la UI antes de cobrar — no lo marca
  * como usado todavía (eso pasa solo si la compra/canje tiene éxito). */
@@ -30,7 +39,12 @@ export async function applyCoupon(code: string): Promise<CouponPreview> {
   if (result.cupon.tipo === "Créditos gratis") {
     return { ok: true, tipo: "Créditos gratis", creditos: result.cupon.creditos ?? 0 };
   }
-  return { ok: true, tipo: "Descuento", descuentoPorcentaje: result.cupon.descuentoPorcentaje ?? 0 };
+  return {
+    ok: true,
+    tipo: "Descuento",
+    descuentoPorcentaje: result.cupon.descuentoPorcentaje ?? 0,
+    fechaInicio: fechaInicioVigente(result.cupon.inicioDiferido),
+  };
 }
 
 export async function subscribeToPlan(
@@ -49,6 +63,7 @@ export async function subscribeToPlan(
   if (!email) return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
 
   let descuento: number | undefined;
+  let fechaInicio: string | undefined;
   let cuponRecordId: string | undefined;
   let cuponUsosActuales: number | undefined;
 
@@ -59,6 +74,7 @@ export async function subscribeToPlan(
       return { ok: false, error: "Ese cupón no aplica a un pago con tarjeta." };
     }
     descuento = (validated.cupon.descuentoPorcentaje ?? 0) / 100;
+    fechaInicio = fechaInicioVigente(validated.cupon.inicioDiferido);
     cuponRecordId = validated.cupon.recordId;
     cuponUsosActuales = validated.cupon.usosActuales;
   }
@@ -83,6 +99,7 @@ export async function subscribeToPlan(
     paymentSourceId: paymentSource.id,
     ownerRef: userId,
     descuento,
+    fechaInicio,
   });
 
   if (!result.ok) return result;
@@ -91,7 +108,7 @@ export async function subscribeToPlan(
     await markCouponRedeemed(cuponRecordId, cuponUsosActuales);
   }
 
-  await upsertSubscription({ correo: email, plan: planId, paymentSourceId: paymentSource.id });
+  await upsertSubscription({ correo: email, plan: planId, paymentSourceId: paymentSource.id, fechaInicio });
   revalidatePath("/mi-suscripcion");
   return { ok: true, credits: result.credits };
 }

@@ -213,24 +213,27 @@ export async function addCredits(recordId: string, amount: number): Promise<numb
   return next;
 }
 
-function oneMonthFromToday(): string {
-  const d = new Date();
+function oneMonthFrom(dateISO: string): string {
+  const d = new Date(dateISO);
   d.setMonth(d.getMonth() + 1);
   return d.toISOString().slice(0, 10);
 }
 
 /** Acredita una compra confirmada por Wompi. Crea el registro en "usuarios"
  * si la persona compra por primera vez. Comprar un plan extiende el
- * vencimiento 1 mes; comprar un adicional solo suma créditos. */
+ * vencimiento 1 mes (desde `fechaBase`, o desde hoy si no se pasa — usado
+ * por promos de prepago donde el plan empieza a correr en una fecha
+ * futura); comprar un adicional solo suma créditos. */
 export async function addCreditsByEmail(
   email: string,
   amount: number,
-  extendVencimiento: boolean
+  extendVencimiento: boolean,
+  fechaBase?: string
 ): Promise<void> {
   const base = getAirtableBase();
   const existing = await getUserCreditsByEmail(email);
 
-  const vencimiento = extendVencimiento ? oneMonthFromToday() : undefined;
+  const vencimiento = extendVencimiento ? oneMonthFrom(fechaBase ?? new Date().toISOString()) : undefined;
 
   if (existing) {
     await base(USUARIOS_TABLE).update([

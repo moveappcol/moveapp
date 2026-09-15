@@ -11,6 +11,11 @@ export type Cupon = {
   usosMaximos: number | null;
   usosActuales: number;
   fechaExpiracion: string | null;
+  /** Solo para cupones de "Descuento" en la web: si está presente, el
+   * vencimiento/próximo cobro del plan se calculan desde esta fecha (no
+   * desde hoy) — para promos de prepago tipo "paga ahora, tu plan empieza
+   * a correr el [fecha]". */
+  inicioDiferido: string | null;
 };
 
 /**
@@ -24,6 +29,7 @@ export type Cupon = {
  *   - "Usos máximos "           (número, opcional — vacío = ilimitado)
  *   - "Usos actuales "           (número — se incrementa cada vez que se redime)
  *   - "Fecha de expiración "      (fecha, opcional)
+ *   - Inicio                      (fecha, opcional — ver Cupon.inicioDiferido arriba)
  */
 const CUPONES_TABLE = "Cupones";
 
@@ -48,6 +54,7 @@ function mapRecordToCupon(
     usosMaximos: (record.get("Usos máximos ") as number) ?? null,
     usosActuales: (record.get("Usos actuales ") as number) ?? 0,
     fechaExpiracion: (record.get("Fecha de expiración ") as string) ?? null,
+    inicioDiferido: (record.get("Inicio") as string) ?? null,
   };
 }
 

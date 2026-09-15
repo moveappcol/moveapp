@@ -60,10 +60,13 @@ export async function upsertSubscription(params: {
   correo: string;
   plan: string;
   paymentSourceId: number;
+  /** Ver Cupon.inicioDiferido — si se pasa, el próximo cobro se calcula un
+   * mes después de esta fecha en vez de un mes después de hoy. */
+  fechaInicio?: string;
 }): Promise<void> {
   const base = getAirtableBase();
   const existing = await getSubscriptionByEmail(params.correo);
-  const proximoCobro = oneMonthFrom(new Date().toISOString());
+  const proximoCobro = oneMonthFrom(params.fechaInicio ?? new Date().toISOString());
   const fields = {
     Correo: params.correo,
     Plan: params.plan,

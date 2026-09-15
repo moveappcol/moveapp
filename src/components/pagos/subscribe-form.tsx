@@ -15,8 +15,16 @@ type CouponState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "invalid"; error: string }
-  | { status: "valid-descuento"; descuentoPorcentaje: number }
+  | { status: "valid-descuento"; descuentoPorcentaje: number; fechaInicio?: string }
   | { status: "valid-gratis"; creditos: number };
+
+function formatFechaLarga(fechaISO: string): string {
+  return new Date(`${fechaISO}T00:00:00`).toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
 
 export default function SubscribeForm({
   planId,
@@ -63,7 +71,11 @@ export default function SubscribeForm({
     if (result.tipo === "Créditos gratis") {
       setCoupon({ status: "valid-gratis", creditos: result.creditos });
     } else {
-      setCoupon({ status: "valid-descuento", descuentoPorcentaje: result.descuentoPorcentaje });
+      setCoupon({
+        status: "valid-descuento",
+        descuentoPorcentaje: result.descuentoPorcentaje,
+        fechaInicio: result.fechaInicio,
+      });
     }
   }
 
@@ -190,6 +202,14 @@ export default function SubscribeForm({
           <p className="mt-2 font-body text-sm font-medium text-move-green">
             Cupón aplicado: -{coupon.descuentoPorcentaje}% — pagas {formatCOP(discountedPrice ?? planPrice)}{" "}
             en vez de {formatCOP(planPrice)}.
+            {coupon.fechaInicio && (
+              <>
+                {" "}
+                Se cobra hoy, pero tu plan empieza a correr el{" "}
+                <strong>{formatFechaLarga(coupon.fechaInicio)}</strong> — tu próximo cobro será un mes
+                después de esa fecha.
+              </>
+            )}
           </p>
         )}
         {coupon.status === "valid-gratis" && (

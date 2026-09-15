@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeSubscriptionPlan } from "@/lib/billing";
-import { upsertSubscription } from "@/lib/subscriptions";
+import { upsertSubscription, getSubscriptionByEmail } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 
@@ -24,6 +24,17 @@ export async function POST(req: Request) {
   const item = findCatalogItem("plan", planId);
   if (!item) {
     return NextResponse.json({ ok: false, error: "Plan desconocido." }, { status: 400 });
+  }
+
+  // Un correo, un plan a la vez — evita cobrar y acreditar créditos otra
+  // vez si ya tiene un plan activo. Cambiar de plan se hace sin volver a
+  // cobrar (endpoint de cambiar plan), no reenviando esta compra.
+  const existingSubscription = await getSubscriptionByEmail(user.email);
+  if (existingSubscription && existingSubscription.estado === "Activa") {
+    return NextResponse.json(
+      { ok: false, error: "Ya tienes un plan activo. Usa el endpoint de cambiar de plan." },
+      { status: 400 }
+    );
   }
 
   const tokens = await fetchFreshAcceptanceTokens();

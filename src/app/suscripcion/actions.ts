@@ -4,7 +4,12 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeSubscriptionPlan } from "@/lib/billing";
-import { upsertSubscription, cancelSubscription, scheduleChangePlan } from "@/lib/subscriptions";
+import {
+  upsertSubscription,
+  cancelSubscription,
+  scheduleChangePlan,
+  getSubscriptionByEmail,
+} from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
 import { validateCoupon, markCouponRedeemed } from "@/lib/cupones";
 import { addCreditsByEmail } from "@/lib/users";
@@ -61,6 +66,18 @@ export async function subscribeToPlan(
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
+
+  // Un correo, un plan a la vez — evita cobrar y acreditar créditos otra
+  // vez si alguien vuelve a /suscribirse/[planId] teniendo ya un plan
+  // activo (ej. un link viejo, o un reintento tras un error). Cambiar de
+  // plan se hace desde "Mi suscripción", sin volver a cobrar.
+  const existingSubscription = await getSubscriptionByEmail(email);
+  if (existingSubscription && existingSubscription.estado === "Activa") {
+    return {
+      ok: false,
+      error: "Ya tienes un plan activo. Para cambiarlo, usa \"Cambiar de plan\" en Mi suscripción.",
+    };
+  }
 
   let descuento: number | undefined;
   let fechaInicio: string | undefined;

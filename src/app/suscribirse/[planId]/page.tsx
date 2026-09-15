@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
 import { formatCOP } from "@/lib/credits-pricing";
 import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
+import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import SubscribeForm from "@/components/pagos/subscribe-form";
 import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
 import { COUPON_COOKIE_NAME } from "@/components/landing/coupon-capture";
@@ -27,6 +28,19 @@ export default async function SuscribirsePage({
 
   const plan = findCatalogItem("plan", planId);
   if (!plan) notFound();
+
+  // Un correo, un plan a la vez — si ya tiene uno activo, esta pantalla no
+  // es el camino (eso es "Cambiar de plan" en Mi suscripción); si se llega
+  // igual (link viejo, doble clic, reintento), la acción del formulario
+  // también lo bloquea, esto solo evita mostrar el formulario de una vez.
+  const clerkUser = await currentUser();
+  const email = clerkUser?.primaryEmailAddress?.emailAddress;
+  if (email) {
+    const existingSubscription = await getSubscriptionByEmail(email);
+    if (existingSubscription && existingSubscription.estado === "Activa") {
+      redirect("/mi-suscripcion");
+    }
+  }
 
   const tokens = await fetchAcceptanceTokens();
   const cookieStore = await cookies();

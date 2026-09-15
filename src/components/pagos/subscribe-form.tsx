@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
@@ -52,6 +52,14 @@ export default function SubscribeForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
+  // Guarda de reentrada contra doble clic/doble tap: `isPending` (de
+  // useTransition) solo se activa una vez llamamos a subscribeToPlan, pero
+  // antes de eso hay un round-trip real a Wompi (tokenizar la tarjeta) sin
+  // ninguna protección — un segundo tap en esa ventana disparaba un cobro y
+  // un abono de créditos duplicados. El ref frena eso de una, sin esperar
+  // al siguiente render.
+  const submittingRef = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [number, setNumber] = useState("");
   const [expMonth, setExpMonth] = useState("");
@@ -133,14 +141,17 @@ export default function SubscribeForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
     setError(null);
 
-    if (!accepted) {
-      setError("Debes aceptar los términos y el tratamiento de datos.");
-      return;
-    }
-
     try {
+      if (!accepted) {
+        setError("Debes aceptar los términos y el tratamiento de datos.");
+        return;
+      }
+
       const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
         method: "POST",
         headers: {
@@ -181,6 +192,9 @@ export default function SubscribeForm({
       });
     } catch {
       setError("No pudimos conectar con Wompi. Intenta de nuevo.");
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
   }
 
@@ -360,10 +374,10 @@ export default function SubscribeForm({
 
           <button
             type="submit"
-            disabled={isPending}
+            disabled={isPending || submitting}
             className="w-full rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isPending
+            {isPending || submitting
               ? "Procesando…"
               : discountedPrice !== null
                 ? `Suscribirme — ${formatCOP(discountedPrice)}`

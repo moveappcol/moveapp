@@ -10,6 +10,7 @@ const RESEND_TIMEOUT_MS = 20_000;
 
 async function sendEmail(params: {
   to: string[];
+  bcc?: string[];
   subject: string;
   html: string;
   attachments?: EmailAttachment[];
@@ -27,6 +28,7 @@ async function sendEmail(params: {
     body: JSON.stringify({
       from,
       to: params.to,
+      bcc: params.bcc,
       subject: params.subject,
       html: params.html,
       attachments: params.attachments,
@@ -64,8 +66,16 @@ function parseGymEmails(gymEmail: string | null): string[] {
     .filter(Boolean);
 }
 
-function recipients(gymEmail: string | null, ownerEmail: string): string[] {
-  return [ownerEmail, ...parseGymEmails(gymEmail)];
+/** El gimnasio va en "to"; la copia del dueño va en "bcc" — así el
+ * gimnasio nunca ve el correo personal del dueño mezclado en el "Para"
+ * (se veía poco profesional y mezclar un Gmail personal con la bandeja
+ * del negocio en el mismo "to" también puede leerse como envío masivo).
+ * Si el gimnasio no tiene correo registrado, el del dueño pasa a "to"
+ * para que el envío no se quede sin ningún destinatario. */
+function recipients(gymEmail: string | null, ownerEmail: string): { to: string[]; bcc?: string[] } {
+  const gymEmails = parseGymEmails(gymEmail);
+  if (gymEmails.length === 0) return { to: [ownerEmail] };
+  return { to: gymEmails, bcc: [ownerEmail] };
 }
 
 function attendeesListHtml(nombres: string[]): string {
@@ -303,7 +313,7 @@ export async function sendLiquidacionEmail(params: {
   `;
 
   await sendEmail({
-    to: recipients(params.gymEmail, params.ownerEmail),
+    ...recipients(params.gymEmail, params.ownerEmail),
     subject: "Reservas confirmadas para la clase en 24 h",
     html,
     attachments: [toAttachment(`pre-reservas-${params.archivo}.pdf`, params.pdf)],
@@ -329,7 +339,7 @@ export async function sendReservasFinalesEmail(params: {
   `;
 
   await sendEmail({
-    to: recipients(params.gymEmail, params.ownerEmail),
+    ...recipients(params.gymEmail, params.ownerEmail),
     subject: "Actualización final de asistentes – Clase próxima a iniciar",
     html,
     attachments: [toAttachment(`reservas-finales-${params.archivo}.pdf`, params.pdf)],
@@ -353,7 +363,7 @@ export async function sendReservasTotalesPeriodoEmail(params: {
   `;
 
   await sendEmail({
-    to: recipients(params.gymEmail, params.ownerEmail),
+    ...recipients(params.gymEmail, params.ownerEmail),
     subject: `Registro de reservas del periodo — ${params.periodo}`,
     html,
     attachments: [toAttachment(`reservas-periodo-${params.archivo}.pdf`, params.pdf)],

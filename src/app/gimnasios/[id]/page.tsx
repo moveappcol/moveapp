@@ -139,6 +139,9 @@ export default async function GymPage({
       <h2 className="mt-10 font-heading text-xl font-semibold text-move-green">
         Clases disponibles
       </h2>
+      <p className="mt-1 font-body text-xs text-move-green/50">
+        Puedes reservar en este gimnasio un máximo de 3 veces al mes.
+      </p>
       <div className="mt-4">
         <ClassList
           gimnasioId={id}

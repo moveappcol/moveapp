@@ -53,9 +53,11 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
  *   - "Gimnasio "    (link a Gimnasios — OJO: el nombre real trae un espacio al final)
- *   - Duración        (número, en minutos, opcional — si está vacío se asume
+ *   - Duración        (campo tipo Duration de Airtable — la API SIEMPRE lo
+ *      devuelve en SEGUNDOS sin importar el formato que se vea en la
+ *      interfaz (m:ss, h:mm:ss, etc.), opcional — si está vacío se asume
  *      60 min; se usa para saber cuándo termina la clase: calificaciones y
- *      el correo "AFTER CLASS")
+ *      el correo "AFTER CLASS". Ojo con este campo — ver DEFAULT_DURACION_MINUTOS.)
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
  *
@@ -111,7 +113,8 @@ function mapRecordToClase(
     cuposDisponibles: Math.max(0, cuposTotales - reservados),
     fecha: (record.get("Horario") as string) ?? null,
     gimnasioId: gimnasio?.[0] ?? null,
-    duracionMinutos: duracion && duracion > 0 ? duracion : DEFAULT_DURACION_MINUTOS,
+    // El campo "Duración" es un Duration de Airtable → llega en segundos.
+    duracionMinutos: duracion && duracion > 0 ? duracion / 60 : DEFAULT_DURACION_MINUTOS,
   };
 }
 

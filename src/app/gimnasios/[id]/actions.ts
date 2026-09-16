@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getClaseById, precioEfectivo } from "@/lib/classes";
 import { createReservation, getActiveReservationClaseIds, type BookingResult } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
+import { getGymById, canAccessGymByGenero } from "@/lib/gyms";
 import { joinWaitlist, leaveWaitlist, type JoinWaitlistResult } from "@/lib/waitlist";
 
 export async function bookClass(
@@ -80,6 +81,11 @@ export async function joinWaitlistAction(
       error: "Completa tu perfil (cédula) antes de unirte a la lista de espera.",
       code: "perfil_incompleto",
     };
+  }
+
+  const gym = await getGymById(gimnasioId);
+  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
+    return { ok: false, error: "Este gimnasio no está disponible para tu perfil." };
   }
 
   const yaReservada = (await getActiveReservationClaseIds(email)).has(claseId);

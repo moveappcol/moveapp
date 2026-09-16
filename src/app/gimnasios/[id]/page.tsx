@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getGymById, GYMS_COMING_SOON } from "@/lib/gyms";
+import { getGymById, canAccessGymByGenero, GYMS_COMING_SOON } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
+import { getUserCreditsByEmail } from "@/lib/users";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
 
 function InfoSection({ title, text }: { title: string; text: string | null }) {
@@ -39,6 +40,8 @@ export default async function GymPage({
     const user = await currentUser();
     const email = user?.primaryEmailAddress?.emailAddress;
     if (email) {
+      const account = await getUserCreditsByEmail(email);
+      if (!canAccessGymByGenero(gym.genero, account?.genero ?? null)) notFound();
       reservedClaseIds = await getActiveReservationClaseIds(email);
       const llenas = classes.filter((c) => c.cuposDisponibles <= 0 && !reservedClaseIds.has(c.id));
       const statuses = await Promise.all(

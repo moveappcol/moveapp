@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { getGymById, GYMS_COMING_SOON } from "@/lib/gyms";
+import { getGymById, canAccessGymByGenero, GYMS_COMING_SOON } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { requireMobileUser } from "@/lib/mobile-auth";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
+import { getUserCreditsByEmail } from "@/lib/users";
 
 export async function GET(
   _req: Request,
@@ -25,6 +26,10 @@ export async function GET(
   let reservedClaseIds: string[] = [];
   try {
     const user = await requireMobileUser();
+    const account = await getUserCreditsByEmail(user.email);
+    if (!canAccessGymByGenero(gym.genero, account?.genero ?? null)) {
+      return NextResponse.json({ error: "Gimnasio no encontrado." }, { status: 404 });
+    }
     reservedClaseIds = [...(await getActiveReservationClaseIds(user.email))];
   } catch {
     // sin sesión — se sigue mostrando el gimnasio igual, sin marcar nada

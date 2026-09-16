@@ -305,12 +305,18 @@ function mapRecordToGym(record: any): Gym {
   };
 }
 
-/** Un hombre no ve gimnasios "solo_mujeres" y viceversa. Sin género definido
- * (invitado sin cuenta, o "Otro") ve todos los gimnasios, sin filtrar. */
+/** Un hombre no puede acceder a gimnasios "solo_mujeres" y viceversa. Sin
+ * género definido (invitado sin cuenta, o "Otro") puede acceder a todos, sin
+ * restricción. Único lugar con esta regla — la grilla, la página del
+ * gimnasio y la reserva real todas llaman a esto para no desincronizarse. */
+export function canAccessGymByGenero(gymGenero: GymGenero, userGenero: string | null): boolean {
+  if (userGenero === "Hombre" && gymGenero === "solo_mujeres") return false;
+  if (userGenero === "Mujer" && gymGenero === "solo_hombres") return false;
+  return true;
+}
+
 export function filterGymsByGenero(gyms: Gym[], userGenero: string | null): Gym[] {
-  if (userGenero === "Hombre") return gyms.filter((g) => g.genero !== "solo_mujeres");
-  if (userGenero === "Mujer") return gyms.filter((g) => g.genero !== "solo_hombres");
-  return gyms;
+  return gyms.filter((g) => canAccessGymByGenero(g.genero, userGenero));
 }
 
 export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }> {

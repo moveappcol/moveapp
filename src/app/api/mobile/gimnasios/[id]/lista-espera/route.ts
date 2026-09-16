@@ -3,6 +3,8 @@ import { getWaitlistStatus, joinWaitlist, leaveWaitlist } from "@/lib/waitlist";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
+import { getClaseById } from "@/lib/classes";
+import { getGymById, canAccessGymByGenero } from "@/lib/gyms";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -44,6 +46,15 @@ export async function POST(req: NextRequest) {
   if (!account?.cedula) {
     return NextResponse.json(
       { ok: false, error: "Completa tu perfil (cédula) antes de unirte a la lista de espera." },
+      { status: 400 }
+    );
+  }
+
+  const clase = await getClaseById(claseId);
+  const gym = clase?.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
+    return NextResponse.json(
+      { ok: false, error: "Este gimnasio no está disponible para tu perfil." },
       { status: 400 }
     );
   }

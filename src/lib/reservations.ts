@@ -1,7 +1,7 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById, precioEfectivo } from "./classes";
-import { getGymById, DEFAULT_BOOKING_CUTOFF_MINUTES } from "./gyms";
+import { getGymById, canAccessGymByGenero, DEFAULT_BOOKING_CUTOFF_MINUTES } from "./gyms";
 import { sendLowRatingAlertEmail } from "./email";
 import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
 import { sendPushNotification } from "./push";
@@ -180,6 +180,12 @@ export async function createReservation(params: {
       ok: false,
       error: "Completa tu perfil (cédula) antes de reservar.",
       code: "perfil_incompleto",
+    };
+  }
+  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
+    return {
+      ok: false,
+      error: "Este gimnasio no está disponible para tu perfil.",
     };
   }
 

@@ -23,20 +23,24 @@ jobs:
       - name: Instalar dependencias
         run: npm ci --legacy-peer-deps
 
+      - name: Instalar Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Configurar git para poder commitear/pushear
         run: |
           git config user.name "Agente de salud UNIQUE"
           git config user.email "uniqueappcol@gmail.com"
 
-      - name: Agente Claude — revisar y arreglar
-        id: agente
-        uses: anthropics/claude-code-action@v1
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: "--max-turns 60 --allowedTools Bash,Read,Edit,Write,Grep,Glob"
-          show_full_output: true
-          prompt: |
-            Eres el agente diario de salud de UNIQUE (www.uniqueappcol.com), un
+      # No usamos anthropics/claude-code-action@v1 aquí: ese wrapper tiene un
+      # bug conocido y sin resolver donde rechaza CLAUDE_CODE_OAUTH_TOKEN con
+      # 401 específicamente dentro de GitHub Actions (funciona bien en local
+      # y con el CLI directo). El CLI de Claude Code lee esta misma variable
+      # de entorno nativamente en modo -p/headless, así que la llamamos
+      # directo y nos saltamos el wrapper roto.
+      - name: Escribir prompt del agente
+        run: |
+          cat > /tmp/prompt-agente.txt <<'PROMPT_EOF'
+          Eres el agente diario de salud de UNIQUE (www.uniqueappcol.com), un
             marketplace de créditos para gimnasios en Colombia. Next.js (App
             Router) desplegado en Railway con auto-deploy al hacer push a
             origin/main. Backend: Airtable, Clerk (auth), Wompi (pagos),
@@ -100,9 +104,17 @@ jobs:
             - Nunca escribas ni modifiques datos en Airtable directamente
               (solo lectura vía los endpoints de arriba).
             - Si algo te parece ambiguo o riesgoso, repórtalo en vez de actuar.
+          PROMPT_EOF
+
+      - name: Agente Claude — revisar y arreglar
+        id: agente
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           GH_TOKEN: ${{ github.token }}
+        run: |
+          claude --max-turns 60 --allowedTools Bash,Read,Edit,Write,Grep,Glob \
+            -p "$(cat /tmp/prompt-agente.txt)"
 
       - name: Enviar reporte por correo
         if: always()

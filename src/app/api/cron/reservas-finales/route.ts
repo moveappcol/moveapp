@@ -16,11 +16,11 @@ import { buildReservasFinalesPdf } from "@/lib/pdf";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 // Ventana amplia porque el cron corre cada pocos minutos y puede atrasarse:
-// desde 30 min después de empezar la clase (por si acaso) hasta 20 min antes
-// (coincide con el cierre real de reservas, así que a los 20 min ya no puede
-// llegar gente nueva y la lista sí es final).
+// desde 30 min después de empezar la clase (por si acaso) hasta el aviso de
+// cada gimnasio (ver reservasFinalesMinutes — normalmente 20 min antes,
+// que coincide con el cierre real de reservas, así que a esa altura ya no
+// puede llegar gente nueva y la lista sí es final).
 const WINDOW_START_MINUTES = -30;
-const WINDOW_END_MINUTES = 20;
 
 function formatFechaLarga(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", {
@@ -58,10 +58,14 @@ export async function GET(req: NextRequest) {
     if (!clase.fecha || !clase.gimnasioId) continue;
 
     const minutesUntilClass = (new Date(clase.fecha).getTime() - now) / (1000 * 60);
-    if (minutesUntilClass < WINDOW_START_MINUTES || minutesUntilClass > WINDOW_END_MINUTES) continue;
+    // Filtro grueso antes de tocar Airtable por el gimnasio — ningún
+    // gimnasio debería pedir más de 3h de anticipación para su aviso.
+    if (minutesUntilClass < WINDOW_START_MINUTES || minutesUntilClass > 180) continue;
 
     const gym = await getGymBillingInfo(clase.gimnasioId);
     if (!gym) continue;
+
+    if (minutesUntilClass > gym.reservasFinalesMinutes) continue;
 
     const fecha = toBogotaDateString(clase.fecha);
 
@@ -97,7 +101,7 @@ export async function GET(req: NextRequest) {
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     const pdf = await buildReservasFinalesPdf({
-      variant: "20min",
+      variant: { kind: "antes", minutos: gym.reservasFinalesMinutes },
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
       clase: clase.name,
@@ -130,7 +134,7 @@ export async function GET(req: NextRequest) {
   if (fallos.length > 0) {
     await sendOpsAlertEmail({
       ownerEmail: OWNER_EMAIL,
-      asunto: "No se pudo mandar la lista de 20 min antes",
+      asunto: "No se pudo mandar la lista final de asistentes",
       detalle: `No se pudo avisar a estos gimnasios de su lista final de asistentes:\n\n${fallos.join("\n")}\n\nToca avisarles manual mientras se revisa qué pasó — la clase ya está por empezar.`,
     });
   }

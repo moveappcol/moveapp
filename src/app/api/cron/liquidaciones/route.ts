@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     const pdf = await buildReservasFinalesPdf({
-      variant: "24h",
+      variant: { kind: "24h" },
       fecha: formatFechaLarga(clase.fecha),
       gimnasio: gym.name,
       clase: clase.name,

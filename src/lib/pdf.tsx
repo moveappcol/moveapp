@@ -61,20 +61,24 @@ function Table({ headers, rows, widths }: { headers: string[]; rows: string[][];
 
 export type ReservaFinalRow = { tipo: "A" | "B" | null; nombre: string; cedula: string };
 
-/** PDF de "reservas finales" — mismo documento para 24h antes y 20 min
- * antes, solo cambia el título y el color del texto (negro para 20 min,
- * verde para 24h), igual a las plantillas de referencia. */
+/** PDF de "reservas finales" — mismo documento para 24h antes y para la
+ * lista final (normalmente 20 min antes, pero algunos gimnasios piden más
+ * anticipación — ver DEFAULT_RESERVAS_FINALES_MINUTES), solo cambia el
+ * título y el color del texto (negro para la lista final, verde para 24h),
+ * igual a las plantillas de referencia. */
 export async function buildReservasFinalesPdf(params: {
-  variant: "20min" | "24h";
+  variant: { kind: "antes"; minutos: number } | { kind: "24h" };
   fecha: string;
   gimnasio: string;
   clase: string;
   hora: string;
   reservas: ReservaFinalRow[];
 }): Promise<Buffer> {
-  const color = params.variant === "20min" ? BLACK : GREEN;
+  const color = params.variant.kind === "antes" ? BLACK : GREEN;
   const titulo =
-    params.variant === "20min" ? "RESERVAS FINALES (20 min antes )" : "RESERVAS FINALES (24 h antes )";
+    params.variant.kind === "antes"
+      ? `RESERVAS FINALES (${params.variant.minutos} min antes )`
+      : "RESERVAS FINALES (24 h antes )";
 
   const doc = (
     <Document>

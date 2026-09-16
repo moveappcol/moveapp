@@ -15,6 +15,12 @@ export const GYMS_COMING_SOON = false;
  * desincronizadas. */
 export const DEFAULT_BOOKING_CUTOFF_MINUTES = 20;
 
+/** Minutos antes de la clase en que se le manda al gimnasio la lista final
+ * de asistentes — salvo que tenga su propio valor en "Minutos aviso lista
+ * final" (ej. LUCKY GIRL PILATES pidió 60, para tener más tiempo de
+ * prepararse). */
+export const DEFAULT_RESERVAS_FINALES_MINUTES = 20;
+
 /** Restricción de acceso por género. "todos" = sin restricción. */
 export type GymGenero = "todos" | "solo_mujeres" | "solo_hombres";
 
@@ -351,6 +357,9 @@ export type GymBillingInfo = {
    * propio configurado todavía en Airtable (se usa el default). */
   porcentajeTipoA: number | null;
   porcentajeTipoB: number | null;
+  /** Ver DEFAULT_RESERVAS_FINALES_MINUTES — ya resuelto al default si el
+   * gimnasio no tiene un valor propio configurado en Airtable. */
+  reservasFinalesMinutes: number;
 };
 
 /** Convierte el entero guardado en Airtable ("Porcentaje tipo A" = 40) a
@@ -378,6 +387,8 @@ async function fetchGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
       pricePerReservation: price !== undefined ? Number(price) : null,
       porcentajeTipoA: toPorcentaje(record.get("Porcentaje tipo A") as number | string | undefined),
       porcentajeTipoB: toPorcentaje(record.get("Porcentaje tipo B") as number | string | undefined),
+      reservasFinalesMinutes:
+        Number(record.get("Minutos aviso lista final")) || DEFAULT_RESERVAS_FINALES_MINUTES,
     };
   } catch {
     return null;

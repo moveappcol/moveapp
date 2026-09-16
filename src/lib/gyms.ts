@@ -388,7 +388,7 @@ async function fetchGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
       porcentajeTipoA: toPorcentaje(record.get("Porcentaje tipo A") as number | string | undefined),
       porcentajeTipoB: toPorcentaje(record.get("Porcentaje tipo B") as number | string | undefined),
       reservasFinalesMinutes:
-        Number(record.get("Minutos aviso lista final")) || DEFAULT_RESERVAS_FINALES_MINUTES,
+        Number(record.get("Minutos aviso lista final ")) || DEFAULT_RESERVAS_FINALES_MINUTES,
     };
   } catch {
     return null;

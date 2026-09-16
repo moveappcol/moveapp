@@ -92,13 +92,16 @@ export async function sendClassReminderEmail(params: {
   clase: string;
   fechaLarga: string;
   hora: string;
+  gimnasio: string | null;
+  mapsUrl: string | null;
 }): Promise<void> {
   const html = `
     <div style="font-family: sans-serif;">
       <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
       <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">CLASS REMINDER</p>
       <p>¡Hola, ${escapeHtml(params.nombre)}! Esperamos que estés muy bien.</p>
-      <p>Te recordamos que tu clase de <strong>${escapeHtml(params.clase)}</strong> es hoy, <strong>${escapeHtml(params.fechaLarga)}</strong> a las <strong>${escapeHtml(params.hora)}</strong>.</p>
+      <p>Te recordamos que tu clase de <strong>${escapeHtml(params.clase)}</strong>${params.gimnasio ? ` en <strong>${escapeHtml(params.gimnasio)}</strong>` : ""} es hoy, <strong>${escapeHtml(params.fechaLarga)}</strong> a las <strong>${escapeHtml(params.hora)}</strong>.</p>
+      ${params.mapsUrl ? `<p><a href="${params.mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver ubicación en Google Maps</a></p>` : ""}
       <p>Te esperamos para que disfrutes mucho la clase y tengas un espacio para moverte, desconectarte y disfrutar.</p>
       <p>Equipo UNIQUE</p>
     </div>

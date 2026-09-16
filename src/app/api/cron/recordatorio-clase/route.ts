@@ -4,6 +4,19 @@ import { getReservationsDetailForClase, markRecordatorioEnviado } from "@/lib/re
 import { sendClassReminderEmail, sendOpsAlertEmail } from "@/lib/email";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { sendPushNotification } from "@/lib/push";
+import { getGymById } from "@/lib/gyms";
+
+/** Link de Maps con la ubicación del gimnasio — con coordenadas si las
+ * tiene (abre directo la ruta), si no cae a una búsqueda por dirección. */
+function buildMapsUrl(gym: { lat: number | null; lng: number | null; address: string }): string | null {
+  if (gym.lat !== null && gym.lng !== null) {
+    return `https://www.google.com/maps/dir/?api=1&destination=${gym.lat},${gym.lng}`;
+  }
+  if (gym.address) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gym.address)}`;
+  }
+  return null;
+}
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -52,6 +65,9 @@ export async function GET(req: NextRequest) {
     const minutesUntilClass = (new Date(clase.fecha).getTime() - now) / (1000 * 60);
     if (minutesUntilClass < WINDOW_START_MINUTES || minutesUntilClass > WINDOW_END_MINUTES) continue;
 
+    const gym = await getGymById(clase.gimnasioId);
+    const mapsUrl = gym ? buildMapsUrl(gym) : null;
+
     const reservas = await getReservationsDetailForClase(clase.id);
     const pendientes = reservas.filter(
       (r) => r.estado !== "Cancelado on time" && !r.recordatorioEnviado
@@ -70,6 +86,8 @@ export async function GET(req: NextRequest) {
           clase: clase.name,
           fechaLarga: formatFechaLarga(clase.fecha),
           hora: formatHora(clase.fecha),
+          gimnasio: gym?.name ?? null,
+          mapsUrl,
         });
         const persona = await getUserCreditsByEmail(r.correo);
         await sendPushNotification({

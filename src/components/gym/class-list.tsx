@@ -44,11 +44,9 @@ function ConfirmModal({
 
 export type WaitlistStatusMap = Record<string, { enEspera: boolean; posicion: number | null }>;
 
-const BOOKING_CUTOFF_MINUTES = 20;
-
-function isBookingClosed(fecha: string): boolean {
+function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
   const minutesUntilClass = (new Date(fecha).getTime() - Date.now()) / (1000 * 60);
-  return minutesUntilClass < BOOKING_CUTOFF_MINUTES;
+  return minutesUntilClass < cutoffMinutes;
 }
 
 /** No mostramos el conteo de cupos en ningún otro caso — solo cuando quedan
@@ -69,11 +67,13 @@ function ClaseCard({
   gimnasioId,
   waitlistStatus,
   yaReservada,
+  bookingCutoffMinutes,
 }: {
   clase: Clase;
   gimnasioId: string;
   waitlistStatus?: { enEspera: boolean; posicion: number | null };
   yaReservada: boolean;
+  bookingCutoffMinutes: number;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -140,7 +140,7 @@ function ClaseCard({
               </Link>
             </Show>
           </>
-        ) : isBookingClosed(clase.fecha) ? (
+        ) : isBookingClosed(clase.fecha, bookingCutoffMinutes) ? (
           <p className="font-body text-sm text-move-green/50">
             Las reservas para esta clase ya cerraron.
           </p>
@@ -188,11 +188,13 @@ export default function ClassList({
   classes,
   waitlistStatus,
   reservedClaseIds,
+  bookingCutoffMinutes,
 }: {
   gimnasioId: string;
   classes: Clase[];
   waitlistStatus?: WaitlistStatusMap;
   reservedClaseIds?: string[];
+  bookingCutoffMinutes: number;
 }) {
   const semana = useMemo(() => semanaActual(), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
@@ -255,6 +257,7 @@ export default function ClassList({
                 gimnasioId={gimnasioId}
                 waitlistStatus={waitlistStatus?.[clase.id]}
                 yaReservada={reservedSet.has(clase.id)}
+                bookingCutoffMinutes={bookingCutoffMinutes}
               />
             ))}
           </ul>
@@ -272,6 +275,7 @@ export default function ClassList({
                 gimnasioId={gimnasioId}
                 waitlistStatus={waitlistStatus?.[clase.id]}
                 yaReservada={reservedSet.has(clase.id)}
+                bookingCutoffMinutes={bookingCutoffMinutes}
               />
             ))}
           </ul>

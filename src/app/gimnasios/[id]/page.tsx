@@ -148,6 +148,7 @@ export default async function GymPage({
           classes={classes}
           waitlistStatus={waitlistStatus}
           reservedClaseIds={[...reservedClaseIds]}
+          bookingCutoffMinutes={gym.bookingCutoffMinutes}
         />
       </div>
     </section>

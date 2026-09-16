@@ -7,6 +7,14 @@ const CACHE_TTL_MS = 10_000;
 // que la grilla y las páginas de detalle sean públicas.
 export const GYMS_COMING_SOON = false;
 
+/** Minutos antes de la clase en que cierran las reservas — por defecto,
+ * salvo que el gimnasio tenga su propio valor en "Minutos de corte reserva"
+ * (ej. LUCKY GIRL PILATES pidió 70 — necesita saber la asistencia con 1h
+ * de anticipación mínimo). Un solo lugar para el default, para que la UI
+ * (class-list.tsx) y la validación real (reservations.ts) nunca queden
+ * desincronizadas. */
+export const DEFAULT_BOOKING_CUTOFF_MINUTES = 20;
+
 /** Restricción de acceso por género. "todos" = sin restricción. */
 export type GymGenero = "todos" | "solo_mujeres" | "solo_hombres";
 
@@ -37,6 +45,9 @@ export type Gym = {
   politicaMenores: string | null;
   nivelRecomendado: string | null;
   recomendaciones: string | null;
+  /** Ver DEFAULT_BOOKING_CUTOFF_MINUTES — ya resuelto al default si el
+   * gimnasio no tiene un valor propio configurado en Airtable. */
+  bookingCutoffMinutes: number;
 };
 
 /**
@@ -61,6 +72,8 @@ export type Gym = {
  *   - "Política para menores de edad"            (texto largo)
  *   - "Nivel recomendado (principiante/avanzado)" (texto largo)
  *   - "Recomendaciones adicionales"              (texto largo)
+ *   - "Minutos de corte reserva"                 (número, opcional — hasta cuántos minutos antes de
+ *      la clase se puede reservar; vacío = usa DEFAULT_BOOKING_CUTOFF_MINUTES)
  *   - Activo                                     (casilla — solo se traen los marcados)
  *
  * "Numero" y "Reservas" existen en la base pero no se usan aquí todavía.
@@ -90,6 +103,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: "Solo mayores de 16 años.",
     nivelRecomendado: "Apto para todos los niveles.",
     recomendaciones: "Trae toalla y una botella de agua.",
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
   {
     id: "mock-2",
@@ -112,6 +126,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: null,
     nivelRecomendado: null,
     recomendaciones: null,
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
   {
     id: "mock-3",
@@ -134,6 +149,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: null,
     nivelRecomendado: null,
     recomendaciones: null,
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
   {
     id: "mock-4",
@@ -156,6 +172,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: null,
     nivelRecomendado: null,
     recomendaciones: null,
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
   {
     id: "mock-5",
@@ -178,6 +195,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: null,
     nivelRecomendado: null,
     recomendaciones: null,
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
   {
     id: "mock-6",
@@ -200,6 +218,7 @@ const MOCK_GYMS: Gym[] = [
     politicaMenores: null,
     nivelRecomendado: null,
     recomendaciones: null,
+    bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
   },
 ];
 
@@ -276,6 +295,7 @@ function mapRecordToGym(record: any): Gym {
     politicaMenores: textField(record, "Política para menores de edad"),
     nivelRecomendado: textField(record, "Nivel recomendado (principiante/avanzado)"),
     recomendaciones: textField(record, "Recomendaciones adicionales"),
+    bookingCutoffMinutes: Number(record.get("Minutos de corte reserva")) || DEFAULT_BOOKING_CUTOFF_MINUTES,
   };
 }
 

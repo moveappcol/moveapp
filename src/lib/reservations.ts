@@ -1,7 +1,7 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById, precioEfectivo } from "./classes";
-import { getGymById } from "./gyms";
+import { getGymById, DEFAULT_BOOKING_CUTOFF_MINUTES } from "./gyms";
 import { sendLowRatingAlertEmail } from "./email";
 import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
 import { sendPushNotification } from "./push";
@@ -78,7 +78,6 @@ export async function markCorreoDespuesClaseEnviado(reservationId: string): Prom
 }
 
 const CANCELLATION_WINDOW_HOURS = 24;
-const BOOKING_CUTOFF_MINUTES = 20;
 const MAX_MONTHLY_RESERVATIONS_PER_GYM = 3;
 
 /** "Y-M" del mes de una fecha en hora de Bogotá (no la del proceso del
@@ -153,11 +152,13 @@ export async function createReservation(params: {
 }): Promise<BookingResult> {
   const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO } = params;
 
+  const gym = await getGymById(gimnasioId);
+  const bookingCutoffMinutes = gym?.bookingCutoffMinutes ?? DEFAULT_BOOKING_CUTOFF_MINUTES;
   const minutesUntilClass = (new Date(fechaISO).getTime() - Date.now()) / (1000 * 60);
-  if (minutesUntilClass < BOOKING_CUTOFF_MINUTES) {
+  if (minutesUntilClass < bookingCutoffMinutes) {
     return {
       ok: false,
-      error: `Las reservas para esta clase cierran ${BOOKING_CUTOFF_MINUTES} minutos antes de que empiece.`,
+      error: `Las reservas para esta clase cierran ${bookingCutoffMinutes} minutos antes de que empiece.`,
     };
   }
 

@@ -54,6 +54,11 @@ export type Gym = {
   /** Ver DEFAULT_BOOKING_CUTOFF_MINUTES — ya resuelto al default si el
    * gimnasio no tiene un valor propio configurado en Airtable. */
   bookingCutoffMinutes: number;
+  /** Campo "Orden" de Airtable — controla en qué posición aparece el
+   * gimnasio en la grilla y en la app. Menor número sale primero; null
+   * (vacío en Airtable) manda al gimnasio al final, ordenado alfabéticamente
+   * entre los demás sin orden. Ver sortGymsByOrder. */
+  order: number | null;
 };
 
 /**
@@ -81,6 +86,8 @@ export type Gym = {
  *   - "Minutos de corte reserva"                 (número, opcional — hasta cuántos minutos antes de
  *      la clase se puede reservar; vacío = usa DEFAULT_BOOKING_CUTOFF_MINUTES)
  *   - Activo                                     (casilla — solo se traen los marcados)
+ *   - Orden                                      (número, opcional — controla el orden de aparición en
+ *      la grilla y la app; menor número sale primero, vacío = al final, orden alfabético)
  *
  * "Numero" y "Reservas" existen en la base pero no se usan aquí todavía.
  */
@@ -110,6 +117,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: "Apto para todos los niveles.",
     recomendaciones: "Trae toalla y una botella de agua.",
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
   {
     id: "mock-2",
@@ -133,6 +141,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: null,
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
   {
     id: "mock-3",
@@ -156,6 +165,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: null,
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
   {
     id: "mock-4",
@@ -179,6 +189,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: null,
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
   {
     id: "mock-5",
@@ -202,6 +213,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: null,
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
   {
     id: "mock-6",
@@ -225,6 +237,7 @@ const MOCK_GYMS: Gym[] = [
     nivelRecomendado: null,
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: null,
   },
 ];
 
@@ -302,7 +315,18 @@ function mapRecordToGym(record: any): Gym {
     nivelRecomendado: textField(record, "Nivel recomendado (principiante/avanzado)"),
     recomendaciones: textField(record, "Recomendaciones adicionales"),
     bookingCutoffMinutes: Number(record.get("Minutos de corte reserva")) || DEFAULT_BOOKING_CUTOFF_MINUTES,
+    order: record.get("Orden") !== undefined && record.get("Orden") !== "" ? Number(record.get("Orden")) : null,
   };
+}
+
+/** Orden de aparición en la grilla y en la app: menor "Orden" primero: los
+ * gimnasios sin "Orden" van al final, ordenados alfabéticamente. */
+export function sortGymsByOrder(gyms: Gym[]): Gym[] {
+  const conOrden = gyms.filter((g) => g.order !== null).sort((a, b) => a.order! - b.order!);
+  const sinOrden = gyms
+    .filter((g) => g.order === null)
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return [...conOrden, ...sinOrden];
 }
 
 /** Un hombre no puede acceder a gimnasios "solo_mujeres" y viceversa. Sin
@@ -321,7 +345,7 @@ export function filterGymsByGenero(gyms: Gym[], userGenero: string | null): Gym[
 
 export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }> {
   if (!isAirtableConfigured()) {
-    return { gyms: MOCK_GYMS, usingMockData: true };
+    return { gyms: sortGymsByOrder(MOCK_GYMS), usingMockData: true };
   }
 
   return cached("gyms:list", CACHE_TTL_MS, async () => {
@@ -330,7 +354,9 @@ export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }
       .select({ filterByFormula: "{Activo} = 1" })
       .all();
 
-    const gyms = records.filter((r) => Boolean(r.get("Nombre"))).map(mapRecordToGym);
+    const gyms = sortGymsByOrder(
+      records.filter((r) => Boolean(r.get("Nombre"))).map(mapRecordToGym)
+    );
 
     return { gyms, usingMockData: false };
   });

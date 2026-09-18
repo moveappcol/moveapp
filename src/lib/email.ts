@@ -323,8 +323,12 @@ export async function sendLiquidacionEmail(params: {
   });
 }
 
-/** Correo de los 20 minutos antes: adjunta el PDF "RESERVAS FINALES (20 min
- * antes)" (puede incluir gente que reservó después del corte de las 24h). */
+/** Correo de la lista final, justo antes de que empiece la clase (por
+ * defecto 20 min, pero cada gimnasio puede tener su propio valor — ver
+ * DEFAULT_RESERVAS_FINALES_MINUTES en gyms.ts). El texto del correo no
+ * menciona los minutos exactos porque varían según el gimnasio; el PDF
+ * adjunto "RESERVAS FINALES (N min antes)" sí trae el valor real de cada
+ * uno. Puede incluir gente que reservó después del corte de las 24h. */
 export async function sendReservasFinalesEmail(params: {
   gymEmail: string | null;
   ownerEmail: string;
@@ -335,7 +339,7 @@ export async function sendReservasFinalesEmail(params: {
 }): Promise<void> {
   const html = `
     <p>Hola,</p>
-    <p>La clase de <strong>${escapeHtml(params.clase)}</strong> comenzará en 20 minutos.</p>
+    <p>La clase de <strong>${escapeHtml(params.clase)}</strong> está por comenzar.</p>
     <p>Les compartimos el listado final de asistentes confirmados:</p>
     ${attendeesListHtml(params.asistentes)}
     <p>Les deseamos una excelente clase y, como siempre, gracias por ser parte de UNIQUE.</p>

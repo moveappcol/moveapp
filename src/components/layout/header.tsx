@@ -7,6 +7,7 @@ import MobileNav from "./mobile-nav";
 const NAV_LINKS = [
   { href: "/#gimnasios", label: "Gimnasios" },
   { href: "/#planes", label: "Planes" },
+  { href: "/como-funciona", label: "Cómo funciona" },
   { href: "/sobre-nosotros", label: "Sobre nosotros" },
   { href: "/#contacto", label: "Contacto" },
 ];

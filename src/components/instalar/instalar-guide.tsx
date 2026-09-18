@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 type Platform = "iphone" | "android";
 
@@ -308,9 +309,13 @@ export default function InstalarGuide() {
   return (
     <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
       <div className="flex items-center justify-between">
-        <span className="font-brand text-2xl font-bold uppercase tracking-tight text-move-green">
-          UNIQUE
-        </span>
+        <Image
+          src="/brand/unique-wordmark.png"
+          alt="UNIQUE"
+          width={854}
+          height={277}
+          className="h-6 w-auto"
+        />
         <div className="flex rounded-full border border-move-green/15 p-1">
           <button
             type="button"

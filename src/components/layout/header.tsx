@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getUserCreditsByEmail } from "@/lib/users";
 import UserMenu from "./user-menu";
@@ -43,11 +44,15 @@ export default async function Header() {
     <header className="sticky top-0 z-50 border-b border-move-green/10 bg-background/95 backdrop-blur relative">
       {/* relative: ancla el panel del menú móvil (ver mobile-nav.tsx) */}
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <Link
-          href="/"
-          className="font-brand text-2xl font-bold uppercase tracking-tight text-move-green"
-        >
-          UNIQUE
+        <Link href="/" className="block">
+          <Image
+            src="/brand/unique-wordmark.png"
+            alt="UNIQUE"
+            width={854}
+            height={277}
+            className="h-6 w-auto"
+            priority
+          />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">

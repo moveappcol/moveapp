@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const CONTACT_EMAIL = "gerencia@uniqueappcol.com";
 
@@ -8,9 +9,13 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 md:grid-cols-3">
           <div>
-            <p className="font-brand text-2xl font-bold uppercase tracking-tight">
-              UNIQUE
-            </p>
+            <Image
+              src="/brand/unique-wordmark-white.png"
+              alt="UNIQUE"
+              width={854}
+              height={277}
+              className="h-6 w-auto"
+            />
             <p className="mt-3 max-w-xs font-body text-sm text-white/70">
               Un solo plan de créditos para entrenar en los mejores gimnasios
               y estudios afiliados.

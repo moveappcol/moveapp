@@ -83,43 +83,40 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
   };
 }
 
+/** Crea o actualiza (atómicamente, del lado de Airtable) el registro de
+ * "usuarios" que coincide con el correo dado. Usamos performUpsert en vez
+ * de "buscar y luego crear si no existe": ese patrón tenía una condición de
+ * carrera real — si dos llamadas caían casi al mismo tiempo (como pasa acá,
+ * saveTrackingConsent y savePushToken se disparan en paralelo desde el
+ * mismo useEffect en la app móvil), ambas veían "no existe" y creaban un
+ * registro duplicado. performUpsert deja que el propio Airtable decida.
+ *
+ * Los tipos de la librería "airtable" no conocen performUpsert ni un
+ * registro sin `id` en `.update()` (ambos se agregaron a la API REST
+ * después de que se escribieran esos tipos), de ahí el `as unknown as`. */
+async function upsertUsuarioPorCorreo(email: string, fields: Record<string, unknown>): Promise<void> {
+  const base = getAirtableBase();
+  const update = base(USUARIOS_TABLE).update as unknown as (
+    records: { fields: Record<string, unknown> }[],
+    opts: { performUpsert: { fieldsToMergeOn: string[] } }
+  ) => Promise<unknown>;
+  await update([{ fields: { Correo: email, ...fields } }], {
+    performUpsert: { fieldsToMergeOn: ["Correo"] },
+  });
+}
+
 /** Guarda que la persona denegó (o volvió a permitir) el rastreo de App
  * Tracking Transparency en la app. Crea el registro en "usuarios" si
  * todavía no existe. */
 export async function saveTrackingConsent(email: string, granted: boolean): Promise<void> {
-  const base = getAirtableBase();
-  const existing = await getUserCreditsByEmail(email);
-  const value = granted ? "" : "denied";
-
-  if (existing) {
-    await base(USUARIOS_TABLE).update([
-      { id: existing.recordId, fields: { TrackingConsent: value } },
-    ]);
-    return;
-  }
-
-  await base(USUARIOS_TABLE).create([
-    { fields: { Correo: email, Creditos: 0, TrackingConsent: value } },
-  ]);
+  await upsertUsuarioPorCorreo(email, { TrackingConsent: granted ? "" : "denied" });
 }
 
 /** Guarda (o borra, si `token` es null) el token de push de la persona.
  * Crea el registro en "usuarios" si todavía no existe (puede pasar antes
  * de completar el perfil). */
 export async function savePushToken(email: string, token: string | null): Promise<void> {
-  const base = getAirtableBase();
-  const existing = await getUserCreditsByEmail(email);
-
-  if (existing) {
-    await base(USUARIOS_TABLE).update([
-      { id: existing.recordId, fields: { PushToken: token ?? "" } },
-    ]);
-    return;
-  }
-
-  await base(USUARIOS_TABLE).create([
-    { fields: { Correo: email, Creditos: 0, PushToken: token ?? "" } },
-  ]);
+  await upsertUsuarioPorCorreo(email, { PushToken: token ?? "" });
 }
 
 /** Borra la cuenta de la persona: elimina su registro de "usuarios" en

@@ -4,7 +4,7 @@ import { getAirtableBase } from "./airtable";
  * Esquema en Airtable — tabla "Liquidacion" (una fila por clase, generada
  * automáticamente cuando se cumplen las 24h antes de la clase — a partir de
  * ahí las reservas ya no se pueden cancelar gratis, así que la lista queda
- * fija salvo por reservas nuevas hasta el corte de 20 min):
+ * fija salvo por reservas nuevas hasta el corte de reserva, 1h por defecto):
  *   - Gimnasio           (texto — nombre del gimnasio)
  *   - Clase               (texto — nombre de la clase)
  *   - Fecha                (fecha de la clase)

@@ -13,7 +13,7 @@ export const GYMS_COMING_SOON = false;
  * de anticipación mínimo). Un solo lugar para el default, para que la UI
  * (class-list.tsx) y la validación real (reservations.ts) nunca queden
  * desincronizadas. */
-export const DEFAULT_BOOKING_CUTOFF_MINUTES = 20;
+export const DEFAULT_BOOKING_CUTOFF_MINUTES = 60;
 
 /** Minutos antes de la clase en que se le manda al gimnasio la lista final
  * de asistentes — salvo que tenga su propio valor en "Minutos aviso lista

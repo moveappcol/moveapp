@@ -16,7 +16,16 @@ import {
  * necesitamos mandar el Bearer del CRON_SECRET) — ver instrucciones en el
  * chat de configuración. Si la liquidación de esa clase todavía no existe
  * (falta para las 24h antes), no hace nada — se calculará bien cuando se
- * cree normalmente. */
+ * cree normalmente.
+ *
+ * OJO: la fecha se toma de la propia reserva ("Fecha" en la tabla
+ * "Reservas"), no de clase.fecha (que lee el campo "Horario" de la clase
+ * recurrente — solo tiene la PRÓXIMA ocurrencia, y queda vacío para clases
+ * ya pasadas). Corregir el estado de una reserva vieja días o meses después
+ * de la clase dependía antes de que "Horario" siguiera apuntando a esa
+ * fecha exacta, así que se saltaba en silencio ("clase sin fecha o
+ * gimnasio") para cualquier corrección hecha después de que la clase
+ * recurrente ya se reprogramó. */
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get("authorization");
@@ -42,14 +51,19 @@ export async function POST(req: NextRequest) {
   if (!claseId) return NextResponse.json({ ok: true, skipped: "reserva sin clase" });
 
   const clase = await getClaseById(claseId);
-  if (!clase || !clase.fecha || !clase.gimnasioId) {
-    return NextResponse.json({ ok: true, skipped: "clase sin fecha o gimnasio" });
+  if (!clase || !clase.gimnasioId) {
+    return NextResponse.json({ ok: true, skipped: "clase sin gimnasio" });
+  }
+
+  const fechaReserva = record.get("Fecha") as string | undefined;
+  if (!fechaReserva) {
+    return NextResponse.json({ ok: true, skipped: "reserva sin fecha" });
   }
 
   const gym = await getGymBillingInfo(clase.gimnasioId);
   if (!gym) return NextResponse.json({ ok: true, skipped: "gimnasio no encontrado" });
 
-  const fecha = toBogotaDateString(clase.fecha);
+  const fecha = toBogotaDateString(fechaReserva);
   const liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
   if (!liquidacion) {
     return NextResponse.json({ ok: true, skipped: "todavía no existe liquidación para esta clase" });

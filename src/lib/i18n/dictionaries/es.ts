@@ -431,6 +431,174 @@ export const es = {
       "Abre la app UNIQUE desde el ícono en tu pantalla de inicio",
     ],
   },
+  terminos: {
+    draftNotice: "",
+    eyebrow: "UNIQUE APP S.A.S. — NIT 902.086.248",
+    title: "Términos y Condiciones de Uso",
+    intro: 'Los presentes Términos y Condiciones (en adelante, los "Términos") regulan el acceso y uso de la plataforma UNIQUE (en adelante, la "Plataforma"), operada por UNIQUE APP S.A.S., sociedad comercial identificada con NIT 902.086.248, domiciliada en Bogotá D.C., Colombia (en adelante, "UNIQUE", "la Empresa", "nosotros"). Al crear una cuenta, adquirir una suscripción o usar la Plataforma de cualquier forma, el usuario (en adelante, el "Usuario") declara haber leído, entendido y aceptado íntegramente estos Términos.',
+    sections: [
+      {
+        title: "1. Objeto de la Plataforma",
+        paragraphs: [
+          'UNIQUE es una plataforma tecnológica que permite a los Usuarios acceder, mediante un sistema de suscripción por créditos, a clases y servicios ofrecidos por estudios y gimnasios independientes aliados (en adelante, los "Gimnasios" o "Aliados") en la ciudad de Bogotá y demás ciudades donde opere el servicio.',
+          "UNIQUE actúa exclusivamente como intermediario tecnológico entre los Usuarios y los Gimnasios. UNIQUE no opera, administra, presta directamente, ni es responsable de las instalaciones, instructores, equipos o clases ofrecidas por los Gimnasios. La relación de prestación del servicio deportivo o de acondicionamiento físico se establece directamente entre el Usuario y el Gimnasio correspondiente. Lo anterior se entiende sin perjuicio de las obligaciones que legalmente correspondan a UNIQUE por la operación de la Plataforma y de los derechos irrenunciables del consumidor.",
+        ],
+      },
+      {
+        title: "2. Cuenta de Usuario",
+        paragraphs: [
+          "Para usar la Plataforma, el Usuario debe crear una cuenta suministrando información veraz, completa y actualizada. El Usuario es el único responsable de la confidencialidad de sus credenciales de acceso y de toda actividad realizada desde su cuenta.",
+          "UNIQUE se reserva el derecho de suspender o cancelar cuentas que suministren información falsa, incompleta, o que incumplan estos Términos, sin que ello genere derecho a indemnización alguna a favor del Usuario. La medida deberá ser razonable y proporcional al incumplimiento identificado.",
+          "El uso de la Plataforma está reservado a mayores de edad.",
+        ],
+      },
+      {
+        title: "3. Suscripciones, Créditos y Pagos",
+        paragraphs: [
+          'El acceso a las clases se realiza mediante planes de suscripción mensual (Starter, Balance, Volumen u otros que UNIQUE defina), cada uno con una asignación de créditos que el Usuario puede redimir en reservas dentro de la vigencia del plan. Los créditos no utilizados no son acumulables entre periodos, no son reembolsables, ni transferibles a otro Usuario, salvo que UNIQUE indique expresamente lo contrario para un plan o promoción determinada. Lo anterior se entiende sin perjuicio de los casos en que la ley aplicable exija devolución o restitución.',
+          'El Usuario podrá adquirir paquetes adicionales de créditos ("top-ups") únicamente si mantiene una suscripción activa, en las condiciones y precios publicados en la Plataforma en el momento de la compra.',
+          "Los pagos se procesan a través de la pasarela de pagos Wompi u otra que UNIQUE determine. UNIQUE no almacena datos completos de tarjetas u otros instrumentos de pago; dicha información es tratada directamente por el proveedor de la pasarela de pagos bajo sus propias políticas.",
+          "UNIQUE se reserva el derecho de modificar precios, planes y equivalencias de créditos, dando aviso previo al Usuario a través de la Plataforma o por correo electrónico, con una antelación razonable que en ningún caso será inferior a diez (10) días calendario antes de que el cambio surta efectos frente a suscripciones vigentes. Las modificaciones serán prospectivas y no afectarán reservas ya confirmadas. El Usuario podrá cancelar su suscripción antes de la entrada en vigor del cambio.",
+        ],
+      },
+      {
+        title: '4. Reservas, Cancelaciones y Política de "No-Show"',
+        paragraphs: [
+          "El Usuario podrá reservar clases disponibles publicadas por los Gimnasios, sujeto al cupo ofrecido por cada Aliado. La reserva se entiende confirmada cuando la Plataforma así lo notifica al Usuario.",
+          'El Usuario podrá cancelar una reserva sin penalidad hasta veinticuatro (24) horas antes del inicio de la clase. Las cancelaciones realizadas con menos de veinticuatro (24) horas de antelación, así como la inasistencia sin cancelación ("no-show"), causarán la pérdida de los créditos utilizados para dicha reserva, sin lugar a devolución ni reembolso. Esta consecuencia no aplicará cuando la cancelación o inasistencia sea atribuible al Gimnasio, a UNIQUE, a una falla de la Plataforma o a un evento que, conforme a la ley, deba dar lugar a devolución o restitución.',
+          'UNIQUE podrá, a su discreción, establecer límites al número de reservas simultáneas o de "no-shows" permitidos por Usuario, así como suspender temporalmente el derecho de reserva de Usuarios reincidentes en incumplir esta política. Estos límites o medidas deberán ser razonables, proporcionales y previamente informados al Usuario.',
+        ],
+      },
+      {
+        title: "5. Exclusión de Responsabilidad y Asunción de Riesgo",
+        paragraphs: [
+          "El Usuario reconoce y acepta que la práctica de actividad física conlleva riesgos inherentes de lesión, y que participa en las clases y actividades ofrecidas por los Gimnasios bajo su propia cuenta y riesgo, luego de haber evaluado su condición física y de salud para dicha práctica. Se recomienda al Usuario consultar con un profesional de la salud antes de iniciar cualquier actividad física, especialmente si tiene condiciones médicas preexistentes.",
+          "UNIQUE NO es responsable por hechos que no le sean legalmente imputables relacionados con lesiones, accidentes, daños a la salud, hurtos, pérdidas o daños de bienes personales, ni por cualquier perjuicio que el Usuario sufra dentro de las instalaciones de un Gimnasio o como consecuencia de una clase, entrenamiento o actividad allí desarrollada. La responsabilidad por la seguridad del Usuario dentro de las instalaciones, la idoneidad de sus instructores, el estado de sus equipos y el cumplimiento de normas de seguridad e higiene corresponde exclusiva y directamente al Gimnasio respectivo, conforme a lo pactado en el contrato de vinculación entre UNIQUE y cada Gimnasio. Ninguna disposición de estos Términos excluye responsabilidades legalmente irrenunciables.",
+          "UNIQUE tampoco será responsable por la cancelación, modificación de horario, cierre temporal o definitivo de un Gimnasio, ni por la calidad del servicio prestado por este, sin perjuicio de las gestiones comerciales razonables que UNIQUE pueda adelantar frente al Aliado en beneficio del Usuario. Cuando la cancelación o modificación afecte una reserva confirmada, UNIQUE restituirá los créditos utilizados o gestionará una alternativa equivalente, según corresponda.",
+          "En la máxima medida permitida por la ley aplicable, la responsabilidad total de UNIQUE frente al Usuario por cualquier reclamación relacionada con la Plataforma se limitará al valor efectivamente pagado por el Usuario a UNIQUE durante el mes calendario en que ocurrieron los hechos que originan la reclamación. Esta limitación no aplicará cuando resulte prohibida por normas imperativas, ni respecto de daños causados por dolo o culpa grave de UNIQUE, afectaciones a la vida o integridad, incumplimiento de obligaciones legales de UNIQUE o derechos irrenunciables del consumidor.",
+        ],
+      },
+      {
+        title: "6. Indemnidad",
+        paragraphs: [
+          "El Usuario se obliga a mantener indemne y a defender a UNIQUE, sus administradores, empleados y aliados frente a cualquier reclamación, demanda, sanción, costo o gasto (incluidos honorarios de abogados) que surja de: (i) el incumplimiento de estos Términos por parte del Usuario; (ii) el uso indebido de la Plataforma; o (iii) hechos o lesiones ocurridos en las instalaciones de un Gimnasio derivados de la conducta del propio Usuario. Esta obligación procederá únicamente respecto de perjuicios directos, comprobados y legalmente imputables al Usuario, y no comprenderá sanciones, costos o gastos atribuibles a actos u omisiones de UNIQUE o de terceros.",
+        ],
+      },
+      {
+        title: "7. Relación con los Gimnasios Aliados",
+        paragraphs: [
+          "Los Gimnasios son terceros independientes que ofrecen cupos disponibles a través de la Plataforma en virtud de un acuerdo comercial con UNIQUE. Ningún Gimnasio actúa como dependiente, agente, representante o empleado de UNIQUE, ni viceversa.",
+          "UNIQUE se reserva el derecho de incorporar o retirar Gimnasios de la Plataforma en cualquier momento, sin que ello genere obligación de compensación frente al Usuario, sin perjuicio de honrar las reservas ya confirmadas. Si una reserva confirmada no puede ser atendida, se restituirán los créditos utilizados o se ofrecerá una alternativa equivalente.",
+        ],
+      },
+      {
+        title: "8. Propiedad Intelectual",
+        paragraphs: [
+          'Todos los derechos de propiedad intelectual sobre la Plataforma, su software, marca, nombre comercial "UNIQUE", diseño, contenidos, base de datos y demás elementos, pertenecen a UNIQUE APP S.A.S. o a sus licenciantes. Queda prohibida su reproducción, distribución, modificación o explotación no autorizada.',
+          "El Usuario otorga a UNIQUE una licencia limitada, no exclusiva y gratuita para usar el contenido que este publique en la Plataforma (reseñas, calificaciones, fotografías de perfil) exclusivamente para el funcionamiento y promoción del servicio. Cuando dicho contenido incluya datos personales, imagen o información sensible, su uso promocional requerirá la autorización específica que corresponda y respetará las finalidades informadas.",
+        ],
+      },
+      {
+        title: "9. Conducta del Usuario",
+        paragraphs: [
+          "El Usuario se compromete a hacer un uso adecuado de la Plataforma y de las instalaciones de los Gimnasios, absteniéndose de: suministrar información falsa; compartir su cuenta con terceros; reservar cupos con la intención de no asistir de forma reiterada; realizar ingeniería inversa sobre la Plataforma; o incurrir en conductas fraudulentas, abusivas, discriminatorias o contrarias a la ley.",
+          "El incumplimiento de esta cláusula faculta a UNIQUE para suspender o cancelar la cuenta del Usuario de forma inmediata y sin necesidad de reembolso alguno. La medida deberá ser razonable y proporcional, sin perjuicio de las devoluciones o remedios exigidos por normas imperativas.",
+        ],
+      },
+      {
+        title: "10. Modificaciones a los Términos",
+        paragraphs: [
+          "UNIQUE podrá modificar estos Términos en cualquier momento. Los cambios serán informados a través de la Plataforma o por correo electrónico, y se entenderán aceptados por el Usuario si continúa usando la Plataforma después de la fecha de entrada en vigencia del cambio. Si el Usuario no está de acuerdo con las modificaciones, podrá cancelar su cuenta antes de que estas entren en vigor. Los cambios sustanciales no tendrán efectos retroactivos y serán informados con antelación razonable. Cuando afecten la autorización para el tratamiento de datos personales, se solicitará una nueva autorización en los casos exigidos por la ley.",
+        ],
+      },
+      {
+        title: "11. Terminación",
+        paragraphs: [
+          "El Usuario podrá cancelar su suscripción en cualquier momento a través de la Plataforma, surtiendo efecto al finalizar el periodo de facturación en curso, sin lugar a devolución proporcional de valores ya pagados. Lo anterior se entiende sin perjuicio de los casos en que proceda devolución, retracto, reversión del pago u otro remedio por mandato legal.",
+          "UNIQUE podrá suspender o terminar unilateralmente el acceso de un Usuario a la Plataforma, con o sin previo aviso, en caso de incumplimiento de estos Términos, fraude, o uso indebido del servicio. La medida será razonable y proporcional; se dará aviso cuando la naturaleza del caso lo permita.",
+        ],
+      },
+      {
+        title: "12. Fuerza Mayor",
+        paragraphs: [
+          "UNIQUE no será responsable por el incumplimiento o retraso en la prestación del servicio derivado de hechos constitutivos de fuerza mayor o caso fortuito, incluyendo fallas de conectividad, fallas de proveedores tecnológicos externos, medidas gubernamentales, desastres naturales o situaciones de orden público. Superado el evento, UNIQUE realizará las gestiones razonables para restablecer el servicio y aplicará los remedios que resulten obligatorios.",
+        ],
+      },
+      {
+        title: "13. Ley Aplicable y Resolución de Conflictos",
+        paragraphs: [
+          "Estos Términos se rigen por las leyes de la República de Colombia. Cualquier controversia derivada de estos Términos se someterá, en primer lugar, a una etapa de arreglo directo entre las partes; de no lograrse acuerdo, a los mecanismos de conciliación extrajudicial disponibles en Bogotá D.C., y en su defecto, a la jurisdicción ordinaria de los jueces y tribunales de Bogotá D.C., sin perjuicio del fuero y de los demás derechos irrenunciables del consumidor.",
+        ],
+      },
+    ],
+    section14Title: "14. Disposiciones Generales",
+    section14Before: "Si alguna disposición de estos Términos fuere declarada inválida o inejecutable, las demás disposiciones continuarán vigentes. La falta de ejercicio de un derecho por parte de UNIQUE no constituye renuncia al mismo. Estos Términos, junto con la Política de Tratamiento de Datos Personales, constituyen el acuerdo íntegro entre las partes. Las peticiones, quejas o reclamos relacionados con la Plataforma podrán presentarse a través de",
+  },
+  tratamientoDatos: {
+    draftNotice: "",
+    eyebrow: "UNIQUE APP S.A.S. — NIT 902.086.248",
+    title: "Política de Tratamiento de Datos Personales",
+    intro: 'En cumplimiento de la Ley 1581 de 2012, el Decreto 1377 de 2013 (compilado en el Decreto 1074 de 2015) y demás normas concordantes que regulan la protección de datos personales en Colombia, UNIQUE APP S.A.S. (NIT 902.086.248), como Responsable del Tratamiento, pone a disposición de los Titulares la presente Política de Tratamiento de Datos Personales (en adelante, la "Política").',
+    sections: [
+      {
+        title: "1. Responsable del Tratamiento",
+        paragraphs: [
+          "Razón social: UNIQUE APP S.A.S. — NIT 902.086.248.",
+          "Domicilio: Bogotá D.C., Colombia. Cll 128 A57c - 04.",
+          "Correo electrónico de contacto para temas de datos personales: gerencia@uniqueappcol.com. Teléfono: 3165351258.",
+          "Área o persona responsable de atender consultas y reclamos: Paula Villate.",
+        ],
+      },
+      {
+        title: "2. Datos Personales Objeto de Tratamiento",
+        paragraphs: [
+          "UNIQUE recolecta, entre otros, los siguientes datos personales de los Usuarios: (i) datos de identificación (nombre completo, tipo y número de documento de identidad, fecha de nacimiento); (ii) datos de contacto (correo electrónico, número telefónico, ciudad de residencia); (iii) datos de la cuenta y uso de la Plataforma (historial de reservas, clases tomadas, Gimnasios visitados, calificaciones, créditos consumidos); (iv) datos transaccionales asociados al procesamiento de pagos, tratados directamente por la pasarela de pagos (UNIQUE no almacena números completos de tarjeta ni códigos de seguridad); y (v) datos técnicos de navegación (dirección IP, dispositivo, cookies), cuando aplique.",
+          "UNIQUE no solicita ni pretende tratar datos sensibles (como datos de salud) más allá de la información que el propio Usuario decida suministrar voluntariamente respecto de condiciones físicas relevantes para su participación en una clase, la cual será tratada con confidencialidad reforzada y únicamente para los fines de seguridad del propio Usuario. La respuesta a preguntas sobre datos sensibles será facultativa y su tratamiento requerirá autorización explícita, separada y verificable del Titular, salvo excepción legal.",
+        ],
+      },
+      {
+        title: "3. Finalidades del Tratamiento",
+        paragraphs: [
+          "Los datos personales del Usuario serán tratados para las siguientes finalidades: (i) crear, administrar y verificar la cuenta del Usuario; (ii) gestionar las reservas de clases y la relación con los Gimnasios Aliados; (iii) procesar pagos y suscripciones; (iv) enviar notificaciones operativas relacionadas con el servicio (confirmaciones de reserva, recordatorios, cambios de horario); (v) atender solicitudes, quejas y reclamos (PQRS); (vi) enviar comunicaciones comerciales y de mercadeo sobre UNIQUE y sus Aliados, siempre que el Usuario haya otorgado autorización para dicha finalidad y sin perjuicio de su derecho a solicitar la exclusión en cualquier momento; (vii) realizar análisis estadísticos y de mejora del servicio; y (viii) dar cumplimiento a obligaciones legales, contractuales y requerimientos de autoridades competentes. La autorización para comunicaciones comerciales se obtendrá de forma diferenciada y podrá revocarse en cualquier momento, sin afectar el tratamiento necesario para prestar el servicio.",
+        ],
+      },
+      {
+        title: "4. Transferencia y Transmisión de Datos a Terceros — Gimnasios Aliados y Proveedores",
+        paragraphs: [
+          "El Usuario acepta y autoriza de forma expresa que, para efectos de permitir el acceso a las clases reservadas, UNIQUE comparta con el Gimnasio correspondiente los datos estrictamente necesarios para identificar al Usuario y validar su reserva, tales como: nombre completo, número de identificación, correo y, cuando aplique, estado de la reserva (confirmada, cancelada, asistida). Esta información se comparte únicamente con el Gimnasio en el que el Usuario tiene una reserva activa, con el único propósito de permitir el control de acceso, la verificación de la identidad del Usuario en recepción y la liquidación de los pagos que UNIQUE realiza a dicho Gimnasio con base en las reservas confirmadas. No se compartirán datos sensibles con los Gimnasios salvo que sean estrictamente necesarios para una finalidad informada y exista autorización explícita o habilitación legal.",
+          "Los Gimnasios Aliados que reciben esta información se obligan contractualmente frente a UNIQUE a: (i) usar los datos exclusivamente para los fines de prestación del servicio y control de acceso; (ii) no usarlos con fines distintos, en particular no contactar al Usuario por fuera de la Plataforma con fines comerciales propios sin autorización independiente de este; y (iii) guardar la confidencialidad y seguridad de la información recibida, así como eliminarla o dejar de usarla una vez cumplida su finalidad, conforme a los términos que se pacten en el respectivo contrato de vinculación entre UNIQUE y el Gimnasio.",
+          "Adicionalmente, UNIQUE podrá compartir datos personales con proveedores tecnológicos que le prestan servicios de infraestructura, alojamiento, autenticación, gestión de bases de datos y procesamiento de pagos (a título enunciativo: Airtable, Clerk, Railway, Wompi, u otros que UNIQUE llegue a contratar), quienes actúan como Encargados del Tratamiento bajo instrucciones de UNIQUE y están obligados contractualmente a proteger dicha información. Cuando dichos proveedores se encuentren ubicados fuera de Colombia, la transferencia o transmisión internacional de datos, según corresponda, se realizará con observancia de la Ley 1581 de 2012 y la regulación aplicable, mediante los contratos, autorizaciones, excepciones o declaraciones de conformidad exigibles en cada caso.",
+          "UNIQUE no vende, arrienda ni comercializa datos personales de sus Usuarios a terceros para fines distintos a los aquí descritos.",
+        ],
+      },
+      {
+        title: "5. Derechos de los Titulares",
+        paragraphs: [
+          "Conforme a la Ley 1581 de 2012, el Usuario, en calidad de Titular de los datos, tiene derecho a: (i) conocer, actualizar y rectificar sus datos personales; (ii) solicitar prueba de la autorización otorgada; (iii) ser informado sobre el uso dado a sus datos; (iv) presentar quejas ante la Superintendencia de Industria y Comercio por infracciones a la ley; (v) revocar la autorización y/o solicitar la supresión del dato, cuando no exista un deber legal o contractual que impida su eliminación; y (vi) acceder de forma gratuita a sus datos personales que hayan sido objeto de tratamiento.",
+          "Estos derechos podrán ejercerse mediante solicitud escrita dirigida al correo de contacto señalado en la Cláusula 1 de esta Política, indicando su nombre, documento de identidad y el objeto de la solicitud. Las consultas se atenderán en un término máximo de diez (10) días hábiles, prorrogable por cinco (5) días hábiles, previa información de los motivos de la demora. Los reclamos se atenderán en un término máximo de quince (15) días hábiles, prorrogable por ocho (8) días hábiles, previa información de los motivos de la demora. Si el reclamo está incompleto, se requerirá al solicitante dentro de los cinco (5) días hábiles siguientes para que subsane; transcurridos dos (2) meses sin respuesta, se entenderá desistido. Recibido el reclamo completo, se incorporará en la base de datos la leyenda «reclamo en trámite» dentro de los dos (2) días hábiles siguientes. El Titular podrá presentar una queja ante la Superintendencia de Industria y Comercio una vez agotado el trámite de consulta o reclamo ante UNIQUE.",
+        ],
+      },
+      {
+        title: "6. Autorización del Titular",
+        paragraphs: [
+          "Al crear una cuenta en la Plataforma, el Usuario otorga a UNIQUE autorización previa, expresa e informada para el tratamiento de sus datos personales conforme a las finalidades descritas en esta Política, incluyendo la transmisión de los datos estrictamente necesarios a los Gimnasios Aliados y a los proveedores tecnológicos mencionados. Esta autorización se recabará mediante un mecanismo verificable (casilla de aceptación en el proceso de registro) que el Usuario deberá aceptar de forma inequívoca antes de poder usar la Plataforma. Las finalidades que requieran autorización diferenciada —mercadeo, datos sensibles, uso promocional de la imagen y datos de menores— serán presentadas separadamente y no se entenderán autorizadas por la sola aceptación general.",
+        ],
+      },
+      {
+        title: "7. Seguridad de la Información",
+        paragraphs: [
+          "UNIQUE implementará medidas técnicas, administrativas y humanas razonables para proteger los datos personales contra pérdida, uso indebido, acceso no autorizado, alteración o destrucción, de acuerdo con los estándares de seguridad aplicables a plataformas tecnológicas y a lo dispuesto por la ley colombiana.",
+        ],
+      },
+      {
+        title: "8. Vigencia",
+        paragraphs: [
+          "Los datos personales serán conservados durante el tiempo en que el Usuario mantenga una cuenta activa en la Plataforma y, posteriormente, durante los plazos adicionales que exijan las normas contables, fiscales, comerciales o de cualquier otra índole aplicables, o hasta que el Titular solicite su supresión y no exista impedimento legal para ello.",
+          "Esta Política rige a partir de su publicación en la Plataforma y podrá ser modificada por UNIQUE, informando previamente al Usuario a través de los canales dispuestos para tal efecto. Fecha de entrada en vigencia: 1/08/2026. Los cambios sustanciales relacionados con la identificación del Responsable o con las finalidades del Tratamiento serán comunicados antes de su implementación y darán lugar a una nueva autorización cuando sea legalmente exigible.",
+        ],
+      },
+    ],
+  },
 };
 
 export type Dictionary = typeof es;

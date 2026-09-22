@@ -433,4 +433,172 @@ export const en: Dictionary = {
       "Open the UNIQUE app from the icon on your home screen",
     ],
   },
+  terminos: {
+    draftNotice: "Unofficial translation, provided for convenience only. The Spanish version is the binding legal text — pending formal legal review.",
+    eyebrow: "UNIQUE APP S.A.S. — Tax ID (NIT) 902.086.248",
+    title: "Terms and Conditions of Use",
+    intro: 'These Terms and Conditions (the "Terms") govern access to and use of the UNIQUE platform (the "Platform"), operated by UNIQUE APP S.A.S., a commercial company identified with Tax ID (NIT) 902.086.248, domiciled in Bogotá D.C., Colombia (referred to as "UNIQUE," "the Company," "we"). By creating an account, purchasing a subscription, or using the Platform in any way, the user (the "User") declares to have read, understood, and fully accepted these Terms.',
+    sections: [
+      {
+        title: "1. Purpose of the Platform",
+        paragraphs: [
+          'UNIQUE is a technology platform that allows Users to access, through a credit-based subscription system, classes and services offered by independent affiliated studios and gyms (the "Gyms" or "Partners") in the city of Bogotá and other cities where the service operates.',
+          "UNIQUE acts exclusively as a technological intermediary between Users and Gyms. UNIQUE does not operate, manage, directly provide, or take responsibility for the facilities, instructors, equipment, or classes offered by the Gyms. The relationship for the provision of the sports or fitness service is established directly between the User and the respective Gym. The foregoing is without prejudice to the obligations legally applicable to UNIQUE for operating the Platform and to the consumer's non-waivable rights.",
+        ],
+      },
+      {
+        title: "2. User Account",
+        paragraphs: [
+          "To use the Platform, the User must create an account providing truthful, complete, and up-to-date information. The User is solely responsible for the confidentiality of their access credentials and for all activity carried out from their account.",
+          "UNIQUE reserves the right to suspend or cancel accounts that provide false or incomplete information, or that breach these Terms, without this generating any right to compensation in favor of the User. Such action must be reasonable and proportional to the breach identified.",
+          "Use of the Platform is reserved for adults.",
+        ],
+      },
+      {
+        title: "3. Subscriptions, Credits, and Payments",
+        paragraphs: [
+          "Access to classes is provided through monthly subscription plans (Starter, Balance, Volume, or others UNIQUE may define), each with a credit allotment the User may redeem for bookings within the plan's validity period. Unused credits do not roll over between periods, are non-refundable, and are non-transferable to another User, unless UNIQUE expressly states otherwise for a given plan or promotion. The foregoing is without prejudice to cases where applicable law requires a refund or reimbursement.",
+          'The User may purchase additional credit packages ("top-ups") only while holding an active subscription, under the terms and prices published on the Platform at the time of purchase.',
+          "Payments are processed through the Wompi payment gateway or another gateway UNIQUE may determine. UNIQUE does not store complete card data or other payment instrument details; such information is handled directly by the payment gateway provider under its own policies.",
+          "UNIQUE reserves the right to modify prices, plans, and credit equivalencies, giving the User prior notice through the Platform or by email, with reasonable advance notice that will never be less than ten (10) calendar days before the change takes effect on existing subscriptions. Changes will apply prospectively and will not affect already-confirmed bookings. The User may cancel their subscription before the change takes effect.",
+        ],
+      },
+      {
+        title: '4. Bookings, Cancellations, and "No-Show" Policy',
+        paragraphs: [
+          "The User may book available classes published by the Gyms, subject to the capacity offered by each Partner. A booking is considered confirmed once the Platform notifies the User accordingly.",
+          'The User may cancel a booking with no penalty up to twenty-four (24) hours before the class starts. Cancellations made with less than twenty-four (24) hours\' notice, as well as failing to attend without cancelling ("no-show"), will result in the loss of the credits used for that booking, with no right to a refund or reimbursement. This consequence will not apply when the cancellation or absence is attributable to the Gym, to UNIQUE, to a Platform failure, or to an event that, under the law, must give rise to a refund or reimbursement.',
+          'UNIQUE may, at its discretion, set limits on the number of simultaneous bookings or "no-shows" allowed per User, and may temporarily suspend the booking rights of Users who repeatedly violate this policy. Such limits or measures must be reasonable, proportional, and communicated to the User in advance.',
+        ],
+      },
+      {
+        title: "5. Limitation of Liability and Assumption of Risk",
+        paragraphs: [
+          "The User acknowledges and accepts that engaging in physical activity carries inherent risks of injury, and that they participate in the classes and activities offered by the Gyms at their own risk, after having assessed their physical and health condition for such activity. Users are encouraged to consult a healthcare professional before starting any physical activity, especially if they have pre-existing medical conditions.",
+          "UNIQUE is NOT liable for events not legally attributable to it related to injuries, accidents, health damage, theft, loss, or damage to personal property, nor for any harm the User may suffer inside a Gym's facilities or as a result of a class, training, or activity conducted there. Responsibility for User safety within the facilities, the competence of its instructors, the condition of its equipment, and compliance with safety and hygiene standards lies exclusively and directly with the respective Gym, in accordance with the partnership agreement between UNIQUE and each Gym. No provision in these Terms excludes legally non-waivable liabilities.",
+          "UNIQUE will also not be liable for the cancellation, schedule change, temporary or permanent closure of a Gym, nor for the quality of the service it provides, without prejudice to the reasonable commercial efforts UNIQUE may undertake with the Partner for the User's benefit. When a cancellation or change affects a confirmed booking, UNIQUE will restore the credits used or arrange an equivalent alternative, as applicable.",
+          "To the maximum extent permitted by applicable law, UNIQUE's total liability to the User for any claim related to the Platform will be limited to the amount actually paid by the User to UNIQUE during the calendar month in which the events giving rise to the claim occurred. This limitation will not apply where prohibited by mandatory law, nor with respect to damages caused by UNIQUE's willful misconduct or gross negligence, harm to life or physical integrity, breach of UNIQUE's legal obligations, or the consumer's non-waivable rights.",
+        ],
+      },
+      {
+        title: "6. Indemnification",
+        paragraphs: [
+          "The User agrees to hold harmless and defend UNIQUE, its officers, employees, and partners against any claim, lawsuit, penalty, cost, or expense (including attorneys' fees) arising from: (i) the User's breach of these Terms; (ii) improper use of the Platform; or (iii) events or injuries occurring at a Gym's facilities resulting from the User's own conduct. This obligation will apply only to direct, proven damages legally attributable to the User, and will not cover penalties, costs, or expenses attributable to acts or omissions of UNIQUE or third parties.",
+        ],
+      },
+      {
+        title: "7. Relationship with Partner Gyms",
+        paragraphs: [
+          "Gyms are independent third parties that offer available spots through the Platform under a commercial agreement with UNIQUE. No Gym acts as a dependent, agent, representative, or employee of UNIQUE, nor vice versa.",
+          "UNIQUE reserves the right to add or remove Gyms from the Platform at any time, without this generating any obligation to compensate the User, without prejudice to honoring already-confirmed bookings. If a confirmed booking cannot be fulfilled, the credits used will be restored or an equivalent alternative will be offered.",
+        ],
+      },
+      {
+        title: "8. Intellectual Property",
+        paragraphs: [
+          'All intellectual property rights over the Platform, its software, brand, the trade name "UNIQUE," design, content, database, and other elements belong to UNIQUE APP S.A.S. or its licensors. Unauthorized reproduction, distribution, modification, or exploitation is prohibited.',
+          "The User grants UNIQUE a limited, non-exclusive, royalty-free license to use content they publish on the Platform (reviews, ratings, profile photos) solely for operating and promoting the service. When such content includes personal data, likeness, or sensitive information, its promotional use will require the applicable specific authorization and will respect the stated purposes.",
+        ],
+      },
+      {
+        title: "9. User Conduct",
+        paragraphs: [
+          "The User agrees to make appropriate use of the Platform and of the Gyms' facilities, and to refrain from: providing false information; sharing their account with third parties; booking spots with the intent to repeatedly not show up; reverse-engineering the Platform; or engaging in fraudulent, abusive, discriminatory, or unlawful conduct.",
+          "Breach of this clause entitles UNIQUE to immediately suspend or cancel the User's account with no obligation to provide a refund. Such action must be reasonable and proportional, without prejudice to refunds or remedies required by mandatory law.",
+        ],
+      },
+      {
+        title: "10. Changes to the Terms",
+        paragraphs: [
+          "UNIQUE may modify these Terms at any time. Changes will be communicated through the Platform or by email, and will be deemed accepted by the User if they continue using the Platform after the change's effective date. If the User disagrees with the changes, they may cancel their account before the changes take effect. Substantial changes will not have retroactive effect and will be communicated with reasonable advance notice. Where changes affect the authorization for processing personal data, a new authorization will be requested in the cases required by law.",
+        ],
+      },
+      {
+        title: "11. Termination",
+        paragraphs: [
+          "The User may cancel their subscription at any time through the Platform, effective at the end of the current billing period, with no proportional refund of amounts already paid. The foregoing is without prejudice to cases where a refund, withdrawal, payment reversal, or other remedy applies under the law.",
+          "UNIQUE may unilaterally suspend or terminate a User's access to the Platform, with or without prior notice, in the event of a breach of these Terms, fraud, or misuse of the service. The action will be reasonable and proportional; notice will be given when the nature of the case allows it.",
+        ],
+      },
+      {
+        title: "12. Force Majeure",
+        paragraphs: [
+          "UNIQUE will not be liable for any failure or delay in providing the service resulting from events of force majeure or fortuitous events, including connectivity failures, failures of external technology providers, government measures, natural disasters, or public order situations. Once the event has passed, UNIQUE will make reasonable efforts to restore the service and will apply any legally required remedies.",
+        ],
+      },
+      {
+        title: "13. Governing Law and Dispute Resolution",
+        paragraphs: [
+          "These Terms are governed by the laws of the Republic of Colombia. Any dispute arising from these Terms will first be submitted to a direct settlement stage between the parties; if no agreement is reached, to the extrajudicial conciliation mechanisms available in Bogotá D.C.; and failing that, to the ordinary jurisdiction of the courts of Bogotá D.C., without prejudice to venue and the consumer's other non-waivable rights.",
+        ],
+      },
+    ],
+    section14Title: "14. General Provisions",
+    section14Before: "If any provision of these Terms is declared invalid or unenforceable, the remaining provisions will remain in effect. UNIQUE's failure to exercise a right does not constitute a waiver of it. These Terms, together with the Personal Data Processing Policy, constitute the entire agreement between the parties. Requests, complaints, or claims related to the Platform may be submitted through",
+  },
+  tratamientoDatos: {
+    draftNotice: "Unofficial translation, provided for convenience only. The Spanish version is the binding legal text — pending formal legal review.",
+    eyebrow: "UNIQUE APP S.A.S. — Tax ID (NIT) 902.086.248",
+    title: "Personal Data Processing Policy",
+    intro: 'In compliance with Colombian Law 1581 of 2012, Decree 1377 of 2013 (compiled in Decree 1074 of 2015), and other applicable regulations governing personal data protection in Colombia, UNIQUE APP S.A.S. (Tax ID/NIT 902.086.248), as Data Controller, makes available to Data Subjects this Personal Data Processing Policy (the "Policy").',
+    sections: [
+      {
+        title: "1. Data Controller",
+        paragraphs: [
+          "Company name: UNIQUE APP S.A.S. — Tax ID (NIT) 902.086.248.",
+          "Address: Bogotá D.C., Colombia. Cll 128 A57c - 04.",
+          "Contact email for personal data matters: gerencia@uniqueappcol.com. Phone: 3165351258.",
+          "Person or area responsible for handling inquiries and complaints: Paula Villate.",
+        ],
+      },
+      {
+        title: "2. Personal Data Subject to Processing",
+        paragraphs: [
+          "UNIQUE collects, among others, the following personal data from Users: (i) identification data (full name, ID document type and number, date of birth); (ii) contact data (email, phone number, city of residence); (iii) account and Platform usage data (booking history, classes taken, Gyms visited, ratings, credits used); (iv) transactional data associated with payment processing, handled directly by the payment gateway (UNIQUE does not store full card numbers or security codes); and (v) technical browsing data (IP address, device, cookies), when applicable.",
+          "UNIQUE does not request or intend to process sensitive data (such as health data) beyond information the User voluntarily chooses to provide regarding physical conditions relevant to their participation in a class, which will be handled with enhanced confidentiality and solely for the User's own safety purposes. Answering questions about sensitive data will be optional, and its processing will require explicit, separate, and verifiable authorization from the Data Subject, except where legally exempted.",
+        ],
+      },
+      {
+        title: "3. Purposes of Processing",
+        paragraphs: [
+          "The User's personal data will be processed for the following purposes: (i) creating, managing, and verifying the User's account; (ii) managing class bookings and the relationship with Partner Gyms; (iii) processing payments and subscriptions; (iv) sending operational notifications related to the service (booking confirmations, reminders, schedule changes); (v) handling requests, complaints, and claims; (vi) sending commercial and marketing communications about UNIQUE and its Partners, provided the User has given authorization for that purpose and without prejudice to their right to opt out at any time; (vii) performing statistical analysis and service improvement; and (viii) complying with legal, contractual obligations, and requirements from competent authorities. Authorization for commercial communications will be obtained separately and may be revoked at any time, without affecting the processing necessary to provide the service.",
+        ],
+      },
+      {
+        title: "4. Transfer and Transmission of Data to Third Parties — Partner Gyms and Providers",
+        paragraphs: [
+          "The User expressly accepts and authorizes that, for the purpose of allowing access to booked classes, UNIQUE may share with the corresponding Gym the data strictly necessary to identify the User and validate their booking, such as: full name, ID number, email, and, when applicable, booking status (confirmed, cancelled, attended). This information is shared only with the Gym where the User has an active booking, solely for the purpose of enabling access control, verifying the User's identity at the front desk, and settling the payments UNIQUE makes to that Gym based on confirmed bookings. Sensitive data will not be shared with Gyms unless strictly necessary for a disclosed purpose and explicit authorization or legal basis exists.",
+          "Partner Gyms that receive this information are contractually bound to UNIQUE to: (i) use the data solely for service delivery and access control purposes; (ii) not use it for other purposes, in particular not contacting the User outside the Platform for their own commercial purposes without the User's independent authorization; and (iii) keep the information received confidential and secure, and delete it or stop using it once its purpose has been fulfilled, in accordance with the terms agreed in the respective partnership agreement between UNIQUE and the Gym.",
+          "Additionally, UNIQUE may share personal data with technology providers that supply infrastructure, hosting, authentication, database management, and payment processing services (including but not limited to: Airtable, Clerk, Railway, Wompi, or others UNIQUE may engage), who act as Data Processors under UNIQUE's instructions and are contractually obligated to protect such information. Where such providers are located outside Colombia, the international transfer or transmission of data, as applicable, will comply with Law 1581 of 2012 and applicable regulations, through the contracts, authorizations, exceptions, or compliance declarations required in each case.",
+          "UNIQUE does not sell, lease, or trade its Users' personal data to third parties for purposes other than those described here.",
+        ],
+      },
+      {
+        title: "5. Rights of Data Subjects",
+        paragraphs: [
+          "Under Law 1581 of 2012, the User, as Data Subject, has the right to: (i) know, update, and correct their personal data; (ii) request proof of the authorization given; (iii) be informed about how their data has been used; (iv) file complaints with the Superintendency of Industry and Commerce (SIC) for violations of the law; (v) revoke authorization and/or request deletion of data, when no legal or contractual duty prevents it; and (vi) access, free of charge, their personal data that has been processed.",
+          "These rights may be exercised through a written request sent to the contact email listed in Clause 1 of this Policy, stating the requester's name, ID document, and the purpose of the request. Inquiries will be addressed within a maximum of ten (10) business days, extendable by five (5) business days upon prior notice of the reasons for the delay. Claims will be addressed within a maximum of fifteen (15) business days, extendable by eight (8) business days upon prior notice of the reasons for the delay. If the claim is incomplete, the requester will be asked to complete it within the following five (5) business days; if two (2) months pass with no response, the claim will be considered withdrawn. Once a complete claim is received, the database will include the notice \"claim in process\" within the following two (2) business days. The Data Subject may file a complaint with the Superintendency of Industry and Commerce once the inquiry or claim process with UNIQUE has been exhausted.",
+        ],
+      },
+      {
+        title: "6. Data Subject's Authorization",
+        paragraphs: [
+          "By creating an account on the Platform, the User grants UNIQUE prior, express, and informed authorization to process their personal data in accordance with the purposes described in this Policy, including the transmission of strictly necessary data to Partner Gyms and the technology providers mentioned above. This authorization will be obtained through a verifiable mechanism (an acceptance checkbox during registration) that the User must unambiguously accept before using the Platform. Purposes requiring separate authorization — marketing, sensitive data, promotional use of likeness, and minors' data — will be presented separately and will not be deemed authorized by general acceptance alone.",
+        ],
+      },
+      {
+        title: "7. Information Security",
+        paragraphs: [
+          "UNIQUE will implement reasonable technical, administrative, and human measures to protect personal data against loss, misuse, unauthorized access, alteration, or destruction, in accordance with security standards applicable to technology platforms and Colombian law.",
+        ],
+      },
+      {
+        title: "8. Validity",
+        paragraphs: [
+          "Personal data will be retained for as long as the User maintains an active account on the Platform and, thereafter, for any additional periods required by applicable accounting, tax, commercial, or other regulations, or until the Data Subject requests its deletion and there is no legal impediment to doing so.",
+          "This Policy is effective upon publication on the Platform and may be modified by UNIQUE, with prior notice to the User through the channels established for that purpose. Effective date: 1/08/2026. Substantial changes related to the identity of the Data Controller or the purposes of Processing will be communicated before implementation and will require new authorization when legally required.",
+        ],
+      },
+    ],
+  },
 };

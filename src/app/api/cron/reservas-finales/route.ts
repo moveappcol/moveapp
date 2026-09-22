@@ -110,6 +110,7 @@ export async function GET(req: NextRequest) {
         tipo: clase.tipo,
         nombre: r.userName,
         cedula: r.cedula,
+        molestias: r.molestias,
       })),
     });
 

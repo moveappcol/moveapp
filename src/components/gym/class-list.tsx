@@ -148,6 +148,18 @@ function ClaseCard({
           <>
             <Show when="signed-in">
               <form action={bookFormAction} className="flex flex-wrap items-center gap-3">
+                <label className="block w-full">
+                  <span className="font-body text-xs text-move-green/60">
+                    ¿Algún dolor o molestia que quieras que el gimnasio tenga en cuenta? (opcional)
+                  </span>
+                  <textarea
+                    name="molestias"
+                    rows={2}
+                    maxLength={300}
+                    placeholder="Ej: dolor de rodilla, embarazo, lesión reciente…"
+                    className="mt-1 w-full rounded-xl border border-move-green/20 px-3 py-2 font-body text-sm text-move-green outline-none focus:border-move-coral"
+                  />
+                </label>
                 <button
                   type="submit"
                   disabled={isBooking}

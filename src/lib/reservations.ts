@@ -17,6 +17,19 @@ export type CancelResult =
   | { ok: true; refunded: boolean }
   | { ok: false; error: string };
 
+export type ReservationParams = {
+  userEmail: string;
+  userName: string;
+  claseId: string;
+  gimnasioId: string;
+  claseCredits: number;
+  fechaISO: string;
+  /** Texto libre y opcional — dolores o molestias que la persona quiere que
+   * el gimnasio tenga en cuenta para esa clase. Va tal cual en el PDF de
+   * "reservas finales" que recibe el gimnasio (ver pdf.tsx). */
+  molestias?: string;
+};
+
 export type Reservation = {
   id: string;
   claseId: string | null;
@@ -34,6 +47,7 @@ export type ReservaDetalle = {
   estado: string;
   cedula: string;
   correo: string;
+  molestias: string;
   recordatorioEnviado: boolean;
   correoDespuesClaseEnviado: boolean;
 };
@@ -53,6 +67,7 @@ export async function getReservationsDetailForClase(claseId: string): Promise<Re
       estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
       cedula: ((r.get("Cedula") as string) ?? "").trim(),
       correo: ((r.get("Correo") as string) ?? "").trim(),
+      molestias: ((r.get("Molestias") as string) ?? "").trim(),
       recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
       correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
     }));
@@ -137,20 +152,16 @@ async function countMonthlyReservationsAtGym(
  *   - Calificación (número 1–5 — opcional, la pone el usuario desde "Mis
  *      reservas" hasta 24h después de terminada la clase)
  *   - Comentario    (texto largo, opcional — junto con la calificación)
+ *   - Molestias     (texto largo, opcional — dolores o molestias que la
+ *      persona quiere que el gimnasio tenga en cuenta; sale en el PDF de
+ *      "reservas finales" que recibe el gimnasio)
  *
  * Puede seguir existiendo un campo "Tipo" acá de cuando esta clasificación
  * vivía por reserva — ya no se lee: el Tipo A/B es del cupo de la clase
  * (ver TipoClase en classes.ts), no de cada persona que la reserva.
  */
-export async function createReservation(params: {
-  userEmail: string;
-  userName: string;
-  claseId: string;
-  gimnasioId: string;
-  claseCredits: number;
-  fechaISO: string;
-}): Promise<BookingResult> {
-  const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO } = params;
+export async function createReservation(params: ReservationParams): Promise<BookingResult> {
+  const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO, molestias } = params;
 
   const gym = await getGymById(gimnasioId);
   const bookingCutoffMinutes = gym?.bookingCutoffMinutes ?? DEFAULT_BOOKING_CUTOFF_MINUTES;
@@ -221,6 +232,7 @@ export async function createReservation(params: {
         Estado: "Reservado",
         Cedula: account.cedula,
         Correo: userEmail,
+        Molestias: molestias?.trim() || "",
       },
     },
   ]);

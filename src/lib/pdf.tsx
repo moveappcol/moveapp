@@ -59,7 +59,13 @@ function Table({ headers, rows, widths }: { headers: string[]; rows: string[][];
   );
 }
 
-export type ReservaFinalRow = { tipo: "A" | "B" | null; nombre: string; cedula: string };
+export type ReservaFinalRow = {
+  tipo: "A" | "B" | null;
+  nombre: string;
+  cedula: string;
+  /** Dolores o molestias opcionales que la persona dejó al reservar. */
+  molestias?: string;
+};
 
 /** PDF de "reservas finales" — mismo documento para 24h antes y para la
  * lista final (normalmente 20 min antes, pero algunos gimnasios piden más
@@ -92,8 +98,9 @@ export async function buildReservasFinalesPdf(params: {
         <Text style={{ ...styles.title, color }}>{titulo}</Text>
 
         <Table
-          headers={["TIPO", "NOMBRE", "CÉDULA"]}
-          rows={params.reservas.map((r) => [r.tipo ?? "—", r.nombre, r.cedula])}
+          headers={["TIPO", "NOMBRE", "CÉDULA", "MOLESTIAS"]}
+          widths={[0.6, 1.3, 1, 2]}
+          rows={params.reservas.map((r) => [r.tipo ?? "—", r.nombre, r.cedula, r.molestias ?? ""])}
         />
 
         <Text style={{ ...styles.footer, color }}>¡ Gracias por ser parte de UNIQUE !</Text>

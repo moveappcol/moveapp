@@ -20,6 +20,7 @@ export async function POST(
   const { id: gimnasioId } = await params;
   const body = await req.json().catch(() => ({}));
   const claseId = body?.claseId as string | undefined;
+  const molestias = (body?.molestias as string | undefined)?.trim();
   if (!claseId) {
     return NextResponse.json({ ok: false, error: "Falta la clase." }, { status: 400 });
   }
@@ -42,6 +43,7 @@ export async function POST(
     gimnasioId,
     claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
+    molestias: molestias || undefined,
   });
 
   if (result.ok) {

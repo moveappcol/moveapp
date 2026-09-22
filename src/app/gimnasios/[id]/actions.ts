@@ -12,7 +12,7 @@ export async function bookClass(
   gimnasioId: string,
   claseId: string,
   _prevState: BookingResult | null,
-  _formData: FormData
+  formData: FormData
 ): Promise<BookingResult> {
   const { userId } = await auth();
   if (!userId) {
@@ -39,6 +39,8 @@ export async function bookClass(
   const userName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || email;
 
+  const molestias = String(formData.get("molestias") ?? "").trim();
+
   const result = await createReservation({
     userEmail: email,
     userName,
@@ -46,6 +48,7 @@ export async function bookClass(
     gimnasioId,
     claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
+    molestias: molestias || undefined,
   });
 
   if (result.ok) {

@@ -6,6 +6,8 @@ import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 function InfoSection({ title, text }: { title: string; text: string | null }) {
   if (!text) return null;
@@ -26,6 +28,10 @@ export default async function GymPage({
   // construir, el link directo tampoco debe abrir en producción. En local
   // (npm run dev) sí se puede seguir viendo para probar mientras se arma.
   if (GYMS_COMING_SOON && process.env.NODE_ENV !== "development") notFound();
+
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = dict.gimnasio;
 
   const { id } = await params;
   const gym = await getGymById(id);
@@ -55,9 +61,9 @@ export default async function GymPage({
 
   const generoLabel =
     gym.genero === "solo_mujeres"
-      ? "Gimnasio exclusivo para mujeres"
+      ? t.exclusivoMujeres
       : gym.genero === "solo_hombres"
-        ? "Gimnasio exclusivo para hombres"
+        ? t.exclusivoHombres
         : null;
 
   return (
@@ -86,7 +92,7 @@ export default async function GymPage({
             rel="noopener noreferrer"
             className="absolute bottom-3 right-3 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
           >
-            Ir
+            {t.ir}
           </a>
         </div>
       )}
@@ -111,16 +117,16 @@ export default async function GymPage({
         </div>
       )}
 
-      <InfoSection title="Descripción" text={gym.description} />
-      <InfoSection title="Puntualidad" text={gym.puntualidad} />
-      <InfoSection title="Política de cancelación" text={gym.politicaCancelacion} />
-      <InfoSection title="Ropa / calzado" text={gym.ropaCalzado} />
-      <InfoSection title="Materiales" text={gym.materiales} />
+      <InfoSection title={t.descripcion} text={gym.description} />
+      <InfoSection title={t.puntualidad} text={gym.puntualidad} />
+      <InfoSection title={t.politicaCancelacion} text={gym.politicaCancelacion} />
+      <InfoSection title={t.ropaCalzado} text={gym.ropaCalzado} />
+      <InfoSection title={t.materiales} text={gym.materiales} />
 
       {gym.servicios.length > 0 && (
         <div className="mt-6">
           <h3 className="font-heading text-sm font-semibold text-move-green">
-            Servicios y amenidades
+            {t.serviciosAmenidades}
           </h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {gym.servicios.map((servicio) => (
@@ -135,16 +141,14 @@ export default async function GymPage({
         </div>
       )}
 
-      <InfoSection title="Política para menores de edad" text={gym.politicaMenores} />
-      <InfoSection title="Nivel recomendado" text={gym.nivelRecomendado} />
-      <InfoSection title="Recomendaciones" text={gym.recomendaciones} />
+      <InfoSection title={t.politicaMenores} text={gym.politicaMenores} />
+      <InfoSection title={t.nivelRecomendado} text={gym.nivelRecomendado} />
+      <InfoSection title={t.recomendaciones} text={gym.recomendaciones} />
 
       <h2 className="mt-10 font-heading text-xl font-semibold text-move-green">
-        Clases disponibles
+        {t.clasesDisponibles}
       </h2>
-      <p className="mt-1 font-body text-xs text-move-green/50">
-        Puedes reservar en este gimnasio un máximo de 3 veces al mes.
-      </p>
+      <p className="mt-1 font-body text-xs text-move-green/50">{t.limiteMensual}</p>
       <div className="mt-4">
         <ClassList
           gimnasioId={id}
@@ -152,6 +156,8 @@ export default async function GymPage({
           waitlistStatus={waitlistStatus}
           reservedClaseIds={[...reservedClaseIds]}
           bookingCutoffMinutes={gym.bookingCutoffMinutes}
+          locale={locale}
+          t={t}
         />
       </div>
     </section>

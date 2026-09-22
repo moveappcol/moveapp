@@ -8,14 +8,20 @@ import { bookClass } from "@/app/gimnasios/[id]/actions";
 import { precioEfectivo, type Clase } from "@/lib/classes";
 import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
 import type { BookingResult } from "@/lib/reservations";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 import WaitlistForm from "./waitlist-form";
+
+type T = Dictionary["gimnasio"];
 
 function ConfirmModal({
   remainingCredits,
   onClose,
+  t,
 }: {
   remainingCredits: number;
   onClose: () => void;
+  t: T;
 }) {
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-move-green/45 px-6">
@@ -25,16 +31,16 @@ function ConfirmModal({
             <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
-        <p className="mt-3 font-heading text-lg font-bold text-move-green">Reserva confirmada</p>
+        <p className="mt-3 font-heading text-lg font-bold text-move-green">{t.reservaConfirmada}</p>
         <p className="mt-1 font-body text-sm text-move-green/70">
-          Créditos restantes: {remainingCredits}.
+          {t.creditosRestantes(remainingCredits)}
         </p>
         <button
           type="button"
           onClick={onClose}
           className="mt-5 w-full rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
-          Listo
+          {t.listo}
         </button>
       </div>
     </div>,
@@ -52,12 +58,12 @@ function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
 /** No mostramos el conteo de cupos en ningún otro caso — solo cuando quedan
  * 2 o menos se avisa, sin decir el total. Si ya no queda ninguno, el
  * mensaje de "clase llena" de abajo ya lo cubre. */
-function CuposAviso({ cuposDisponibles }: { cuposDisponibles: number }) {
+function CuposAviso({ cuposDisponibles, t }: { cuposDisponibles: number; t: T }) {
   if (cuposDisponibles <= 0 || cuposDisponibles > 2) return null;
 
   return (
     <p className="mt-1 font-heading text-sm font-bold uppercase tracking-wide text-red-600">
-      {cuposDisponibles === 1 ? "Último cupo disponible" : "Últimos 2 cupos disponibles"}
+      {cuposDisponibles === 1 ? t.ultimoCupo : t.ultimos2Cupos}
     </p>
   );
 }
@@ -68,12 +74,16 @@ function ClaseCard({
   waitlistStatus,
   yaReservada,
   bookingCutoffMinutes,
+  locale,
+  t,
 }: {
   clase: Clase;
   gimnasioId: string;
   waitlistStatus?: { enEspera: boolean; posicion: number | null };
   yaReservada: boolean;
   bookingCutoffMinutes: number;
+  locale: Locale;
+  t: T;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -96,15 +106,15 @@ function ClaseCard({
         <div>
           <p className="font-heading text-base font-semibold text-move-green">{clase.name}</p>
           <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
-            {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
+            {clase.fecha ? formatHora(clase.fecha, locale) : t.horaPorConfirmar}
           </p>
-          <CuposAviso cuposDisponibles={clase.cuposDisponibles} />
+          <CuposAviso cuposDisponibles={clase.cuposDisponibles} t={t} />
         </div>
         <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
           {precioEfectivo(clase) < clase.credits && (
             <span className="mr-1 text-move-green/40 line-through">{clase.credits}</span>
           )}
-          {precioEfectivo(clase)} créditos
+          {t.credits(precioEfectivo(clase))}
         </span>
       </div>
 
@@ -113,22 +123,22 @@ function ClaseCard({
           <ConfirmModal
             remainingCredits={bookState.ok ? bookState.remainingCredits : 0}
             onClose={() => setDismissed(true)}
+            t={t}
           />
         ) : yaReservada ? (
-          <p className="font-body text-sm font-medium text-move-green">
-            Ya reservaste esta clase.
-          </p>
+          <p className="font-body text-sm font-medium text-move-green">{t.yaReservada}</p>
         ) : !clase.fecha ? (
-          <p className="font-body text-sm text-move-green/50">Todavía no tiene fecha confirmada.</p>
+          <p className="font-body text-sm text-move-green/50">{t.sinFechaConfirmada}</p>
         ) : clase.cuposDisponibles <= 0 ? (
           <>
-            <p className="mb-2 font-body text-sm text-move-green/50">Esta clase ya está llena.</p>
+            <p className="mb-2 font-body text-sm text-move-green/50">{t.claseLlena}</p>
             <Show when="signed-in">
               <WaitlistForm
                 gimnasioId={gimnasioId}
                 claseId={clase.id}
                 initialEnEspera={waitlistStatus?.enEspera ?? false}
                 initialPosicion={waitlistStatus?.posicion ?? null}
+                t={t.waitlist}
               />
             </Show>
             <Show when="signed-out">
@@ -136,27 +146,23 @@ function ClaseCard({
                 href="/iniciar-sesion"
                 className="font-heading text-sm font-semibold text-move-coral hover:underline"
               >
-                Inicia sesión para unirte a la lista de espera
+                {t.iniciaSesionListaEspera}
               </Link>
             </Show>
           </>
         ) : isBookingClosed(clase.fecha, bookingCutoffMinutes) ? (
-          <p className="font-body text-sm text-move-green/50">
-            Las reservas para esta clase ya cerraron.
-          </p>
+          <p className="font-body text-sm text-move-green/50">{t.reservasCerraron}</p>
         ) : (
           <>
             <Show when="signed-in">
               <form action={bookFormAction} className="flex flex-wrap items-center gap-3">
                 <label className="block w-full">
-                  <span className="font-body text-xs text-move-green/60">
-                    ¿Algún dolor o molestia que quieras que el gimnasio tenga en cuenta? (opcional)
-                  </span>
+                  <span className="font-body text-xs text-move-green/60">{t.molestiasLabel}</span>
                   <textarea
                     name="molestias"
                     rows={2}
                     maxLength={300}
-                    placeholder="Ej: dolor de rodilla, embarazo, lesión reciente…"
+                    placeholder={t.molestiasPlaceholder}
                     className="mt-1 w-full rounded-xl border border-move-green/20 px-3 py-2 font-body text-sm text-move-green outline-none focus:border-move-coral"
                   />
                 </label>
@@ -165,7 +171,7 @@ function ClaseCard({
                   disabled={isBooking}
                   className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
-                  {isBooking ? "Reservando…" : "Reservar"}
+                  {isBooking ? t.reservando : t.reservar}
                 </button>
                 {bookState && !bookState.ok && (
                   <p className="w-full font-body text-sm text-move-coral">{bookState.error}</p>
@@ -175,7 +181,7 @@ function ClaseCard({
                     href="/completar-perfil"
                     className="w-full font-heading text-sm font-semibold text-move-coral hover:underline"
                   >
-                    Completar perfil
+                    {t.completarPerfil}
                   </Link>
                 )}
               </form>
@@ -185,7 +191,7 @@ function ClaseCard({
                 href="/iniciar-sesion"
                 className="font-heading text-sm font-semibold text-move-coral hover:underline"
               >
-                Inicia sesión para reservar
+                {t.iniciaSesionReservar}
               </Link>
             </Show>
           </>
@@ -201,23 +207,23 @@ export default function ClassList({
   waitlistStatus,
   reservedClaseIds,
   bookingCutoffMinutes,
+  locale,
+  t,
 }: {
   gimnasioId: string;
   classes: Clase[];
   waitlistStatus?: WaitlistStatusMap;
   reservedClaseIds?: string[];
   bookingCutoffMinutes: number;
+  locale: Locale;
+  t: T;
 }) {
-  const semana = useMemo(() => semanaActual(), []);
+  const semana = useMemo(() => semanaActual(locale), [locale]);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
   const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);
 
   if (classes.length === 0) {
-    return (
-      <p className="font-body text-sm text-move-green/60">
-        Todavía no hay clases publicadas para este gimnasio.
-      </p>
-    );
+    return <p className="font-body text-sm text-move-green/60">{t.sinClasesProgramadas}</p>;
   }
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
@@ -257,9 +263,7 @@ export default function ClassList({
         </p>
 
         {clasesDelDia.length === 0 ? (
-          <p className="font-body text-sm text-move-green/60">
-            No hay clases programadas para este día.
-          </p>
+          <p className="font-body text-sm text-move-green/60">{t.noHayClasesEsteDia}</p>
         ) : (
           <ul className="space-y-4">
             {clasesDelDia.map((clase) => (
@@ -270,6 +274,8 @@ export default function ClassList({
                 waitlistStatus={waitlistStatus?.[clase.id]}
                 yaReservada={reservedSet.has(clase.id)}
                 bookingCutoffMinutes={bookingCutoffMinutes}
+                locale={locale}
+                t={t}
               />
             ))}
           </ul>
@@ -278,7 +284,7 @@ export default function ClassList({
 
       {sinFecha.length > 0 && (
         <div className="space-y-4">
-          <h3 className="font-heading text-lg font-bold text-move-green">Fecha por confirmar</h3>
+          <h3 className="font-heading text-lg font-bold text-move-green">{t.fechaPorConfirmar}</h3>
           <ul className="space-y-4">
             {sinFecha.map((clase) => (
               <ClaseCard
@@ -288,6 +294,8 @@ export default function ClassList({
                 waitlistStatus={waitlistStatus?.[clase.id]}
                 yaReservada={reservedSet.has(clase.id)}
                 bookingCutoffMinutes={bookingCutoffMinutes}
+                locale={locale}
+                t={t}
               />
             ))}
           </ul>

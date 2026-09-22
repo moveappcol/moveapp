@@ -4,17 +4,22 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { joinWaitlistAction, leaveWaitlistAction } from "@/app/gimnasios/[id]/actions";
 import type { JoinWaitlistResult } from "@/lib/waitlist";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+
+type T = Dictionary["gimnasio"]["waitlist"];
 
 export default function WaitlistForm({
   gimnasioId,
   claseId,
   initialEnEspera,
   initialPosicion,
+  t,
 }: {
   gimnasioId: string;
   claseId: string;
   initialEnEspera: boolean;
   initialPosicion: number | null;
+  t: T;
 }) {
   const joinAction = joinWaitlistAction.bind(null, gimnasioId, claseId);
   const [joinState, joinFormAction, joinPending] = useActionState<JoinWaitlistResult | null, FormData>(
@@ -34,17 +39,14 @@ export default function WaitlistForm({
   if (enEspera) {
     return (
       <div>
-        <p className="font-body text-sm text-move-green/70">
-          Estás en la lista de espera{posicion ? ` (posición ${posicion})` : ""} — te avisamos si
-          se libera un cupo.
-        </p>
+        <p className="font-body text-sm text-move-green/70">{t.enEspera(posicion)}</p>
         <form action={leaveFormAction} className="mt-2">
           <button
             type="submit"
             disabled={leavePending}
             className="rounded-full border border-move-coral px-5 py-2 font-heading text-sm font-semibold text-move-coral transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {leavePending ? "Saliendo…" : "Salir de la lista"}
+            {leavePending ? t.saliendo : t.salirDeLista}
           </button>
         </form>
       </div>
@@ -58,7 +60,7 @@ export default function WaitlistForm({
         disabled={joinPending}
         className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {joinPending ? "Uniendo…" : "Unirme a la lista de espera"}
+        {joinPending ? t.uniendo : t.unirme}
       </button>
       {joinState && !joinState.ok && (
         <p className="w-full font-body text-sm text-move-coral">{joinState.error}</p>
@@ -68,7 +70,7 @@ export default function WaitlistForm({
           href="/completar-perfil"
           className="w-full font-heading text-sm font-semibold text-move-coral hover:underline"
         >
-          Completar perfil
+          {t.completarPerfil}
         </Link>
       )}
     </form>

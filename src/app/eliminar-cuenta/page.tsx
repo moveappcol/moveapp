@@ -1,3 +1,6 @@
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-8">
@@ -7,73 +10,48 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function EliminarCuentaPage() {
+export default async function EliminarCuentaPage() {
+  const t = getDictionary(await getLocale()).eliminarCuenta;
+
   return (
     <section className="mx-auto max-w-2xl px-4 py-20 sm:px-6">
-      <p className="font-body text-xs uppercase tracking-wide text-move-green/50">
-        UNIQUE APP S.A.S. — NIT 902.086.248
-      </p>
-      <h1 className="mt-2 font-heading text-3xl font-bold text-move-green">
-        Eliminar tu cuenta de UNIQUE
-      </h1>
-      <p className="mt-4 font-body text-sm leading-relaxed text-move-green/80">
-        Si quieres eliminar tu cuenta de UNIQUE (aplicación de UNIQUE APP S.A.S.) y los datos
-        personales asociados, sigue los pasos de esta página.
-      </p>
+      <p className="font-body text-xs uppercase tracking-wide text-move-green/50">{t.eyebrow}</p>
+      <h1 className="mt-2 font-heading text-3xl font-bold text-move-green">{t.title}</h1>
+      <p className="mt-4 font-body text-sm leading-relaxed text-move-green/80">{t.intro}</p>
 
-      <Section title="Cómo solicitar la eliminación">
+      <Section title={t.s1Title}>
         <p>
-          Escríbenos a{" "}
+          {t.s1P1Before}{" "}
           <a href="mailto:gerencia@uniqueappcol.com" className="text-move-coral underline">
             gerencia@uniqueappcol.com
           </a>{" "}
-          desde el correo con el que creaste tu cuenta, indicando en el asunto o el cuerpo del
-          mensaje: &quot;Solicito eliminar mi cuenta y mis datos&quot;.
+          {t.s1P1After}
         </p>
-        <p>
-          Vamos a confirmar tu identidad respondiendo a ese mismo correo, y procesaremos la
-          eliminación dentro de los diez (10) días hábiles siguientes. Te avisaremos por correo
-          cuando quede completada.
-        </p>
+        <p>{t.s1P2}</p>
       </Section>
 
-      <Section title="Qué datos se eliminan">
-        <p>
-          Al eliminar tu cuenta, borramos permanentemente: tu nombre y apellido, número de
-          documento de identidad, fecha de nacimiento, género, número de teléfono, historial de
-          reservas y calificaciones de clases, favoritos guardados, y el token de notificaciones
-          push de tu dispositivo. También eliminamos tu cuenta de inicio de sesión (correo y
-          contraseña).
-        </p>
+      <Section title={t.s2Title}>
+        <p>{t.s2P1}</p>
       </Section>
 
-      <Section title="Qué datos se conservan, y por cuánto tiempo">
-        <p>
-          Los registros de pagos y transacciones (monto, fecha, gimnasio, plan o créditos
-          comprados) se conservan hasta por cinco (5) años después de la eliminación de tu cuenta,
-          porque la normativa contable y tributaria colombiana exige mantener soportes de
-          transacciones comerciales durante ese período. Desvinculamos esta información de tus
-          datos de contacto (correo, teléfono) en cuanto es posible, dejando únicamente lo
-          necesario para efectos contables y fiscales.
-        </p>
+      <Section title={t.s3Title}>
+        <p>{t.s3P1}</p>
       </Section>
 
-      <Section title="Eliminar solo una parte de tus datos">
+      <Section title={t.s4Title}>
         <p>
-          Si prefieres no eliminar tu cuenta pero quieres que borremos datos específicos (por
-          ejemplo, tu historial de reservas o calificaciones), escríbenos a la misma dirección,{" "}
+          {t.s4P1Before}{" "}
           <a href="mailto:gerencia@uniqueappcol.com" className="text-move-coral underline">
             gerencia@uniqueappcol.com
           </a>
-          , indicando qué información quieres que eliminemos. Aplican los mismos plazos y
-          excepciones descritos arriba.
+          , {t.s4P1After}
         </p>
       </Section>
 
       <p className="mt-8 font-body text-xs text-move-green/50">
-        Para más detalles sobre cómo tratamos tus datos personales, consulta nuestra{" "}
+        {t.footerBefore}{" "}
         <a href="/tratamiento-datos" className="text-move-coral underline">
-          Política de Tratamiento de Datos Personales
+          {t.footerLink}
         </a>
         .
       </p>

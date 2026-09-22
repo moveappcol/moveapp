@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
+type T = Dictionary["instalar"];
 type Platform = "iphone" | "android";
 
 /** Marco de teléfono en CSS puro — sin capturas de pantalla, para que se
@@ -32,15 +34,13 @@ function MiniSiteHeader() {
   );
 }
 
-function MiniSiteHero() {
+function MiniSiteHero({ t }: { t: T }) {
   return (
     <div className="flex-1 space-y-1.5 bg-white px-2.5 pt-2.5">
       <span className="inline-block rounded-full bg-move-lime/60 px-1.5 py-0.5 text-[5px] font-bold uppercase tracking-wide text-move-green">
-        Un solo plan, todos los gimnasios
+        {t.heroBadge}
       </span>
-      <p className="font-heading text-[9px] font-bold leading-tight text-move-green">
-        Entrena donde quieras, cuando quieras.
-      </p>
+      <p className="font-heading text-[9px] font-bold leading-tight text-move-green">{t.heroTitle}</p>
       <div className="h-10 rounded-lg bg-move-coral/90" />
       <div className="flex gap-1">
         <div className="h-3 flex-1 rounded-full bg-move-coral" />
@@ -112,7 +112,7 @@ function ShareIcon({ highlighted = false }: { highlighted?: boolean }) {
   );
 }
 
-function ShareSheetIOS() {
+function ShareSheetIOS({ t }: { t: T }) {
   return (
     <div className="flex h-full flex-col justify-end bg-move-green/5">
       <div className="rounded-t-xl bg-white p-2 shadow-[0_-4px_10px_rgba(0,0,0,0.08)]">
@@ -126,7 +126,7 @@ function ShareSheetIOS() {
           <div className="h-3 rounded bg-move-green/5" />
           <div className="flex items-center gap-1 rounded bg-move-coral/15 px-1 py-0.5 ring-1 ring-move-coral">
             <div className="h-2 w-2 rounded-sm border border-move-green" />
-            <span className="text-[5.5px] font-bold text-move-green">Agregar a pantalla de inicio</span>
+            <span className="text-[5.5px] font-bold text-move-green">{t.addToHomeScreen}</span>
           </div>
           <div className="h-3 rounded bg-move-green/5" />
         </div>
@@ -135,13 +135,13 @@ function ShareSheetIOS() {
   );
 }
 
-function AddConfirmIOS() {
+function AddConfirmIOS({ t }: { t: T }) {
   return (
     <div className="flex h-full flex-col bg-white p-2">
       <div className="mb-2 flex items-center justify-between text-[6px] font-semibold text-move-green/50">
-        <span>Cancelar</span>
+        <span>{t.cancelar}</span>
         <span className="rounded bg-move-coral px-1.5 py-0.5 text-white ring-2 ring-move-coral/40">
-          Agregar
+          {t.agregar}
         </span>
       </div>
       <div className="flex flex-1 flex-col items-center justify-center gap-1.5">
@@ -176,7 +176,7 @@ function HomeScreen({ withNotch = false, opening = false }: { withNotch?: boolea
   );
 }
 
-function ChromeMenu() {
+function ChromeMenu({ t }: { t: T }) {
   return (
     <div className="flex h-full flex-col bg-white">
       <div className="flex items-center justify-end gap-1 bg-move-green/5 px-1.5 py-1">
@@ -192,7 +192,7 @@ function ChromeMenu() {
           <div className="h-2.5 rounded bg-move-green/5" />
           <div className="h-2.5 rounded bg-move-green/5" />
           <div className="flex items-center gap-1 rounded bg-move-coral/15 px-1 py-0.5 ring-1 ring-move-coral">
-            <span className="text-[5px] font-bold text-move-green">Instalar aplicación</span>
+            <span className="text-[5px] font-bold text-move-green">{t.instalarAplicacion}</span>
           </div>
           <div className="h-2.5 rounded bg-move-green/5" />
         </div>
@@ -201,13 +201,13 @@ function ChromeMenu() {
   );
 }
 
-function InstallingAndroid() {
+function InstallingAndroid({ t }: { t: T }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 bg-white p-2">
       <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-move-coral">
         <span className="font-brand text-[6px] font-bold text-move-green">UQ</span>
       </div>
-      <p className="text-[6px] font-semibold text-move-green">Instalando UNIQUE…</p>
+      <p className="text-[6px] font-semibold text-move-green">{t.instalandoUnique}</p>
       <div className="h-1 w-16 overflow-hidden rounded-full bg-move-green/10">
         <div className="h-full w-2/3 rounded-full bg-move-coral" />
       </div>
@@ -217,94 +217,64 @@ function InstallingAndroid() {
 
 type Step = { title: string; screen: React.ReactNode };
 
-const iphoneSteps: Step[] = [
-  {
-    title: "Abre Safari y entra a uniqueappcol.com",
-    screen: (
-      <SafariChrome urlLabel="uniqueappcol.com">
-        <MiniSiteHeader />
-        <MiniSiteHero />
-      </SafariChrome>
-    ),
-  },
-  {
-    title: "Toca el botón ••• en la barra inferior de Safari",
-    screen: (
-      <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="more">
-        <MiniSiteHeader />
-        <MiniSiteHero />
-      </SafariChrome>
-    ),
-  },
-  {
-    title: "Ahora sí, toca el botón Compartir",
-    screen: (
-      <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="share">
-        <MiniSiteHeader />
-        <MiniSiteHero />
-      </SafariChrome>
-    ),
-  },
-  {
-    title: "Desliza hacia abajo y toca \"Agregar a pantalla de inicio\"",
-    screen: <ShareSheetIOS />,
-  },
-  {
-    title: "Presiona \"Agregar\" en la esquina superior derecha",
-    screen: <AddConfirmIOS />,
-  },
-  {
-    title: "El ícono se agrega solo a tu pantalla de inicio",
-    screen: <HomeScreen withNotch />,
-  },
-  {
-    title: "Abre la app UNIQUE desde el ícono",
-    screen: <HomeScreen withNotch opening />,
-  },
-];
+function buildIphoneSteps(t: T): Step[] {
+  return [
+    {
+      title: t.iphoneSteps[0],
+      screen: (
+        <SafariChrome urlLabel="uniqueappcol.com">
+          <MiniSiteHeader />
+          <MiniSiteHero t={t} />
+        </SafariChrome>
+      ),
+    },
+    {
+      title: t.iphoneSteps[1],
+      screen: (
+        <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="more">
+          <MiniSiteHeader />
+          <MiniSiteHero t={t} />
+        </SafariChrome>
+      ),
+    },
+    {
+      title: t.iphoneSteps[2],
+      screen: (
+        <SafariChrome urlLabel="uniqueappcol.com" toolbarIcon="share">
+          <MiniSiteHeader />
+          <MiniSiteHero t={t} />
+        </SafariChrome>
+      ),
+    },
+    { title: t.iphoneSteps[3], screen: <ShareSheetIOS t={t} /> },
+    { title: t.iphoneSteps[4], screen: <AddConfirmIOS t={t} /> },
+    { title: t.iphoneSteps[5], screen: <HomeScreen withNotch /> },
+    { title: t.iphoneSteps[6], screen: <HomeScreen withNotch opening /> },
+  ];
+}
 
-const androidSteps: Step[] = [
-  {
-    title: "Abre Chrome y entra a uniqueappcol.com",
-    screen: (
-      <div className="flex h-full flex-col">
-        <MiniSiteHeader />
-        <MiniSiteHero />
-      </div>
-    ),
-  },
-  {
-    title: "Toca el menú ⋮ en la esquina superior derecha",
-    screen: <ChromeMenu />,
-  },
-  {
-    title: "Selecciona \"Instalar aplicación\"",
-    screen: <ChromeMenu />,
-  },
-  {
-    title: "Confirma tocando \"Instalar\"",
-    screen: <InstallingAndroid />,
-  },
-  {
-    title: "Espera unos segundos mientras se instala",
-    screen: <InstallingAndroid />,
-  },
-  {
-    title: "Abre la app UNIQUE desde el ícono en tu pantalla de inicio",
-    screen: <HomeScreen opening />,
-  },
-];
+function buildAndroidSteps(t: T): Step[] {
+  return [
+    {
+      title: t.androidSteps[0],
+      screen: (
+        <div className="flex h-full flex-col">
+          <MiniSiteHeader />
+          <MiniSiteHero t={t} />
+        </div>
+      ),
+    },
+    { title: t.androidSteps[1], screen: <ChromeMenu t={t} /> },
+    { title: t.androidSteps[2], screen: <ChromeMenu t={t} /> },
+    { title: t.androidSteps[3], screen: <InstallingAndroid t={t} /> },
+    { title: t.androidSteps[4], screen: <InstallingAndroid t={t} /> },
+    { title: t.androidSteps[5], screen: <HomeScreen opening /> },
+  ];
+}
 
-const features = [
-  { label: "Reservas rápidas" },
-  { label: "Acceso con un toque" },
-  { label: "Notificaciones" },
-  { label: "Experiencia de pantalla completa" },
-];
-
-export default function InstalarGuide() {
+export default function InstalarGuide({ t }: { t: T }) {
   const [platform, setPlatform] = useState<Platform>("iphone");
-  const steps = platform === "iphone" ? iphoneSteps : androidSteps;
+  const steps = platform === "iphone" ? buildIphoneSteps(t) : buildAndroidSteps(t);
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
@@ -339,18 +309,13 @@ export default function InstalarGuide() {
       </div>
 
       <h1 className="mt-8 font-heading text-3xl font-bold text-move-green sm:text-4xl">
-        ¿Cómo instalar la app de UNIQUE en tu {platform === "iphone" ? "iPhone" : "Android"}?
+        {t.titleFor(platform === "iphone" ? "iPhone" : "Android")}
       </h1>
-      <p className="mt-2 max-w-xl font-body text-move-green/70">
-        Instálala en menos de un minuto y reserva tus clases directo desde tu celular — sin pasar
-        por el App Store ni Google Play.
-      </p>
+      <p className="mt-2 max-w-xl font-body text-move-green/70">{t.subtitle}</p>
 
       {platform === "android" && (
         <p className="mt-4 max-w-xl rounded-xl bg-move-lime/30 px-4 py-3 font-body text-sm text-move-green/80">
-          <strong className="font-heading">Importante:</strong> si tu celular es Samsung, abre este
-          enlace con Chrome (no con el navegador &ldquo;Internet&rdquo; que trae Samsung por
-          defecto) — si no, Android puede bloquear la instalación por error.
+          <strong className="font-heading">{t.samsungWarningStrong}</strong> {t.samsungWarningBody}
         </p>
       )}
 
@@ -377,18 +342,17 @@ export default function InstalarGuide() {
           </svg>
         </div>
         <p className="font-body text-sm">
-          <strong className="font-heading">¡Listo!</strong> Ahora puedes reservar tus clases de
-          forma rápida desde tu celular.
+          <strong className="font-heading">{t.listoStrong}</strong> {t.listoBody}
         </p>
       </div>
 
       <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {features.map((f) => (
+        {t.features.map((f) => (
           <div
-            key={f.label}
+            key={f}
             className="rounded-2xl border border-move-green/10 bg-white px-3 py-4 text-center font-body text-xs font-semibold text-move-green/80"
           >
-            {f.label}
+            {f}
           </div>
         ))}
       </div>

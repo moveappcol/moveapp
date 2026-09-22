@@ -74,6 +74,8 @@ export const es = {
       ultimos2Cupos: "Últimos 2 cupos disponibles",
       cuposDisponibles: "Cupos disponibles",
       gimnasioGenerico: "Gimnasio",
+      todasLasActividades: "Todas las actividades",
+      todosLosHorarios: "Todo el día",
     },
     plans: {
       title: "Planes de créditos",

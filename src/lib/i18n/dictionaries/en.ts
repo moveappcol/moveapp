@@ -76,6 +76,8 @@ export const en: Dictionary = {
       ultimos2Cupos: "Last 2 spots available",
       cuposDisponibles: "Spots available",
       gimnasioGenerico: "Gym",
+      todasLasActividades: "All activities",
+      todosLosHorarios: "All day",
     },
     plans: {
       title: "Credit plans",

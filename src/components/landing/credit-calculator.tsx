@@ -7,12 +7,15 @@ import {
   estimateCreditsForBudget,
   formatCOP,
 } from "@/lib/credits-pricing";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 type Mode = "credits" | "budget";
 
 const CHEAPEST_PLAN = CREDIT_PLANS.reduce((min, p) => (p.price < min.price ? p : min));
 
-export default function CreditCalculator() {
+export default function CreditCalculator({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale).home.calculator;
   const [mode, setMode] = useState<Mode>("credits");
   const [creditsInput, setCreditsInput] = useState("30");
   const [budgetInput, setBudgetInput] = useState("250000");
@@ -30,13 +33,8 @@ export default function CreditCalculator() {
 
   return (
     <div className="rounded-3xl border border-move-green/10 bg-white p-6 shadow-sm sm:p-8">
-      <h3 className="font-heading text-xl font-semibold text-move-green">
-        Calculadora de créditos
-      </h3>
-      <p className="mt-1 font-body text-sm text-move-green/70">
-        Dinos cuántos créditos quieres, o cuánto quieres gastar, y te
-        mostramos la combinación de plan + adicionales más conveniente.
-      </p>
+      <h3 className="font-heading text-xl font-semibold text-move-green">{t.title}</h3>
+      <p className="mt-1 font-body text-sm text-move-green/70">{t.subtitle}</p>
 
       <div className="mt-6 inline-flex rounded-full bg-move-green/5 p-1">
         <button
@@ -48,7 +46,7 @@ export default function CreditCalculator() {
               : "text-move-green/70 hover:text-move-green"
           }`}
         >
-          Quiero X créditos
+          {t.modeCredits}
         </button>
         <button
           type="button"
@@ -59,7 +57,7 @@ export default function CreditCalculator() {
               : "text-move-green/70 hover:text-move-green"
           }`}
         >
-          Tengo un presupuesto
+          {t.modeBudget}
         </button>
       </div>
 
@@ -68,7 +66,7 @@ export default function CreditCalculator() {
           {mode === "credits" ? (
             <label className="block">
               <span className="font-heading text-sm font-medium text-move-green">
-                Créditos que quieres tener
+                {t.creditsLabel}
               </span>
               <input
                 type="number"
@@ -81,7 +79,7 @@ export default function CreditCalculator() {
           ) : (
             <label className="block">
               <span className="font-heading text-sm font-medium text-move-green">
-                Tu presupuesto (COP)
+                {t.budgetLabel}
               </span>
               <input
                 type="number"
@@ -99,27 +97,23 @@ export default function CreditCalculator() {
           {result ? (
             <>
               <p className="font-heading text-sm font-medium text-move-green/70">
-                {mode === "credits" ? "Precio estimado" : "Créditos que alcanzas"}
+                {mode === "credits" ? t.precioEstimado : t.creditosQueAlcanzas}
               </p>
               <p className="mt-1 font-heading text-3xl font-bold text-move-green">
                 {mode === "credits"
                   ? formatCOP(result.cost)
-                  : `${result.credits} créditos`}
+                  : `${result.credits} ${locale === "en" ? "credits" : "créditos"}`}
               </p>
               <p className="mt-2 font-body text-sm text-move-green/70">
                 {mode === "credits"
-                  ? `Te alcanza para ${result.credits} créditos.`
-                  : `Por ${formatCOP(result.cost)}.`}
+                  ? t.teAlcanzaPara(result.credits)
+                  : t.porPrecio(formatCOP(result.cost))}
               </p>
               <ul className="mt-3 space-y-1 font-body text-sm text-move-green/70">
-                <li>
-                  Plan {result.plan.name} ({result.plan.label}) —{" "}
-                  {formatCOP(result.plan.price)}
-                </li>
+                <li>{t.planLine(result.plan.name ?? "", result.plan.label, formatCOP(result.plan.price))}</li>
                 {result.topups.map((item) => (
                   <li key={item.pkg.id}>
-                    {item.quantity}× adicional de {item.pkg.label} —{" "}
-                    {formatCOP(item.pkg.price * item.quantity)}
+                    {t.topupLine(item.quantity, item.pkg.label, formatCOP(item.pkg.price * item.quantity))}
                   </li>
                 ))}
               </ul>
@@ -127,18 +121,14 @@ export default function CreditCalculator() {
           ) : (
             <p className="font-body text-sm text-move-green/70">
               {mode === "budget"
-                ? `Tu presupuesto no alcanza ni para el plan más pequeño (${CHEAPEST_PLAN.label} por ${formatCOP(CHEAPEST_PLAN.price)}).`
-                : "Ingresa un número de créditos mayor a 0."}
+                ? t.presupuestoInsuficiente(CHEAPEST_PLAN.label, formatCOP(CHEAPEST_PLAN.price))
+                : t.ingresaNumero}
             </p>
           )}
         </div>
       </div>
 
-      <p className="mt-6 font-body text-xs text-move-green/50">
-        Estimado combinando 1 plan mensual + créditos adicionales. Los
-        créditos adicionales solo se pueden comprar durante el mes de un
-        plan activo, y los créditos vencen al cumplirse el mes.
-      </p>
+      <p className="mt-6 font-body text-xs text-move-green/50">{t.footnote}</p>
     </div>
   );
 }

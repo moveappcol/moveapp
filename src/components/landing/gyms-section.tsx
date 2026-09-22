@@ -5,6 +5,8 @@ import { getAllClasesDeTodosLosGimnasios } from "@/lib/classes";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
 import GymsExplorerToggle from "./gyms-explorer-toggle";
 import ViewTracker from "@/components/analytics/view-tracker";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const GYMS_VIEW_EVENT_PARAMS = {
   content_name: "Gimnasios afiliados",
@@ -12,6 +14,9 @@ const GYMS_VIEW_EVENT_PARAMS = {
 };
 
 export default async function GymsSection() {
+  const locale = await getLocale();
+  const t = getDictionary(locale).home.gyms;
+
   // En local (npm run dev) se ve la grilla real para poder probarla; en
   // producción sigue mostrando "Coming soon" mientras GYMS_COMING_SOON siga
   // en true.
@@ -20,21 +25,14 @@ export default async function GymsSection() {
       <section id="gimnasios" className="bg-background">
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <ViewTracker event="ViewContent" params={GYMS_VIEW_EVENT_PARAMS} />
-          <h2 className="font-heading text-3xl font-bold text-move-green">
-            Gimnasios afiliados
-          </h2>
-          <p className="mt-2 max-w-xl font-body text-move-green/70">
-            Busca gimnasios cerca de ti y filtra por tipo de actividad.
-          </p>
+          <h2 className="font-heading text-3xl font-bold text-move-green">{t.title}</h2>
+          <p className="mt-2 max-w-xl font-body text-move-green/70">{t.subtitle}</p>
 
           <div className="mt-12 flex flex-col items-center justify-center rounded-3xl border border-move-green/10 bg-move-green/[0.03] py-24 text-center">
             <span className="font-heading text-4xl font-bold uppercase tracking-tight text-move-coral sm:text-5xl">
-              Coming soon
+              {t.comingSoon}
             </span>
-            <p className="mt-4 max-w-md font-body text-sm text-move-green/60">
-              Estamos confirmando los primeros gimnasios afiliados. Muy pronto
-              podrás verlos y reservar clases aquí.
-            </p>
+            <p className="mt-4 max-w-md font-body text-sm text-move-green/60">{t.comingSoonBody}</p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
               {["Boxing", "Indoor Cycling", "Pilates", "Funcional"].map((activity) => (
                 <span
@@ -77,21 +75,23 @@ export default async function GymsSection() {
         <ViewTracker event="ViewContent" params={GYMS_VIEW_EVENT_PARAMS} />
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-heading text-3xl font-bold text-move-green">
-              Gimnasios afiliados
-            </h2>
-            <p className="mt-2 max-w-xl font-body text-move-green/70">
-              Busca gimnasios cerca de ti y filtra por tipo de actividad.
-            </p>
+            <h2 className="font-heading text-3xl font-bold text-move-green">{t.title}</h2>
+            <p className="mt-2 max-w-xl font-body text-move-green/70">{t.subtitle}</p>
           </div>
           {usingMockData && (
             <span className="rounded-full bg-move-green/5 px-3 py-1 font-heading text-xs font-medium text-move-green/60">
-              Datos de ejemplo — conecta Airtable para ver gimnasios reales
+              {t.mockDataBanner}
             </span>
           )}
         </div>
 
-        <GymsExplorerToggle gyms={gyms} classes={classes} reservedClaseIds={reservedClaseIds} />
+        <GymsExplorerToggle
+          gyms={gyms}
+          classes={classes}
+          reservedClaseIds={reservedClaseIds}
+          locale={locale}
+          t={t}
+        />
       </div>
     </section>
   );

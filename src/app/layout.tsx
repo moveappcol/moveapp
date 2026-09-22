@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
-import { esES } from "@clerk/localizations";
+import { esES, enUS } from "@clerk/localizations";
 import { poppins, inter } from "@/lib/fonts";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
@@ -10,6 +10,7 @@ import WhatsappButton from "@/components/layout/whatsapp-button";
 import MetaPixel from "@/components/analytics/meta-pixel";
 import CouponCapture from "@/components/landing/coupon-capture";
 import { GoogleTagManagerScript, GoogleTagManagerNoscript } from "@/components/analytics/google-tag-manager";
+import { getLocale } from "@/lib/i18n/locale";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -33,14 +34,16 @@ export const viewport: Viewport = {
   themeColor: "#ff4f3f",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+
   return (
     <ClerkProvider
-      localization={esES}
+      localization={locale === "en" ? enUS : esES}
       signInUrl="/iniciar-sesion"
       signUpUrl="/crear-cuenta"
       appearance={{
@@ -52,7 +55,7 @@ export default function RootLayout({
       }}
     >
       <html
-        lang="es"
+        lang={locale}
         className={`${poppins.variable} ${inter.variable} h-full antialiased`}
       >
         <body className="flex min-h-full flex-col">

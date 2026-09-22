@@ -1,9 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const CONTACT_EMAIL = "gerencia@uniqueappcol.com";
 
-export default function Footer() {
+export default async function Footer() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
   return (
     <footer className="border-t border-move-green/10 bg-move-green text-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
@@ -16,15 +21,12 @@ export default function Footer() {
               height={277}
               className="h-6 w-auto"
             />
-            <p className="mt-3 max-w-xs font-body text-sm text-white/70">
-              Un solo plan de créditos para entrenar en los mejores gimnasios
-              y estudios afiliados.
-            </p>
+            <p className="mt-3 max-w-xs font-body text-sm text-white/70">{dict.footer.tagline}</p>
           </div>
 
           <div>
             <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-lime">
-              Contacto
+              {dict.footer.contacto}
             </p>
             <a
               href={`mailto:${CONTACT_EMAIL}`}
@@ -36,32 +38,34 @@ export default function Footer() {
 
           <div>
             <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-lime">
-              Política de cancelación
+              {dict.footer.politicaCancelacionTitle}
             </p>
             <p className="mt-3 font-body text-sm text-white/70">
-              Puedes cancelar una clase hasta 24 horas antes sin costo.
+              {dict.footer.politicaCancelacionText}
             </p>
           </div>
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} UNIQUE. Todos los derechos reservados.</p>
+          <p>
+            © {new Date().getFullYear()} UNIQUE. {dict.footer.rights}
+          </p>
           {/* Anchors nativos a propósito: ver nota en hero.tsx */}
           <nav className="flex gap-6">
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/#gimnasios" className="hover:text-white">
-              Gimnasios
+              {dict.header.navGimnasios}
             </a>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/#planes" className="hover:text-white">
-              Planes
+              {dict.header.navPlanes}
             </a>
             <Link href="/sobre-nosotros" className="hover:text-white">
-              Sobre nosotros
+              {dict.header.navSobreNosotros}
             </Link>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/#contacto" className="hover:text-white">
-              Contacto
+              {dict.header.navContacto}
             </a>
           </nav>
         </div>

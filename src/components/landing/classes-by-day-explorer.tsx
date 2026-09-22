@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { precioEfectivo, type Clase } from "@/lib/classes";
 import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 export type GymInfo = { name: string; activities: string[] };
 
@@ -11,12 +13,16 @@ export default function ClassesByDayExplorer({
   classes,
   gymsById,
   reservedClaseIds,
+  locale,
+  t,
 }: {
   classes: Clase[];
   gymsById: Record<string, GymInfo>;
   reservedClaseIds?: string[];
+  locale: Locale;
+  t: Dictionary["home"]["gyms"];
 }) {
-  const semana = useMemo(() => semanaActual(), []);
+  const semana = useMemo(() => semanaActual(locale), [locale]);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
   const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);
 
@@ -56,9 +62,7 @@ export default function ClassesByDayExplorer({
         </p>
 
         {clasesDelDia.length === 0 ? (
-          <p className="font-body text-sm text-move-green/60">
-            No hay clases programadas para este día.
-          </p>
+          <p className="font-body text-sm text-move-green/60">{t.noClasesHoy}</p>
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {clasesDelDia.map((clase) => {
@@ -73,7 +77,7 @@ export default function ClassesByDayExplorer({
                     className="block h-full rounded-2xl border border-move-green/10 bg-white p-5 transition-shadow hover:shadow-md"
                   >
                     <p className="font-heading text-xs font-semibold uppercase tracking-wide text-move-coral">
-                      {gym?.name ?? "Gimnasio"}
+                      {gym?.name ?? t.gimnasioGenerico}
                     </p>
                     <div className="mt-2 flex flex-wrap items-start justify-between gap-2">
                       <div>
@@ -81,7 +85,7 @@ export default function ClassesByDayExplorer({
                           {clase.name}
                         </p>
                         <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
-                          {clase.fecha ? formatHora(clase.fecha) : "Hora por confirmar"}
+                          {clase.fecha ? formatHora(clase.fecha, locale) : t.horaPorConfirmar}
                         </p>
                       </div>
                       <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
@@ -90,20 +94,20 @@ export default function ClassesByDayExplorer({
                             {clase.credits}
                           </span>
                         )}
-                        {precioEfectivo(clase)} créditos
+                        {precioEfectivo(clase)} {locale === "en" ? "credits" : "créditos"}
                       </span>
                     </div>
 
                     <p className="mt-3 font-body text-sm font-medium text-move-green/70">
                       {yaReservada
-                        ? "Ya reservaste esta clase."
+                        ? t.yaReservada
                         : llena
-                        ? "Clase llena — únete a la lista de espera"
+                        ? t.claseLlena
                         : clase.cuposDisponibles <= 2
                         ? clase.cuposDisponibles === 1
-                          ? "Último cupo disponible"
-                          : "Últimos 2 cupos disponibles"
-                        : "Cupos disponibles"}
+                          ? t.ultimoCupo
+                          : t.ultimos2Cupos
+                        : t.cuposDisponibles}
                     </p>
                   </Link>
                 </li>

@@ -3,21 +3,21 @@
 import { useState } from "react";
 import ContactForm from "./contact-form";
 import GymApplicationForm from "./gym-application-form";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const CONTACT_EMAIL = "gerencia@uniqueappcol.com";
 
 type Tab = "cliente" | "gimnasio";
 
-export default function ContactSection() {
+export default function ContactSection({ t }: { t: Dictionary["home"]["contact"] }) {
   const [tab, setTab] = useState<Tab>("cliente");
 
   return (
     <section id="contacto" className="bg-background">
       <div className="mx-auto max-w-2xl px-4 py-20 sm:px-6">
-        <h2 className="font-heading text-3xl font-bold text-move-green">Contacto</h2>
+        <h2 className="font-heading text-3xl font-bold text-move-green">{t.title}</h2>
         <p className="mt-2 font-body text-move-green/70">
-          ¿Dudas, alianzas o soporte? Escríbenos y te contestamos pronto, o
-          mándanos un correo directo a{" "}
+          {t.subtitleBefore}{" "}
           <a href={`mailto:${CONTACT_EMAIL}`} className="text-move-coral underline-offset-4 hover:underline">
             {CONTACT_EMAIL}
           </a>
@@ -34,7 +34,7 @@ export default function ContactSection() {
                 : "border-move-green/15 text-move-green/60 hover:border-move-green/40"
             }`}
           >
-            Tengo una pregunta
+            {t.tabCliente}
           </button>
           <button
             type="button"
@@ -45,11 +45,13 @@ export default function ContactSection() {
                 : "border-move-green/15 text-move-green/60 hover:border-move-green/40"
             }`}
           >
-            Quiero afiliar mi gimnasio
+            {t.tabGimnasio}
           </button>
         </div>
 
-        <div className="mt-6">{tab === "cliente" ? <ContactForm /> : <GymApplicationForm />}</div>
+        <div className="mt-6">
+          {tab === "cliente" ? <ContactForm t={t.form} /> : <GymApplicationForm t={t.gymForm} />}
+        </div>
       </div>
     </section>
   );

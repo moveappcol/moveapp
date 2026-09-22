@@ -4,10 +4,17 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { Gym } from "@/lib/gyms";
 import { distanceKm } from "@/lib/geo";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type GeoStatus = "idle" | "loading" | "denied" | "unsupported" | "success";
 
-export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
+export default function GymsExplorer({
+  gyms,
+  t,
+}: {
+  gyms: Gym[];
+  t: Dictionary["home"]["gyms"];
+}) {
   const [query, setQuery] = useState("");
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -77,7 +84,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar por nombre o ciudad…"
+          placeholder={t.searchPlaceholder}
           className="w-full max-w-sm rounded-full border border-move-green/20 px-5 py-3 font-body text-sm text-move-green outline-none focus:border-move-coral"
         />
 
@@ -87,7 +94,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
           disabled={geoStatus === "loading"}
           className="rounded-full border border-move-green/20 px-5 py-3 font-heading text-sm font-medium text-move-green transition-colors hover:border-move-green disabled:opacity-50"
         >
-          {geoStatus === "loading" ? "Buscando tu ubicación…" : "Usar mi ubicación"}
+          {geoStatus === "loading" ? t.locatingYou : t.useMyLocation}
         </button>
 
         <div className="flex flex-wrap gap-2">
@@ -112,15 +119,10 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
       </div>
 
       {geoStatus === "denied" && (
-        <p className="mt-3 font-body text-sm text-move-coral">
-          No pudimos acceder a tu ubicación. Revisa los permisos del navegador
-          e inténtalo de nuevo.
-        </p>
+        <p className="mt-3 font-body text-sm text-move-coral">{t.geoDenied}</p>
       )}
       {geoStatus === "unsupported" && (
-        <p className="mt-3 font-body text-sm text-move-coral">
-          Tu navegador no soporta geolocalización.
-        </p>
+        <p className="mt-3 font-body text-sm text-move-coral">{t.geoUnsupported}</p>
       )}
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -140,7 +142,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
                 />
               ) : (
                 <span className="font-heading text-xs font-medium uppercase tracking-wide text-move-green/40">
-                  Foto próximamente
+                  {t.photoSoon}
                 </span>
               )}
             </div>
@@ -165,9 +167,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
               </p>
               {gym.genero !== "todos" && (
                 <span className="mt-2 inline-block rounded-full bg-move-coral/10 px-2.5 py-0.5 font-heading text-[11px] font-semibold uppercase tracking-wide text-move-coral">
-                  {gym.genero === "solo_mujeres"
-                    ? "Gimnasio exclusivo para mujeres"
-                    : "Gimnasio exclusivo para hombres"}
+                  {gym.genero === "solo_mujeres" ? t.exclusivoMujeres : t.exclusivoHombres}
                 </span>
               )}
             </div>
@@ -175,9 +175,7 @@ export default function GymsExplorer({ gyms }: { gyms: Gym[] }) {
         ))}
 
         {results.length === 0 && (
-          <p className="col-span-full font-body text-sm text-move-green/60">
-            No encontramos gimnasios con esos filtros.
-          </p>
+          <p className="col-span-full font-body text-sm text-move-green/60">{t.noResults}</p>
         )}
       </div>
     </>

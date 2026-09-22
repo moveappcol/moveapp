@@ -2,24 +2,30 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getUserCreditsByEmail } from "@/lib/users";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import UserMenu from "./user-menu";
 import MobileNav from "./mobile-nav";
-
-const NAV_LINKS = [
-  { href: "/#gimnasios", label: "Gimnasios" },
-  { href: "/#planes", label: "Planes" },
-  { href: "/como-funciona", label: "Cómo funciona" },
-  { href: "/sobre-nosotros", label: "Sobre nosotros" },
-  { href: "/#contacto", label: "Contacto" },
-];
-
-const SIGNED_IN_NAV_LINKS = [
-  { href: "/mis-reservas", label: "Mis reservas" },
-  { href: "/mi-suscripcion", label: "Mi suscripción" },
-];
+import LanguageToggle from "./language-toggle";
 
 export default async function Header() {
   const { userId } = await auth();
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
+  const NAV_LINKS = [
+    { href: "/#gimnasios", label: dict.header.navGimnasios },
+    { href: "/#planes", label: dict.header.navPlanes },
+    { href: "/como-funciona", label: dict.header.navComoFunciona },
+    { href: "/sobre-nosotros", label: dict.header.navSobreNosotros },
+    { href: "/#contacto", label: dict.header.navContacto },
+  ];
+
+  const SIGNED_IN_NAV_LINKS = [
+    { href: "/mis-reservas", label: dict.header.navMisReservas },
+    { href: "/mi-suscripcion", label: dict.header.navMiSuscripcion },
+  ];
+
   const navLinks = userId ? [...NAV_LINKS, ...SIGNED_IN_NAV_LINKS] : NAV_LINKS;
 
   let displayName: string | null = null;
@@ -28,7 +34,7 @@ export default async function Header() {
   if (userId) {
     const user = await currentUser();
     const email = user?.primaryEmailAddress?.emailAddress ?? null;
-    displayName = user?.firstName || email || "Cuenta";
+    displayName = user?.firstName || email || dict.header.account;
 
     if (email) {
       try {
@@ -78,6 +84,7 @@ export default async function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <LanguageToggle locale={locale} />
           {userId ? (
             <>
               <div className="text-right">
@@ -85,10 +92,15 @@ export default async function Header() {
                   {displayName}
                 </p>
                 <p className="font-body text-xs font-semibold leading-tight text-move-green/70 sm:font-normal sm:text-move-green/60">
-                  {credits !== null ? `${credits} créditos` : "—"}
+                  {credits !== null ? `${credits} ${dict.common.credits}` : "—"}
                 </p>
               </div>
-              <UserMenu />
+              <UserMenu
+                labels={{
+                  misReservas: dict.header.navMisReservas,
+                  miSuscripcion: dict.header.navMiSuscripcion,
+                }}
+              />
             </>
           ) : (
             <div className="hidden items-center gap-3 md:flex">
@@ -96,17 +108,26 @@ export default async function Header() {
                 href="/iniciar-sesion"
                 className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
               >
-                Iniciar sesión
+                {dict.common.signIn}
               </Link>
               <Link
                 href="/crear-cuenta"
                 className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Crear cuenta
+                {dict.common.createAccount}
               </Link>
             </div>
           )}
-          <MobileNav links={navLinks} showAuthLinks={!userId} />
+          <MobileNav
+            links={navLinks}
+            showAuthLinks={!userId}
+            labels={{
+              open: dict.header.openMenu,
+              close: dict.header.closeMenu,
+              signIn: dict.common.signIn,
+              createAccount: dict.common.createAccount,
+            }}
+          />
         </div>
       </div>
     </header>

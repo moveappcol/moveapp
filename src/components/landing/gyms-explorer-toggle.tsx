@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { Gym } from "@/lib/gyms";
 import type { Clase } from "@/lib/classes";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 import GymsExplorer from "./gyms-explorer";
 import ClassesByDayExplorer, { type GymInfo } from "./classes-by-day-explorer";
 
@@ -12,10 +14,14 @@ export default function GymsExplorerToggle({
   gyms,
   classes,
   reservedClaseIds,
+  locale,
+  t,
 }: {
   gyms: Gym[];
   classes: Clase[];
   reservedClaseIds?: string[];
+  locale: Locale;
+  t: Dictionary["home"]["gyms"];
 }) {
   const [modo, setModo] = useState<Modo>("gimnasio");
 
@@ -35,7 +41,7 @@ export default function GymsExplorerToggle({
               : "text-move-green/60 hover:text-move-green"
           }`}
         >
-          Por gimnasio
+          {t.tabPorGimnasio}
         </button>
         <button
           type="button"
@@ -44,14 +50,20 @@ export default function GymsExplorerToggle({
             modo === "dia" ? "bg-move-green text-white" : "text-move-green/60 hover:text-move-green"
           }`}
         >
-          Por día
+          {t.tabPorDia}
         </button>
       </div>
 
       {modo === "gimnasio" ? (
-        <GymsExplorer gyms={gyms} />
+        <GymsExplorer gyms={gyms} t={t} />
       ) : (
-        <ClassesByDayExplorer classes={classes} gymsById={gymsById} reservedClaseIds={reservedClaseIds} />
+        <ClassesByDayExplorer
+          classes={classes}
+          gymsById={gymsById}
+          reservedClaseIds={reservedClaseIds}
+          locale={locale}
+          t={t}
+        />
       )}
     </div>
   );

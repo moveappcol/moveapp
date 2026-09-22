@@ -8,9 +8,11 @@ type NavLink = { href: string; label: string };
 export default function MobileNav({
   links,
   showAuthLinks,
+  labels,
 }: {
   links: NavLink[];
   showAuthLinks?: boolean;
+  labels: { open: string; close: string; signIn: string; createAccount: string };
 }) {
   const [open, setOpen] = useState(false);
 
@@ -19,7 +21,7 @@ export default function MobileNav({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Cerrar menú" : "Abrir menú"}
+        aria-label={open ? labels.close : labels.open}
         aria-expanded={open}
         className="flex h-9 w-9 items-center justify-center text-move-green"
       >
@@ -69,14 +71,14 @@ export default function MobileNav({
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 font-heading text-sm font-medium text-move-green hover:bg-move-green/5"
               >
-                Iniciar sesión
+                {labels.signIn}
               </Link>
               <Link
                 href="/crear-cuenta"
                 onClick={() => setOpen(false)}
                 className="rounded-full bg-move-coral px-5 py-3 text-center font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
-                Crear cuenta
+                {labels.createAccount}
               </Link>
             </div>
           )}

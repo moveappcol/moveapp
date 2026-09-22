@@ -18,7 +18,7 @@ declare global {
  * -- un solo clic en "Instalar" y listo. En iPhone, Apple no expone ninguna
  * API para disparar "Agregar a pantalla de inicio" desde código: ahí no
  * queda otra que mandar a la guía de pasos manuales. */
-export default function InstallAppButton() {
+export default function InstallAppButton({ label }: { label: string }) {
   const router = useRouter();
   // El servidor no tiene matchMedia — ahí simplemente asumimos "no
   // instalado" (el botón se muestra) y, si el cliente ya lo tenía
@@ -94,7 +94,7 @@ export default function InstallAppButton() {
         <path d="M7 11l5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
         <path d="M5 20h14" strokeLinecap="round" />
       </svg>
-      Descargar app
+      {label}
     </button>
   );
 }

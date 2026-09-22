@@ -2,12 +2,16 @@
 
 import { UserButton } from "@clerk/nextjs";
 
-export default function UserMenu() {
+export default function UserMenu({
+  labels,
+}: {
+  labels: { misReservas: string; miSuscripcion: string };
+}) {
   return (
     <UserButton>
       <UserButton.MenuItems>
         <UserButton.Link
-          label="Mis reservas"
+          label={labels.misReservas}
           href="/mis-reservas"
           labelIcon={
             <svg
@@ -26,7 +30,7 @@ export default function UserMenu() {
           }
         />
         <UserButton.Link
-          label="Mi suscripción"
+          label={labels.miSuscripcion}
           href="/mi-suscripcion"
           labelIcon={
             <svg

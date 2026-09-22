@@ -3,8 +3,15 @@
 import { useActionState, useState } from "react";
 import { submitRatingAction } from "@/app/mis-reservas/actions";
 import type { RatingResult } from "@/lib/reservations";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export default function RateClassForm({ reservationId }: { reservationId: string }) {
+export default function RateClassForm({
+  reservationId,
+  t,
+}: {
+  reservationId: string;
+  t: Dictionary["misReservas"]["rate"];
+}) {
   const [state, formAction, isPending] = useActionState<RatingResult | null, FormData>(
     submitRatingAction,
     null
@@ -13,11 +20,7 @@ export default function RateClassForm({ reservationId }: { reservationId: string
   const [hover, setHover] = useState(0);
 
   if (state?.ok) {
-    return (
-      <p className="mt-2 font-body text-sm font-medium text-move-green">
-        ¡Gracias por calificar la clase!
-      </p>
-    );
+    return <p className="mt-2 font-body text-sm font-medium text-move-green">{t.gracias}</p>;
   }
 
   return (
@@ -25,9 +28,7 @@ export default function RateClassForm({ reservationId }: { reservationId: string
       <input type="hidden" name="reservationId" value={reservationId} />
       <input type="hidden" name="calificacion" value={calificacion} />
 
-      <p className="font-heading text-xs font-semibold text-move-green">
-        ¿Cómo estuvo la clase? (opcional)
-      </p>
+      <p className="font-heading text-xs font-semibold text-move-green">{t.comoEstuvo}</p>
 
       <div className="mt-2 flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
@@ -37,7 +38,7 @@ export default function RateClassForm({ reservationId }: { reservationId: string
             onClick={() => setCalificacion(n)}
             onMouseEnter={() => setHover(n)}
             onMouseLeave={() => setHover(0)}
-            aria-label={`${n} estrella${n > 1 ? "s" : ""}`}
+            aria-label={t.estrella(n)}
             className="text-2xl leading-none transition-transform hover:scale-110"
           >
             <span className={(hover || calificacion) >= n ? "text-move-coral" : "text-move-green/20"}>
@@ -50,7 +51,7 @@ export default function RateClassForm({ reservationId }: { reservationId: string
       <textarea
         name="comentario"
         rows={2}
-        placeholder="Cuéntanos algo más (opcional)"
+        placeholder={t.placeholder}
         className="mt-3 w-full rounded-xl border border-move-green/20 px-3 py-2 font-body text-sm text-move-green outline-none focus:border-move-coral"
       />
 
@@ -61,7 +62,7 @@ export default function RateClassForm({ reservationId }: { reservationId: string
         disabled={isPending || calificacion === 0}
         className="mt-3 rounded-full bg-move-coral px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? "Enviando…" : "Enviar calificación"}
+        {isPending ? t.enviando : t.enviarCalificacion}
       </button>
     </form>
   );

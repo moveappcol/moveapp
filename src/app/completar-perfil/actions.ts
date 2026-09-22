@@ -10,10 +10,14 @@ import {
   validatePhone,
   validateFechaNacimiento,
 } from "@/lib/documento";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export async function saveCompletarPerfil(_prevState: { error: string } | null, formData: FormData) {
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
+
+  const t = getDictionary(await getLocale()).completarPerfil.errors;
 
   const nombre = String(formData.get("nombre") ?? "").trim();
   const apellido = String(formData.get("apellido") ?? "").trim();
@@ -26,14 +30,14 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
   const tratamientoDatosAceptado = formData.get("tratamientoDatosAceptado") === "on";
   const marketingAceptado = formData.get("marketingAceptado") === "on";
 
-  if (!nombre) return { error: "Ingresa tu nombre." };
-  if (!apellido) return { error: "Ingresa tu apellido." };
+  if (!nombre) return { error: t.ingresaNombre };
+  if (!apellido) return { error: t.ingresaApellido };
 
   const phoneError = validatePhone(telefono);
   if (phoneError) return { error: phoneError };
 
   if (!isTipoDocumento(tipoDocumento)) {
-    return { error: "Selecciona un tipo de documento válido." };
+    return { error: t.tipoDocumentoInvalido };
   }
 
   const documentError = validateDocumentNumber(tipoDocumento, cedula);
@@ -43,20 +47,20 @@ export async function saveCompletarPerfil(_prevState: { error: string } | null, 
   if (fechaNacimientoError) return { error: fechaNacimientoError };
 
   if (!isGenero(genero)) {
-    return { error: "Selecciona tu género." };
+    return { error: t.generoInvalido };
   }
 
   if (!terminosAceptados) {
-    return { error: "Debes aceptar los términos y condiciones para continuar." };
+    return { error: t.debeAceptarTerminos };
   }
   if (!tratamientoDatosAceptado) {
-    return { error: "Debes aceptar el tratamiento de datos personales para continuar." };
+    return { error: t.debeAceptarTratamiento };
   }
 
   const user = await currentUser();
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) {
-    return { error: "Tu cuenta no tiene un correo asociado." };
+    return { error: t.sinCorreo };
   }
 
   const clerk = await clerkClient();

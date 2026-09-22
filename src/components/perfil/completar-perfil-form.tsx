@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { saveCompletarPerfil } from "@/app/completar-perfil/actions";
 import { TIPOS_DOCUMENTO, GENEROS } from "@/lib/documento";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral";
@@ -20,9 +21,11 @@ function maxBirthDate(): string {
 export default function CompletarPerfilForm({
   defaultNombre,
   defaultApellido,
+  t,
 }: {
   defaultNombre: string;
   defaultApellido: string;
+  t: Dictionary["completarPerfil"]["form"];
 }) {
   const [state, formAction, isPending] = useActionState<{ error: string } | null, FormData>(
     saveCompletarPerfil,
@@ -32,25 +35,25 @@ export default function CompletarPerfilForm({
   return (
     <form action={formAction} className="space-y-4">
       <label className="block">
-        <span className={labelClass}>Nombre</span>
+        <span className={labelClass}>{t.nombre}</span>
         <input type="text" name="nombre" required defaultValue={defaultNombre} className={inputClass} />
       </label>
 
       <label className="block">
-        <span className={labelClass}>Apellido</span>
+        <span className={labelClass}>{t.apellido}</span>
         <input type="text" name="apellido" required defaultValue={defaultApellido} className={inputClass} />
       </label>
 
       <label className="block">
-        <span className={labelClass}>Número de teléfono</span>
+        <span className={labelClass}>{t.telefono}</span>
         <input type="tel" name="telefono" required inputMode="tel" className={inputClass} />
       </label>
 
       <label className="block">
-        <span className={labelClass}>Tipo de documento</span>
+        <span className={labelClass}>{t.tipoDocumento}</span>
         <select name="tipoDocumento" required defaultValue="" className={inputClass}>
           <option value="" disabled>
-            Selecciona un tipo
+            {t.selectTipo}
           </option>
           {TIPOS_DOCUMENTO.map((tipo) => (
             <option key={tipo} value={tipo}>
@@ -61,23 +64,21 @@ export default function CompletarPerfilForm({
       </label>
 
       <label className="block">
-        <span className={labelClass}>Número de documento</span>
+        <span className={labelClass}>{t.numeroDocumento}</span>
         <input type="text" name="cedula" required inputMode="text" className={inputClass} />
       </label>
 
       <label className="block">
-        <span className={labelClass}>Fecha de nacimiento</span>
+        <span className={labelClass}>{t.fechaNacimiento}</span>
         <input type="date" name="fechaNacimiento" required max={maxBirthDate()} className={inputClass} />
-        <span className="mt-1 block font-body text-xs text-move-green/60">
-          UNIQUE es solo para mayores de 18 años.
-        </span>
+        <span className="mt-1 block font-body text-xs text-move-green/60">{t.soloMayores}</span>
       </label>
 
       <label className="block">
-        <span className={labelClass}>Género</span>
+        <span className={labelClass}>{t.genero}</span>
         <select name="genero" required defaultValue="" className={inputClass}>
           <option value="" disabled>
-            Selecciona una opción
+            {t.selectOpcion}
           </option>
           {GENEROS.map((genero) => (
             <option key={genero} value={genero}>
@@ -91,31 +92,28 @@ export default function CompletarPerfilForm({
         <label className="flex items-start gap-2">
           <input type="checkbox" name="tratamientoDatosAceptado" required className="mt-1" />
           <span className="font-body text-sm text-move-green/80">
-            He leído y acepto la{" "}
+            {t.tratamientoBefore}{" "}
             <Link href="/tratamiento-datos" target="_blank" className="text-move-coral underline">
-              Política de Tratamiento de Datos Personales
+              {t.tratamientoLink}
             </Link>{" "}
-            de UNIQUE.
+            {t.tratamientoAfter}
           </span>
         </label>
 
         <label className="flex items-start gap-2">
           <input type="checkbox" name="terminosAceptados" required className="mt-1" />
           <span className="font-body text-sm text-move-green/80">
-            He leído y acepto los{" "}
+            {t.terminosBefore}{" "}
             <Link href="/terminos" target="_blank" className="text-move-coral underline">
-              Términos y Condiciones de Uso
+              {t.terminosLink}
             </Link>{" "}
-            de UNIQUE.
+            {t.terminosAfter}
           </span>
         </label>
 
         <label className="flex items-start gap-2">
           <input type="checkbox" name="marketingAceptado" className="mt-1" />
-          <span className="font-body text-sm text-move-green/80">
-            Autorizo a UNIQUE a contactarme con fines comerciales y promocionales (novedades,
-            promociones, campañas) al correo electrónico y/o número de teléfono que registré.
-          </span>
+          <span className="font-body text-sm text-move-green/80">{t.marketing}</span>
         </label>
       </div>
 
@@ -126,7 +124,7 @@ export default function CompletarPerfilForm({
         disabled={isPending}
         className="w-full rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? "Guardando…" : "Continuar"}
+        {isPending ? t.guardando : t.continuar}
       </button>
     </form>
   );

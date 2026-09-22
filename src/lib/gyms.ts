@@ -21,6 +21,32 @@ export const DEFAULT_BOOKING_CUTOFF_MINUTES = 60;
  * prepararse). */
 export const DEFAULT_RESERVAS_FINALES_MINUTES = 20;
 
+/** Fecha desde la que se aceptan reservas reales — mientras se van
+ * cargando cupos nuevos, las clases se pueden ver pero no reservar, para
+ * no dejar que alguien gaste créditos en un cupo que todavía se está
+ * armando. Se desactiva sola en cuanto pase esta fecha, sin tocar código;
+ * poner en null para quitar el bloqueo antes de tiempo. Hora de Bogotá
+ * explícita (-05:00, sin horario de verano) para que "el viernes" sea el
+ * viernes en Bogotá sin importar dónde corra el servidor. */
+export const RESERVATIONS_OPEN_AT: string | null = "2026-09-25T00:00:00-05:00";
+
+export function reservationsAreOpen(): boolean {
+  return !RESERVATIONS_OPEN_AT || Date.now() >= new Date(RESERVATIONS_OPEN_AT).getTime();
+}
+
+/** Fecha en español ("viernes 25 de septiembre") para mostrar mientras
+ * las reservas siguen cerradas — deriva del mismo valor de arriba para
+ * que nunca queden desincronizados. */
+export function reservationsOpenLabel(locale: "es" | "en" = "es"): string {
+  if (!RESERVATIONS_OPEN_AT) return "";
+  return new Date(RESERVATIONS_OPEN_AT).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
+    timeZone: "America/Bogota",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 /** Restricción de acceso por género. "todos" = sin restricción. */
 export type GymGenero = "todos" | "solo_mujeres" | "solo_hombres";
 

@@ -1,6 +1,12 @@
 import { notFound } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { getGymById, canAccessGymByGenero, GYMS_COMING_SOON } from "@/lib/gyms";
+import {
+  getGymById,
+  canAccessGymByGenero,
+  GYMS_COMING_SOON,
+  reservationsAreOpen,
+  reservationsOpenLabel,
+} from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
@@ -32,6 +38,8 @@ export default async function GymPage({
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = dict.gimnasio;
+  const reservasAbiertas = reservationsAreOpen();
+  const reservasAbrenLabel = reservationsOpenLabel(locale);
 
   const { id } = await params;
   const gym = await getGymById(id);
@@ -157,6 +165,8 @@ export default async function GymPage({
           reservedClaseIds={[...reservedClaseIds]}
           bookingCutoffMinutes={gym.bookingCutoffMinutes}
           locale={locale}
+          reservasAbiertas={reservasAbiertas}
+          reservasAbrenLabel={reservasAbrenLabel}
         />
       </div>
     </section>

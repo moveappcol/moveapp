@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
-import { getGymById, canAccessGymByGenero, GYMS_COMING_SOON } from "@/lib/gyms";
+import {
+  getGymById,
+  canAccessGymByGenero,
+  GYMS_COMING_SOON,
+  reservationsAreOpen,
+  reservationsOpenLabel,
+} from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { requireMobileUser } from "@/lib/mobile-auth";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
@@ -35,5 +41,13 @@ export async function GET(
     // sin sesión — se sigue mostrando el gimnasio igual, sin marcar nada
   }
 
-  return NextResponse.json({ gym, classes, reservedClaseIds });
+  const reservasAbiertas = reservationsAreOpen();
+
+  return NextResponse.json({
+    gym,
+    classes,
+    reservedClaseIds,
+    reservasAbiertas,
+    reservasAbrenLabel: reservationsOpenLabel("es"),
+  });
 }

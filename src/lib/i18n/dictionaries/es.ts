@@ -155,6 +155,8 @@ export const es = {
     ultimoCupo: "Último cupo disponible",
     ultimos2Cupos: "Últimos 2 cupos disponibles",
     yaReservada: "Ya reservaste esta clase.",
+    reservasAbrenEl: (fecha: string) =>
+      `Todavía estamos cargando los cupos — las reservas abren el ${fecha}.`,
     sinFechaConfirmada: "Todavía no tiene fecha confirmada.",
     reservasCerraron: "Las reservas para esta clase ya cerraron.",
     iniciaSesionReservar: "Inicia sesión para reservar",

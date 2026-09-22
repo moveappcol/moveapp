@@ -1,7 +1,13 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById, precioEfectivo } from "./classes";
-import { getGymById, canAccessGymByGenero, DEFAULT_BOOKING_CUTOFF_MINUTES } from "./gyms";
+import {
+  getGymById,
+  canAccessGymByGenero,
+  DEFAULT_BOOKING_CUTOFF_MINUTES,
+  reservationsAreOpen,
+  reservationsOpenLabel,
+} from "./gyms";
 import { sendLowRatingAlertEmail } from "./email";
 import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
 import { sendPushNotification } from "./push";
@@ -162,6 +168,13 @@ async function countMonthlyReservationsAtGym(
  */
 export async function createReservation(params: ReservationParams): Promise<BookingResult> {
   const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO, molestias } = params;
+
+  if (!reservationsAreOpen()) {
+    return {
+      ok: false,
+      error: `Todavía estamos cargando los cupos — las reservas abren el ${reservationsOpenLabel()}.`,
+    };
+  }
 
   const gym = await getGymById(gimnasioId);
   const bookingCutoffMinutes = gym?.bookingCutoffMinutes ?? DEFAULT_BOOKING_CUTOFF_MINUTES;

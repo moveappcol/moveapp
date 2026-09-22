@@ -157,6 +157,7 @@ export const en: Dictionary = {
     ultimoCupo: "Last spot available",
     ultimos2Cupos: "Last 2 spots available",
     yaReservada: "You already booked this class.",
+    reservasAbrenEl: (fecha: string) => `We're still loading spots — bookings open on ${fecha}.`,
     sinFechaConfirmada: "This class doesn't have a confirmed date yet.",
     reservasCerraron: "Bookings for this class have closed.",
     iniciaSesionReservar: "Sign in to book",

@@ -77,6 +77,8 @@ function ClaseCard({
   bookingCutoffMinutes,
   locale,
   t,
+  reservasAbiertas,
+  reservasAbrenLabel,
 }: {
   clase: Clase;
   gimnasioId: string;
@@ -85,6 +87,8 @@ function ClaseCard({
   bookingCutoffMinutes: number;
   locale: Locale;
   t: T;
+  reservasAbiertas: boolean;
+  reservasAbrenLabel: string;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -128,6 +132,8 @@ function ClaseCard({
           />
         ) : yaReservada ? (
           <p className="font-body text-sm font-medium text-move-green">{t.yaReservada}</p>
+        ) : !reservasAbiertas ? (
+          <p className="font-body text-sm text-move-green/50">{t.reservasAbrenEl(reservasAbrenLabel)}</p>
         ) : !clase.fecha ? (
           <p className="font-body text-sm text-move-green/50">{t.sinFechaConfirmada}</p>
         ) : clase.cuposDisponibles <= 0 ? (
@@ -209,6 +215,8 @@ export default function ClassList({
   reservedClaseIds,
   bookingCutoffMinutes,
   locale,
+  reservasAbiertas,
+  reservasAbrenLabel,
 }: {
   gimnasioId: string;
   classes: Clase[];
@@ -216,6 +224,8 @@ export default function ClassList({
   reservedClaseIds?: string[];
   bookingCutoffMinutes: number;
   locale: Locale;
+  reservasAbiertas: boolean;
+  reservasAbrenLabel: string;
 }) {
   // No se recibe `t` como prop porque este componente es la primera
   // frontera cliente — algunas claves de dict.gimnasio son funciones
@@ -283,6 +293,8 @@ export default function ClassList({
                 bookingCutoffMinutes={bookingCutoffMinutes}
                 locale={locale}
                 t={t}
+                reservasAbiertas={reservasAbiertas}
+                reservasAbrenLabel={reservasAbrenLabel}
               />
             ))}
           </ul>
@@ -303,6 +315,8 @@ export default function ClassList({
                 bookingCutoffMinutes={bookingCutoffMinutes}
                 locale={locale}
                 t={t}
+                reservasAbiertas={reservasAbiertas}
+                reservasAbrenLabel={reservasAbrenLabel}
               />
             ))}
           </ul>

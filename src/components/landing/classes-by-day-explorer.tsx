@@ -35,9 +35,19 @@ export default function ClassesByDayExplorer({
   const [rangoSeleccionado, setRangoSeleccionado] = useState<string | null>(null);
   const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);
 
+  // Las opciones incluyen tanto las actividades ya puestas por clase como
+  // las de los gimnasios (para las clases que el staff todavía no
+  // clasificó individualmente) — así el chip no desaparece mientras se
+  // va llenando el dato nuevo.
   const activityOptions = useMemo(
-    () => Array.from(new Set(Object.values(gymsById).flatMap((g) => g.activities))).sort(),
-    [gymsById]
+    () =>
+      Array.from(
+        new Set([
+          ...classes.map((c) => c.actividad).filter((a): a is string => a !== null),
+          ...Object.values(gymsById).flatMap((g) => g.activities),
+        ])
+      ).sort(),
+    [classes, gymsById]
   );
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
@@ -54,7 +64,15 @@ export default function ClassesByDayExplorer({
       if (!reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
 
       const gym = c.gimnasioId ? gymsById[c.gimnasioId] : undefined;
-      if (actividadSeleccionada && !gym?.activities.includes(actividadSeleccionada)) return false;
+      if (actividadSeleccionada) {
+        // Si la clase ya tiene su propia actividad puesta, se compara
+        // exacto contra esa — más preciso que las actividades generales
+        // del gimnasio. Solo cae al gimnasio si todavía no se clasificó.
+        const coincide = c.actividad
+          ? c.actividad === actividadSeleccionada
+          : (gym?.activities.includes(actividadSeleccionada) ?? false);
+        if (!coincide) return false;
+      }
 
       if (rangoActivo) {
         const hora = bogotaHour(c.fecha);

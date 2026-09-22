@@ -28,6 +28,13 @@ export type Clase = {
   fecha: string | null;
   gimnasioId: string | null;
   duracionMinutos: number;
+  /** Actividad de esta clase puntual (Yoga, Boxing, etc.) — null si el
+   * staff del gimnasio todavía no la clasificó. Es distinto de las
+   * "Actividades" del gimnasio (que son varias, el conjunto que ofrece en
+   * general): esto es una sola, la de esta clase específica. Se usa para
+   * el filtro de actividad del explorador "por día"; mientras no esté
+   * puesta, ese filtro cae de vuelta a las actividades del gimnasio. */
+  actividad: string | null;
 };
 
 /** Los créditos que realmente se cobran al reservar — el descuento si
@@ -53,6 +60,10 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *   - Horario        (fecha y hora — cada fila es una sesión específica,
  *                      no un horario recurrente)
  *   - "Gimnasio "    (link a Gimnasios — OJO: el nombre real trae un espacio al final)
+ *   - Actividad      (selección, opcional — Yoga/Boxing/Cycling/etc. de
+ *      esta clase puntual; vacío = todavía no clasificada, el filtro de
+ *      actividad del explorador "por día" cae de vuelta a las actividades
+ *      del gimnasio)
  *   - Duración        (campo tipo Duration de Airtable — la API SIEMPRE lo
  *      devuelve en SEGUNDOS sin importar el formato que se vea en la
  *      interfaz (m:ss, h:mm:ss, etc.), opcional — si está vacío se asume
@@ -102,6 +113,7 @@ function mapRecordToClase(
   const descuento = record.get("Descuento creditos") as number | undefined;
   const precio = record.get("Precio") as number | undefined;
   const tipo = ((record.get("Tipo") as string) ?? "").trim();
+  const actividad = ((record.get("Actividad") as string) ?? "").trim();
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
@@ -115,6 +127,7 @@ function mapRecordToClase(
     gimnasioId: gimnasio?.[0] ?? null,
     // El campo "Duración" es un Duration de Airtable → llega en segundos.
     duracionMinutos: duracion && duracion > 0 ? duracion / 60 : DEFAULT_DURACION_MINUTOS,
+    actividad: actividad || null,
   };
 }
 

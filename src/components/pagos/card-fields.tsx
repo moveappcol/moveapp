@@ -1,5 +1,7 @@
 "use client";
 
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+
 /** Campos de tarjeta + aceptación de términos, compartidos entre el
  * formulario de suscribirse a un plan y el de comprar créditos
  * adicionales — mismo modelo de cobro en los dos casos. */
@@ -18,6 +20,7 @@ export default function CardFields({
   setAccepted,
   permalinkAcceptance,
   permalinkPersonalAuth,
+  t,
 }: {
   number: string;
   setNumber: (value: string) => void;
@@ -33,11 +36,12 @@ export default function CardFields({
   setAccepted: (value: boolean) => void;
   permalinkAcceptance: string;
   permalinkPersonalAuth: string;
+  t: Dictionary["pagos"]["cardFields"];
 }) {
   return (
     <>
       <label className="block">
-        <span className="font-heading text-sm font-medium text-move-green">Número de tarjeta</span>
+        <span className="font-heading text-sm font-medium text-move-green">{t.numero}</span>
         <input
           type="text"
           inputMode="numeric"
@@ -50,7 +54,7 @@ export default function CardFields({
       </label>
 
       <label className="block">
-        <span className="font-heading text-sm font-medium text-move-green">Nombre en la tarjeta</span>
+        <span className="font-heading text-sm font-medium text-move-green">{t.nombreEnTarjeta}</span>
         <input
           type="text"
           required
@@ -62,7 +66,7 @@ export default function CardFields({
 
       <div className="grid grid-cols-3 gap-3">
         <label className="block">
-          <span className="font-heading text-sm font-medium text-move-green">Mes</span>
+          <span className="font-heading text-sm font-medium text-move-green">{t.mes}</span>
           <input
             type="text"
             inputMode="numeric"
@@ -75,7 +79,7 @@ export default function CardFields({
           />
         </label>
         <label className="block">
-          <span className="font-heading text-sm font-medium text-move-green">Año</span>
+          <span className="font-heading text-sm font-medium text-move-green">{t.anio}</span>
           <input
             type="text"
             inputMode="numeric"
@@ -88,7 +92,7 @@ export default function CardFields({
           />
         </label>
         <label className="block">
-          <span className="font-heading text-sm font-medium text-move-green">CVC</span>
+          <span className="font-heading text-sm font-medium text-move-green">{t.cvc}</span>
           <input
             type="text"
             inputMode="numeric"
@@ -109,15 +113,15 @@ export default function CardFields({
           className="mt-0.5"
         />
         <span>
-          Acepto los{" "}
+          {t.aceptoBefore}{" "}
           <a href={permalinkAcceptance} target="_blank" rel="noopener noreferrer" className="underline">
-            términos y condiciones
+            {t.terminos}
           </a>{" "}
-          y la{" "}
+          {t.aceptoMiddle}{" "}
           <a href={permalinkPersonalAuth} target="_blank" rel="noopener noreferrer" className="underline">
-            autorización de tratamiento de datos
+            {t.autorizacion}
           </a>{" "}
-          de Wompi.
+          {t.aceptoAfter}
         </span>
       </label>
     </>

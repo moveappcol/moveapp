@@ -1,35 +1,24 @@
 import Link from "next/link";
 import { fetchTransaction } from "@/lib/wompi";
 import PurchaseTracker from "@/components/analytics/purchase-tracker";
-
-const STATUS_COPY: Record<string, { title: string; body: string }> = {
-  APPROVED: {
-    title: "¡Pago aprobado!",
-    body: "Tus créditos ya deberían estar disponibles en tu cuenta. Si no los ves en un par de minutos, escríbenos a gerencia@uniqueappcol.com.",
-  },
-  DECLINED: {
-    title: "Pago rechazado",
-    body: "Tu pago no fue aprobado. No se hizo ningún cobro. Puedes intentar de nuevo con otro medio de pago.",
-  },
-  PENDING: {
-    title: "Pago en proceso",
-    body: "Estamos confirmando tu pago. Te acreditaremos los créditos apenas Wompi nos confirme la transacción.",
-  },
-  VOIDED: {
-    title: "Pago anulado",
-    body: "Esta transacción fue anulada. No se hizo ningún cobro.",
-  },
-  ERROR: {
-    title: "Ocurrió un error",
-    body: "No pudimos procesar tu pago. Puedes intentar de nuevo o escribirnos a gerencia@uniqueappcol.com.",
-  },
-};
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function PagoResultadoPage({
   searchParams,
 }: {
   searchParams: Promise<{ id?: string }>;
 }) {
+  const t = getDictionary(await getLocale()).pagos.resultado;
+
+  const STATUS_COPY: Record<string, { title: string; body: string }> = {
+    APPROVED: { title: t.approvedTitle, body: t.approvedBody },
+    DECLINED: { title: t.declinedTitle, body: t.declinedBody },
+    PENDING: { title: t.pendingTitle, body: t.pendingBody },
+    VOIDED: { title: t.voidedTitle, body: t.voidedBody },
+    ERROR: { title: t.errorTitle, body: t.errorBody },
+  };
+
   const { id } = await searchParams;
   const tx = id ? await fetchTransaction(id) : null;
   const copy = tx ? STATUS_COPY[tx.status] : null;
@@ -40,17 +29,14 @@ export default async function PagoResultadoPage({
         <PurchaseTracker transactionId={tx.id} value={tx.amountInCents / 100} />
       )}
       <h1 className="font-heading text-2xl font-bold text-move-green">
-        {copy?.title ?? "No encontramos esa transacción"}
+        {copy?.title ?? t.notFoundTitle}
       </h1>
-      <p className="mt-3 font-body text-sm text-move-green/70">
-        {copy?.body ??
-          "No pudimos verificar el estado de este pago. Si crees que es un error, escríbenos a gerencia@uniqueappcol.com."}
-      </p>
+      <p className="mt-3 font-body text-sm text-move-green/70">{copy?.body ?? t.notFoundBody}</p>
       <Link
         href="/"
         className="mt-8 inline-block rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
-        Volver al inicio
+        {t.volverAlInicio}
       </Link>
     </section>
   );

@@ -9,6 +9,8 @@ import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import SubscribeForm from "@/components/pagos/subscribe-form";
 import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
 import { COUPON_COOKIE_NAME } from "@/components/landing/coupon-capture";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /** Cupón que se intenta aplicar por defecto a cualquier persona que llegue
  * al checkout, sin necesidad de un link de campaña — mientras siga activo
@@ -25,6 +27,9 @@ export default async function SuscribirsePage({
   const { userId } = await auth();
   if (!userId) redirect(`/iniciar-sesion`);
   await requireCompleteProfileIfSignedIn();
+
+  const locale = await getLocale();
+  const t = getDictionary(locale).pagos;
 
   const plan = findCatalogItem("plan", planId);
   if (!plan) notFound();
@@ -50,16 +55,12 @@ export default async function SuscribirsePage({
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
       <CheckoutViewTracker planId={plan.id} planName={plan.name ?? plan.label} value={plan.price} />
       <h1 className="font-heading text-2xl font-bold text-move-green">
-        Suscribirme a {plan.name} ({plan.label})
+        {t.subscribe.title(plan.name ?? "", plan.label)}
       </h1>
       <p className="mt-2 font-body text-sm text-move-green/70">
-        {formatCOP(plan.price)} al mes · se cobra automáticamente cada mes a
-        la misma tarjeta hasta que canceles. Puedes cancelar o cambiar de
-        plan cuando quieras desde &ldquo;Mi suscripción&rdquo;.
+        {t.subscribe.subtitle(formatCOP(plan.price))}
       </p>
-      <p className="mt-2 font-body text-xs text-move-green/50">
-        Puedes acceder a cada gimnasio un máximo de 3 veces al mes.
-      </p>
+      <p className="mt-2 font-body text-xs text-move-green/50">{t.subscribe.limiteMensual}</p>
 
       <div className="mt-8">
         <SubscribeForm
@@ -69,6 +70,8 @@ export default async function SuscribirsePage({
           permalinkAcceptance={tokens.permalinkAcceptance}
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}
           initialCouponCode={initialCouponCode}
+          locale={locale}
+          t={t}
         />
       </div>
     </section>

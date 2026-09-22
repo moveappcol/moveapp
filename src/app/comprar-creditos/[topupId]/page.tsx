@@ -7,6 +7,8 @@ import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import BuyTopupForm from "@/components/pagos/buy-topup-form";
 import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default async function ComprarCreditosPage({
   params,
@@ -17,6 +19,8 @@ export default async function ComprarCreditosPage({
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
   await requireCompleteProfileIfSignedIn();
+
+  const t = getDictionary(await getLocale()).pagos;
 
   const topup = findCatalogItem("topup", topupId);
   if (!topup) notFound();
@@ -35,11 +39,8 @@ export default async function ComprarCreditosPage({
   return (
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
       <CheckoutViewTracker planId={topup.id} planName={topup.label} value={topup.price} />
-      <h1 className="font-heading text-2xl font-bold text-move-green">Comprar {topup.label}</h1>
-      <p className="mt-2 font-body text-sm text-move-green/70">
-        {formatCOP(topup.price)} · se cobra una sola vez a la tarjeta que
-        ingreses acá, no vuelve a cobrarse.
-      </p>
+      <h1 className="font-heading text-2xl font-bold text-move-green">{t.topup.comprar(topup.label)}</h1>
+      <p className="mt-2 font-body text-sm text-move-green/70">{t.topup.subtitle(formatCOP(topup.price))}</p>
 
       <div className="mt-8">
         <BuyTopupForm
@@ -48,6 +49,7 @@ export default async function ComprarCreditosPage({
           publicKey={wompiPublicKey()}
           permalinkAcceptance={tokens.permalinkAcceptance}
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}
+          t={t}
         />
       </div>
     </section>

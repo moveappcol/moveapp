@@ -6,6 +6,7 @@ import { buyTopup } from "@/app/pagos/actions";
 import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -19,12 +20,14 @@ export default function BuyTopupForm({
   publicKey,
   permalinkAcceptance,
   permalinkPersonalAuth,
+  t,
 }: {
   topupId: string;
   topupPrice: number;
   publicKey: string;
   permalinkAcceptance: string;
   permalinkPersonalAuth: string;
+  t: Dictionary["pagos"];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -52,7 +55,7 @@ export default function BuyTopupForm({
 
     try {
       if (!accepted) {
-        setError("Debes aceptar los términos y el tratamiento de datos.");
+        setError(t.debeAceptarTerminos);
         return;
       }
 
@@ -72,7 +75,7 @@ export default function BuyTopupForm({
       });
       const json = await res.json();
       if (!res.ok || !json?.data?.id) {
-        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : "Revisa los datos de la tarjeta.");
+        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
         return;
       }
 
@@ -90,7 +93,7 @@ export default function BuyTopupForm({
         setSuccess(result.credits);
       });
     } catch {
-      setError("No pudimos conectar con Wompi. Intenta de nuevo.");
+      setError(t.noConectoWompi);
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -100,9 +103,9 @@ export default function BuyTopupForm({
   if (success !== null) {
     return (
       <ApprovedModal
-        title="Tu compra fue aprobada"
-        message={`Ya tienes ${success} créditos adicionales disponibles.`}
-        buttonLabel="Ver mi perfil"
+        title={t.topup.compraAprobadaTitle}
+        message={t.topup.compraAprobadaMessage(success)}
+        buttonLabel={t.verMiPerfil}
         onClose={() => router.push("/mi-suscripcion")}
       />
     );
@@ -111,8 +114,7 @@ export default function BuyTopupForm({
   if (pending) {
     return (
       <p className="rounded-2xl border border-move-green/10 bg-white p-6 font-body text-sm font-medium text-move-green">
-        Tu pago está siendo procesado. Te avisaremos apenas se confirme —
-        revisa &ldquo;Mi suscripción&rdquo; en unos minutos.
+        {t.pagoEnProceso}
       </p>
     );
   }
@@ -134,6 +136,7 @@ export default function BuyTopupForm({
         setAccepted={setAccepted}
         permalinkAcceptance={permalinkAcceptance}
         permalinkPersonalAuth={permalinkPersonalAuth}
+        t={t.cardFields}
       />
 
       {error && <p className="font-body text-sm text-move-coral">{error}</p>}
@@ -143,7 +146,7 @@ export default function BuyTopupForm({
         disabled={isPending || submitting}
         className="w-full rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {isPending || submitting ? "Procesando…" : `Comprar — ${formatCOP(topupPrice)}`}
+        {isPending || submitting ? t.procesando : t.topup.comprarPorPrecio(formatCOP(topupPrice))}
       </button>
     </form>
   );

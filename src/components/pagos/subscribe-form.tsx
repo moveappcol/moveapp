@@ -7,6 +7,8 @@ import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
 import SubscribeTracker from "@/components/analytics/subscribe-tracker";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -21,8 +23,8 @@ type CouponState =
   | { status: "valid-descuento"; descuentoPorcentaje: number; fechaInicio?: string }
   | { status: "valid-gratis"; creditos: number };
 
-function formatFechaLarga(fechaISO: string): string {
-  return new Date(`${fechaISO}T00:00:00`).toLocaleDateString("es-CO", {
+function formatFechaLarga(fechaISO: string, locale: Locale): string {
+  return new Date(`${fechaISO}T00:00:00`).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -36,6 +38,8 @@ export default function SubscribeForm({
   permalinkAcceptance,
   permalinkPersonalAuth,
   initialCouponCode,
+  locale,
+  t,
 }: {
   planId: string;
   planPrice: number;
@@ -47,6 +51,8 @@ export default function SubscribeForm({
    * Airtable, se falla en silencio y el campo queda vacío — no tiene
    * sentido mostrar un error por un cupón que nadie escribió a mano. */
   initialCouponCode?: string;
+  locale: Locale;
+  t: Dictionary["pagos"];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -148,7 +154,7 @@ export default function SubscribeForm({
 
     try {
       if (!accepted) {
-        setError("Debes aceptar los términos y el tratamiento de datos.");
+        setError(t.debeAceptarTerminos);
         return;
       }
 
@@ -168,7 +174,7 @@ export default function SubscribeForm({
       });
       const json = await res.json();
       if (!res.ok || !json?.data?.id) {
-        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : "Revisa los datos de la tarjeta.");
+        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
         return;
       }
 
@@ -190,7 +196,7 @@ export default function SubscribeForm({
         setSuccess(result.credits);
       });
     } catch {
-      setError("No pudimos conectar con Wompi. Intenta de nuevo.");
+      setError(t.noConectoWompi);
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -210,9 +216,9 @@ export default function SubscribeForm({
           <SubscribeTracker value={discountedPrice ?? planPrice} planId={planId} />
         )}
         <ApprovedModal
-          title="Tu suscripción fue aprobada"
-          message="Gracias por ser parte de UNIQUE."
-          buttonLabel="Ver mi perfil"
+          title={t.subscribe.suscripcionAprobadaTitle}
+          message={t.subscribe.suscripcionAprobadaMessage}
+          buttonLabel={t.verMiPerfil}
           onClose={() => router.push("/mi-suscripcion")}
         />
       </>
@@ -222,8 +228,7 @@ export default function SubscribeForm({
   if (pending) {
     return (
       <p className="rounded-2xl border border-move-green/10 bg-white p-6 font-body text-sm font-medium text-move-green">
-        Tu pago está siendo procesado. Te avisaremos apenas se confirme —
-        revisa &ldquo;Mi suscripción&rdquo; en unos minutos.
+        {t.pagoEnProceso}
       </p>
     );
   }
@@ -232,7 +237,7 @@ export default function SubscribeForm({
     <div className="space-y-4">
       <div className="rounded-2xl border border-move-green/10 bg-white p-6">
         <label className="block">
-          <span className="font-heading text-sm font-medium text-move-green">¿Tienes un cupón?</span>
+          <span className="font-heading text-sm font-medium text-move-green">{t.subscribe.tienesCupon}</span>
           <div className="mt-2 flex gap-2">
             <input
               type="text"
@@ -242,7 +247,7 @@ export default function SubscribeForm({
                 setCoupon({ status: "idle" });
                 setCouponCode(null);
               }}
-              placeholder="Código de cupón"
+              placeholder={t.subscribe.codigoCupon}
               className="w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
             />
             <button
@@ -251,7 +256,7 @@ export default function SubscribeForm({
               disabled={coupon.status === "loading" || !couponInput.trim()}
               className="whitespace-nowrap rounded-xl border border-move-green/20 px-4 py-3 font-heading text-sm font-semibold text-move-green transition-colors hover:border-move-green disabled:opacity-50"
             >
-              {coupon.status === "loading" ? "Validando…" : "Aplicar"}
+              {coupon.status === "loading" ? t.subscribe.validando : t.subscribe.aplicar}
             </button>
           </div>
         </label>
@@ -261,21 +266,24 @@ export default function SubscribeForm({
         )}
         {coupon.status === "valid-descuento" && (
           <p className="mt-2 font-body text-sm font-medium text-move-green">
-            Cupón aplicado: -{coupon.descuentoPorcentaje}% — pagas {formatCOP(discountedPrice ?? planPrice)}{" "}
-            en vez de {formatCOP(planPrice)}.
+            {t.subscribe.cuponAplicadoDescuento(
+              coupon.descuentoPorcentaje,
+              formatCOP(discountedPrice ?? planPrice),
+              formatCOP(planPrice)
+            )}
             {coupon.fechaInicio && (
               <>
                 {" "}
-                Se cobra hoy, pero tu plan empieza a correr el{" "}
-                <strong>{formatFechaLarga(coupon.fechaInicio)}</strong> — tu próximo cobro será un mes
-                después de esa fecha.
+                {t.subscribe.seCobraHoyBefore}{" "}
+                <strong>{formatFechaLarga(coupon.fechaInicio, locale)}</strong>{" "}
+                {t.subscribe.seCobraHoyAfter}
               </>
             )}
           </p>
         )}
         {coupon.status === "valid-gratis" && (
           <p className="mt-2 font-body text-sm font-medium text-move-green">
-            Cupón aplicado: te da {coupon.creditos} créditos gratis, sin necesidad de tarjeta.
+            {t.subscribe.cuponAplicadoGratis(coupon.creditos)}
           </p>
         )}
       </div>
@@ -289,7 +297,7 @@ export default function SubscribeForm({
             disabled={isPending}
             className="w-full rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {isPending ? "Procesando…" : `Reclamar ${coupon.creditos} créditos gratis`}
+            {isPending ? t.procesando : t.subscribe.reclamarCreditosGratis(coupon.creditos)}
           </button>
         </div>
       ) : (
@@ -309,6 +317,7 @@ export default function SubscribeForm({
             setAccepted={setAccepted}
             permalinkAcceptance={permalinkAcceptance}
             permalinkPersonalAuth={permalinkPersonalAuth}
+            t={t.cardFields}
           />
 
           {error && <p className="font-body text-sm text-move-coral">{error}</p>}
@@ -319,10 +328,10 @@ export default function SubscribeForm({
             className="w-full rounded-full bg-move-coral px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {isPending || submitting
-              ? "Procesando…"
+              ? t.procesando
               : discountedPrice !== null
-                ? `Suscribirme — ${formatCOP(discountedPrice)}`
-                : "Suscribirme"}
+                ? t.subscribe.suscribirmePorPrecio(formatCOP(discountedPrice))
+                : t.subscribe.suscribirme}
           </button>
         </form>
       )}

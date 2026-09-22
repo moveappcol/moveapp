@@ -6,7 +6,8 @@ import { buyTopup } from "@/app/pagos/actions";
 import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 function wompiApiBase(publicKey: string): string {
   return publicKey.startsWith("pub_prod_")
@@ -20,15 +21,18 @@ export default function BuyTopupForm({
   publicKey,
   permalinkAcceptance,
   permalinkPersonalAuth,
-  t,
+  locale,
 }: {
   topupId: string;
   topupPrice: number;
   publicKey: string;
   permalinkAcceptance: string;
   permalinkPersonalAuth: string;
-  t: Dictionary["pagos"];
+  locale: Locale;
 }) {
+  // Ver la nota en subscribe-form.tsx — dict.pagos tiene valores función,
+  // así que t se calcula acá en vez de recibirse como prop.
+  const t = getDictionary(locale).pagos;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);

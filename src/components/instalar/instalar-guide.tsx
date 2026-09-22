@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary, type Dictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 type T = Dictionary["instalar"];
 type Platform = "iphone" | "android";
@@ -272,7 +273,10 @@ function buildAndroidSteps(t: T): Step[] {
   ];
 }
 
-export default function InstalarGuide({ t }: { t: T }) {
+export default function InstalarGuide({ locale }: { locale: Locale }) {
+  // t se calcula acá (no llega como prop) porque titleFor() es una
+  // función — ver la misma nota en class-list.tsx.
+  const t = getDictionary(locale).instalar;
   const [platform, setPlatform] = useState<Platform>("iphone");
   const steps = platform === "iphone" ? buildIphoneSteps(t) : buildAndroidSteps(t);
 

@@ -3,15 +3,19 @@
 import { useActionState } from "react";
 import { cancelReservationAction } from "@/app/mis-reservas/actions";
 import type { CancelResult } from "@/lib/reservations";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 export default function CancelReservationButton({
   reservationId,
-  t,
+  locale,
 }: {
   reservationId: string;
-  t: Dictionary["misReservas"]["cancelar"];
+  locale: Locale;
 }) {
+  // t se calcula acá (no llega como prop) porque cancelada() es una
+  // función — ver la misma nota en class-list.tsx.
+  const t = getDictionary(locale).misReservas.cancelar;
   const action = cancelReservationAction.bind(null, reservationId);
   const [state, formAction, isPending] = useActionState<CancelResult | null, FormData>(
     action,

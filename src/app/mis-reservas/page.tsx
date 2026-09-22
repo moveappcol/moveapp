@@ -76,12 +76,12 @@ export default async function MisReservasPage() {
                   </p>
                 </div>
                 {r.estado === "Reservado" && (
-                  <CancelReservationButton reservationId={r.id} t={t.cancelar} />
+                  <CancelReservationButton reservationId={r.id} locale={locale} />
                 )}
               </div>
 
               {ratingWindowState(r) === "puede-calificar" && (
-                <RateClassForm reservationId={r.id} t={t.rate} />
+                <RateClassForm reservationId={r.id} locale={locale} />
               )}
               {ratingWindowState(r) === "ya-califico" && (
                 <p className="mt-2 font-body text-sm text-move-green/70">

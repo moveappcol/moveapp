@@ -20,7 +20,8 @@ export default async function ComprarCreditosPage({
   if (!userId) redirect("/iniciar-sesion");
   await requireCompleteProfileIfSignedIn();
 
-  const t = getDictionary(await getLocale()).pagos;
+  const locale = await getLocale();
+  const t = getDictionary(locale).pagos;
 
   const topup = findCatalogItem("topup", topupId);
   if (!topup) notFound();
@@ -49,7 +50,7 @@ export default async function ComprarCreditosPage({
           publicKey={wompiPublicKey()}
           permalinkAcceptance={tokens.permalinkAcceptance}
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}
-          t={t}
+          locale={locale}
         />
       </div>
     </section>

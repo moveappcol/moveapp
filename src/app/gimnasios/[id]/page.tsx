@@ -157,7 +157,6 @@ export default async function GymPage({
           reservedClaseIds={[...reservedClaseIds]}
           bookingCutoffMinutes={gym.bookingCutoffMinutes}
           locale={locale}
-          t={t}
         />
       </div>
     </section>

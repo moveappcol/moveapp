@@ -3,15 +3,19 @@
 import { useActionState, useState } from "react";
 import { submitRatingAction } from "@/app/mis-reservas/actions";
 import type { RatingResult } from "@/lib/reservations";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import type { Locale } from "@/lib/i18n/locale";
 
 export default function RateClassForm({
   reservationId,
-  t,
+  locale,
 }: {
   reservationId: string;
-  t: Dictionary["misReservas"]["rate"];
+  locale: Locale;
 }) {
+  // t se calcula acá (no llega como prop) porque estrella() es una
+  // función — ver la misma nota en class-list.tsx.
+  const t = getDictionary(locale).misReservas.rate;
   const [state, formAction, isPending] = useActionState<RatingResult | null, FormData>(
     submitRatingAction,
     null

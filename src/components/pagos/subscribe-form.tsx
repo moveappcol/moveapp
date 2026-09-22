@@ -7,7 +7,7 @@ import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
 import SubscribeTracker from "@/components/analytics/subscribe-tracker";
-import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
 
 function wompiApiBase(publicKey: string): string {
@@ -39,7 +39,6 @@ export default function SubscribeForm({
   permalinkPersonalAuth,
   initialCouponCode,
   locale,
-  t,
 }: {
   planId: string;
   planPrice: number;
@@ -52,8 +51,12 @@ export default function SubscribeForm({
    * sentido mostrar un error por un cupón que nadie escribió a mano. */
   initialCouponCode?: string;
   locale: Locale;
-  t: Dictionary["pagos"];
 }) {
+  // t se calcula acá (no llega como prop) porque dict.pagos tiene valores
+  // función (cuponAplicadoDescuento, suscribirmePorPrecio, etc.) que React
+  // no puede serializar al cruzar de un Server Component a este Client
+  // Component — ver la misma nota en class-list.tsx.
+  const t = getDictionary(locale).pagos;
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);

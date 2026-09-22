@@ -71,7 +71,6 @@ export default async function SuscribirsePage({
           permalinkPersonalAuth={tokens.permalinkPersonalAuth}
           initialCouponCode={initialCouponCode}
           locale={locale}
-          t={t}
         />
       </div>
     </section>

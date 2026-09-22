@@ -9,6 +9,7 @@ import { precioEfectivo, type Clase } from "@/lib/classes";
 import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
 import type { BookingResult } from "@/lib/reservations";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
 import WaitlistForm from "./waitlist-form";
 
@@ -208,7 +209,6 @@ export default function ClassList({
   reservedClaseIds,
   bookingCutoffMinutes,
   locale,
-  t,
 }: {
   gimnasioId: string;
   classes: Clase[];
@@ -216,8 +216,15 @@ export default function ClassList({
   reservedClaseIds?: string[];
   bookingCutoffMinutes: number;
   locale: Locale;
-  t: T;
 }) {
+  // No se recibe `t` como prop porque este componente es la primera
+  // frontera cliente — algunas claves de dict.gimnasio son funciones
+  // (credits, creditosRestantes, waitlist.enEspera), y React no puede
+  // serializar funciones al cruzar de un Server Component a un Client
+  // Component. Se calcula acá mismo (getDictionary es una función pura,
+  // no usa cookies()), y de ahí para abajo ya es todo cliente-a-cliente,
+  // donde pasar funciones sí es válido.
+  const t = getDictionary(locale).gimnasio;
   const semana = useMemo(() => semanaActual(locale), [locale]);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
   const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);

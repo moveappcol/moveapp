@@ -102,6 +102,15 @@ export async function countActiveReservationsForClase(claseId: string): Promise<
     .length;
 }
 
+/** Lee un campo de selección de Airtable sin asumir si quedó configurado
+ * como selección única (llega como string) o múltiple (llega como
+ * array) — para no reventar si alguien lo crea distinto a lo esperado.
+ * Con selección múltiple, se queda con el primer valor. */
+function firstSelectValue(raw: unknown): string {
+  if (Array.isArray(raw)) return String(raw[0] ?? "").trim();
+  return String(raw ?? "").trim();
+}
+
 function mapRecordToClase(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   record: any,
@@ -112,8 +121,8 @@ function mapRecordToClase(
   const duracion = record.get("Duración") as number | undefined;
   const descuento = record.get("Descuento creditos") as number | undefined;
   const precio = record.get("Precio") as number | undefined;
-  const tipo = ((record.get("Tipo") as string) ?? "").trim();
-  const actividad = ((record.get("Actividad") as string) ?? "").trim();
+  const tipo = firstSelectValue(record.get("Tipo"));
+  const actividad = firstSelectValue(record.get("Actividad"));
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",

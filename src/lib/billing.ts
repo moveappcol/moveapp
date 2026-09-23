@@ -1,6 +1,6 @@
 import { chargeWithPaymentSource } from "./wompi";
 import { findCatalogItem, buildReference } from "./orders";
-import { createPendingPago, updatePagoEstado, claimPagoAprobado } from "./pagos";
+import { createPendingPago, updatePagoEstado, updatePagoFactura, claimPagoAprobado } from "./pagos";
 import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
 import { createElectronicInvoice } from "./dataico";
 import { isTipoDocumento } from "./documento";
@@ -16,6 +16,10 @@ export async function facturarCompra(params: {
   correo: string;
   concepto: string;
   totalConIva: number;
+  /** Record de "Pagos" a actualizar con el link al PDF y el CUFE cuando la
+   * factura se genera bien — opcional porque el webhook a veces no tiene
+   * a mano el mismo record que el cobro síncrono ya actualizó. */
+  pagoId?: string;
 }): Promise<void> {
   try {
     const account = await getUserCreditsByEmail(params.correo);
@@ -30,7 +34,11 @@ export async function facturarCompra(params: {
       cedula: account?.cedula ?? "",
       telefono: account?.telefono ?? null,
     });
-    if (!result.ok) {
+    if (result.ok) {
+      if (params.pagoId) {
+        await updatePagoFactura(params.pagoId, { pdfUrl: result.pdfUrl, cufe: result.cufe });
+      }
+    } else {
       await sendOpsAlertEmail({
         ownerEmail: OWNER_EMAIL,
         asunto: "No se pudo generar la factura electrónica",
@@ -126,6 +134,7 @@ export async function chargeSubscriptionPlan(params: {
       correo: params.correo,
       concepto: `Suscripción UNIQUE — Plan ${item.name ?? item.label}`,
       totalConIva: precio,
+      pagoId,
     });
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
@@ -182,6 +191,7 @@ export async function chargeTopup(params: {
       correo: params.correo,
       concepto: `Créditos adicionales UNIQUE — ${item.label}`,
       totalConIva: item.price,
+      pagoId,
     });
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };

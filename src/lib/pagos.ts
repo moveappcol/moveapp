@@ -14,6 +14,11 @@ import type { PurchaseKind } from "./orders";
  *   - PaymentSourceId (número, opcional — solo para "Plan": la fuente de
  *      pago de Wompi que se cobró, para poder activar/renovar la
  *      suscripción desde el webhook si Wompi confirma la aprobación tarde)
+ *   - "Factura PDF"  (texto, opcional — link al PDF de la factura
+ *      electrónica generada en Dataico; vacío si todavía no se ha generado
+ *      o si falló, ver la alerta por correo en ese caso)
+ *   - "Factura CUFE" (texto, opcional — código único de la factura ante la
+ *      DIAN, para referencia/soporte)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -111,6 +116,21 @@ export async function updatePagoEstado(
   const base = getAirtableBase();
   await base(PAGOS_TABLE).update(
     [{ id: recordId, fields: { Estado: estado, TransaccionId: transaccionId } }],
+    { typecast: true }
+  );
+}
+
+/** Guarda la referencia de la factura electrónica ya generada en Dataico,
+ * para tener el link al PDF y el CUFE a la mano desde el mismo registro
+ * del pago — sin esto, un pago exitoso no deja ningún rastro de si la
+ * factura se generó bien o no (solo se avisaba por correo cuando fallaba). */
+export async function updatePagoFactura(
+  recordId: string,
+  factura: { pdfUrl: string; cufe: string }
+): Promise<void> {
+  const base = getAirtableBase();
+  await base(PAGOS_TABLE).update(
+    [{ id: recordId, fields: { "Factura PDF": factura.pdfUrl, "Factura CUFE": factura.cufe } }],
     { typecast: true }
   );
 }

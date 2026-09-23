@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
         ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`
         : `Créditos adicionales UNIQUE — ${item.label}`,
     totalConIva: item.price,
+    pagoId: pago.id,
   });
   if (pago.tipo === "plan") {
     // El pago quedó "Pendiente" del lado de Wompi y se aprobó tarde (por

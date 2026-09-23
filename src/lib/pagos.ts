@@ -108,6 +108,21 @@ export async function claimPagoAprobado(referencia: string, transaccionId: strin
   });
 }
 
+/** Un pago que ya estaba "Aprobado" (créditos ya dados) llega anulado desde
+ * Wompi (ej. reembolso manual desde su dashboard) — como con
+ * claimPagoAprobado, se usa el mismo lock para que dos webhooks del mismo
+ * evento no reviertan los créditos dos veces. Devuelve el pago (con sus
+ * datos de antes de marcarlo "Rechazado") para que el llamador sepa cuántos
+ * créditos quitar; null si no había nada que revertir. */
+export async function claimPagoRevertido(referencia: string, transaccionId: string): Promise<Pago | null> {
+  return withLock(`pago:${referencia}`, async () => {
+    const fresh = await findPagoByReferencia(referencia);
+    if (!fresh || fresh.estado !== "Aprobado") return null;
+    await updatePagoEstado(fresh.id, "Rechazado", transaccionId);
+    return fresh;
+  });
+}
+
 export async function updatePagoEstado(
   recordId: string,
   estado: PagoEstado,

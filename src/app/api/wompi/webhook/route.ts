@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyEventChecksum } from "@/lib/wompi";
 import { findCatalogItem, parseReference } from "@/lib/orders";
-import { findPagoByReferencia, updatePagoEstado, claimPagoAprobado, type PagoEstado } from "@/lib/pagos";
-import { addCreditsByEmail, getUserCreditsByEmail } from "@/lib/users";
+import {
+  findPagoByReferencia,
+  updatePagoEstado,
+  claimPagoAprobado,
+  claimPagoRevertido,
+  type PagoEstado,
+} from "@/lib/pagos";
+import { addCreditsByEmail, deductCreditsByEmail, getUserCreditsByEmail } from "@/lib/users";
 import { sendMetaPurchaseEvent } from "@/lib/meta-conversions-api";
-import { getSubscriptionByEmail, upsertSubscription, markSubscriptionRenewed } from "@/lib/subscriptions";
+import {
+  getSubscriptionByEmail,
+  upsertSubscription,
+  markSubscriptionRenewed,
+  cancelSubscription,
+} from "@/lib/subscriptions";
 import { facturarCompra } from "@/lib/billing";
+import { sendOpsAlertEmail } from "@/lib/email";
+
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
 function statusToEstado(status: string): PagoEstado {
   if (status === "APPROVED") return "Aprobado";
@@ -46,7 +60,27 @@ export async function POST(req: NextRequest) {
   if (nextEstado !== "Aprobado") {
     // Un rechazo/pendiente no acredita nada — pero no pises un pago que ya
     // haya quedado "Aprobado" (ej. reintento del webhook fuera de orden).
-    if (pago.estado !== "Aprobado") await updatePagoEstado(pago.id, nextEstado, tx.id);
+    if (pago.estado !== "Aprobado") {
+      await updatePagoEstado(pago.id, nextEstado, tx.id);
+      return NextResponse.json({ ok: true });
+    }
+    // El pago ya estaba "Aprobado" (créditos ya dados) y ahora llega
+    // anulado — solo VOIDED es una señal explícita de reversión real (ej.
+    // reembolso manual desde el dashboard de Wompi); un DECLINED/ERROR
+    // tardío sobre un pago ya aprobado casi siempre es un webhook fuera de
+    // orden, no debe revertir nada.
+    if (tx.status === "VOIDED") {
+      const revertido = await claimPagoRevertido(pago.referencia, tx.id);
+      if (revertido) {
+        await deductCreditsByEmail(revertido.correo, revertido.creditos);
+        if (revertido.tipo === "plan") await cancelSubscription(revertido.correo);
+        await sendOpsAlertEmail({
+          ownerEmail: OWNER_EMAIL,
+          asunto: "Pago anulado — créditos revertidos",
+          detalle: `Correo: ${revertido.correo}\nItem: ${revertido.item}\nCréditos revertidos: ${revertido.creditos}\nReferencia: ${revertido.referencia}${revertido.tipo === "plan" ? "\n\nEra un plan — se canceló la suscripción." : ""}`,
+        });
+      }
+    }
     return NextResponse.json({ ok: true });
   }
 

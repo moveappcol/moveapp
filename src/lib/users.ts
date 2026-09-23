@@ -246,3 +246,15 @@ export async function addCreditsByEmail(
     { fields: { Correo: email, Creditos: amount, ...(vencimiento && { Vencimiento: vencimiento }) } },
   ]);
 }
+
+/** Revierte los créditos de una compra que ya se había acreditado y luego
+ * se anuló (ej. reembolso manual desde el dashboard de Wompi) — nunca deja
+ * el saldo negativo. No toca "Vencimiento": revertir la fecha exacta de un
+ * plan requeriría saber cuál era antes de esa compra, y no se guarda. */
+export async function deductCreditsByEmail(email: string, amount: number): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getUserCreditsByEmail(email);
+  if (!existing) return;
+  const next = Math.max(0, existing.credits - amount);
+  await base(USUARIOS_TABLE).update([{ id: existing.recordId, fields: { Creditos: next } }]);
+}

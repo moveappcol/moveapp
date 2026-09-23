@@ -22,6 +22,12 @@ const DATAICO_CREDIT_NOTES_URL = "https://api.dataico.com/direct/dataico_api/v2/
 const DATAICO_ACCOUNT_ID = "01a0cbf0-36ea-8a42-ae99-e228c1293090";
 const RESOLUTION_NUMBER = "18764116030884";
 const RESOLUTION_PREFIX = "UNQ";
+/** Las notas crédito, a diferencia de las facturas, no usan una resolución
+ * de autorización de la DIAN — es una numeración "simple" que Dataico
+ * registra y envía directo (confirmado vía GET /numberings/credit-note:
+ * dian_resolutions queda vacío). Solo hace falta el prefijo, creado dentro
+ * del panel de Dataico (Ventas > Notas Crédito > Numeraciones), 2026-09-23. */
+const CREDIT_NOTE_PREFIX = "NCE";
 const IVA_RATE = 19;
 
 /** "PRUEBAS" no envía nada real a la DIAN — se usa hasta confirmar que la
@@ -226,9 +232,9 @@ export type CreateCreditNoteParams = {
   /** UUID de la factura original en Dataico (no el CUFE) — se guarda en el
    * link del PDF de la factura (query param "document-id"). */
   invoiceUuid: string;
-  /** Consecutivo dentro del rango de la resolución DIAN de notas crédito —
+  /** Consecutivo dentro de la numeración de notas crédito (prefijo "NCE") —
    * ya reservado por el llamador (ver reserveNextNotaCreditoNumero en
-   * pagos.ts). Es una resolución DIAN distinta a la de facturas. */
+   * pagos.ts). */
   numero: number;
 };
 
@@ -240,24 +246,11 @@ export type CreateCreditNoteResult =
  * la referencia — hace falta cuando un pago que ya tenía factura generada
  * se anula después (ej. reembolso manual desde el dashboard de Wompi):
  * anular el pago ahí NO anula la factura electrónica, es un documento legal
- * aparte. Requiere una resolución DIAN de notas crédito — es un tipo de
- * documento distinto al de facturas de venta, hay que tramitarla aparte
- * ante la DIAN y configurarla en Dataico. Mientras no esté configurada acá
- * (DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER / DATAICO_CREDIT_NOTE_PREFIX),
- * devuelve el error explicando qué falta en vez de intentar la llamada. */
+ * aparte. Probado en vivo contra la cuenta real (2026-09-23): NCE1,
+ * DIAN_ACEPTADO. */
 export async function createCreditNote(params: CreateCreditNoteParams): Promise<CreateCreditNoteResult> {
   const apiKey = process.env.DATAICO_API_KEY;
   if (!apiKey) return { ok: false, error: "Falta la variable de entorno DATAICO_API_KEY." };
-
-  const resolutionNumber = process.env.DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER;
-  const prefix = process.env.DATAICO_CREDIT_NOTE_PREFIX;
-  if (!resolutionNumber || !prefix) {
-    return {
-      ok: false,
-      error:
-        "Falta la resolución DIAN de notas crédito (documento distinto al de facturas — hay que tramitarla ante la DIAN) y configurar DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER / DATAICO_CREDIT_NOTE_PREFIX en Railway.",
-    };
-  }
 
   const items = await fetchInvoiceItems(params.invoiceUuid, apiKey);
   if (!items || items.length === 0) {
@@ -274,7 +267,7 @@ export async function createCreditNote(params: CreateCreditNoteParams): Promise<
       env: dataicoEnv(),
       dataico_account_id: DATAICO_ACCOUNT_ID,
       number: params.numero,
-      numbering: { resolution_number: resolutionNumber, prefix, flexible: true },
+      numbering: { prefix: CREDIT_NOTE_PREFIX, flexible: true },
       invoice_id: params.invoiceUuid,
       issue_date: formatFechaHoraDian(now),
       sin_factura_referenciada: false,
@@ -291,7 +284,10 @@ export async function createCreditNote(params: CreateCreditNoteParams): Promise<
           {
             tax_category: "IVA",
             tax_rate: it.taxRate,
-            tax_amount: Math.round((it.price * it.taxRate) / 100),
+            // Dataico valida que tax_rate * base_amount = tax_amount
+            // exacto (con centavos) — redondear a entero lo rebota
+            // (confirmado en pruebas, 2026-09-23).
+            tax_amount: Math.round(it.price * it.taxRate) / 100,
             tax_base: 100,
             base_amount: it.price,
           },

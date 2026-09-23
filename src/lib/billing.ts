@@ -80,11 +80,12 @@ export async function facturarCompra(params: {
  * luego se revirtió (ej. anulación manual desde el dashboard de Wompi) —
  * anular el pago ahí NO anula la factura electrónica, hace falta emitir una
  * nota crédito aparte. No hace nada si el pago nunca llegó a tener factura
- * (compra que nunca se facturó, o falló). Nunca deja que un fallo acá se
- * propague — si Dataico falla (ej. todavía no hay resolución DIAN de notas
- * crédito configurada), se avisa por correo para anularla manual. */
+ * (compra que nunca se facturó, o falló), ni si ya tiene una nota crédito
+ * emitida (idempotencia — evita duplicarla si el webhook de Wompi llega más
+ * de una vez). Nunca deja que un fallo acá se propague — si Dataico falla,
+ * se avisa por correo para anularla manual. */
 export async function anularFacturaPorReversion(pago: Pago): Promise<void> {
-  if (!pago.facturaPdfUrl) return;
+  if (!pago.facturaPdfUrl || pago.notaCredito) return;
   try {
     const invoiceUuid = extractInvoiceUuidFromPdfUrl(pago.facturaPdfUrl);
     if (!invoiceUuid) {

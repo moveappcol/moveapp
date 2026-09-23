@@ -25,12 +25,13 @@ import type { PurchaseKind } from "./orders";
  *      llamar a Dataico, así que puede quedar puesto en un pago cuya
  *      factura terminó fallando — eso deja un hueco en la numeración, que
  *      es normal y está permitido en facturación electrónica.)
- *   - "NotaCredito" (número entero, opcional — el consecutivo dentro del
- *      rango de la resolución DIAN de NOTAS CRÉDITO, que es un tipo de
- *      documento y una resolución aparte de la de facturas. Se pone cuando
- *      un pago con factura ya generada se anula después y hay que anular
- *      esa factura ante la DIAN — también sirve como marca de "esta
- *      reversión ya emitió su nota crédito", para no duplicarla.)
+ *   - "NotaCredito" (número entero, opcional — el consecutivo dentro de la
+ *      numeración de notas crédito, prefijo "NCE" (a diferencia de las
+ *      facturas, esta numeración no usa resolución DIAN, ver
+ *      CREDIT_NOTE_PREFIX en dataico.ts). Se pone cuando un pago con
+ *      factura ya generada se anula después y hay que anular esa factura
+ *      ante la DIAN — también sirve como marca de "esta reversión ya
+ *      emitió su nota crédito", para no duplicarla.)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -50,6 +51,9 @@ export type Pago = {
    * para poder anularla con una nota crédito si el pago se revierte
    * después. Null si nunca se facturó (o falló). */
   facturaPdfUrl: string | null;
+  /** Número de la nota crédito ya emitida para este pago, si la hay — sirve
+   * de marca de idempotencia: si ya tiene una, no hay que emitir otra. */
+  notaCredito: number | null;
 };
 
 function mapRecordToPago(
@@ -67,6 +71,7 @@ function mapRecordToPago(
     estado: ((record.get("Estado") as string) ?? "Pendiente") as PagoEstado,
     paymentSourceId: paymentSourceId !== undefined && paymentSourceId !== null ? paymentSourceId : null,
     facturaPdfUrl: (record.get("Factura PDF") as string) || null,
+    notaCredito: (record.get("NotaCredito") as number) || null,
   };
 }
 

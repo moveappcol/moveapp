@@ -5,6 +5,7 @@ import { findPagoByReferencia, updatePagoEstado, claimPagoAprobado, type PagoEst
 import { addCreditsByEmail, getUserCreditsByEmail } from "@/lib/users";
 import { sendMetaPurchaseEvent } from "@/lib/meta-conversions-api";
 import { getSubscriptionByEmail, upsertSubscription, markSubscriptionRenewed } from "@/lib/subscriptions";
+import { facturarCompra } from "@/lib/billing";
 
 function statusToEstado(status: string): PagoEstado {
   if (status === "APPROVED") return "Aprobado";
@@ -57,6 +58,14 @@ export async function POST(req: NextRequest) {
   if (!credited) return NextResponse.json({ ok: true });
 
   await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
+  await facturarCompra({
+    correo: pago.correo,
+    concepto:
+      pago.tipo === "plan"
+        ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`
+        : `Créditos adicionales UNIQUE — ${item.label}`,
+    totalConIva: item.price,
+  });
   if (pago.tipo === "plan") {
     // El pago quedó "Pendiente" del lado de Wompi y se aprobó tarde (por
     // eso llegamos por webhook y no por la respuesta síncrona del cobro):

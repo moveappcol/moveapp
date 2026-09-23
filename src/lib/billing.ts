@@ -1,7 +1,50 @@
 import { chargeWithPaymentSource } from "./wompi";
 import { findCatalogItem, buildReference } from "./orders";
 import { createPendingPago, updatePagoEstado, claimPagoAprobado } from "./pagos";
-import { addCreditsByEmail } from "./users";
+import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
+import { createElectronicInvoice } from "./dataico";
+import { isTipoDocumento } from "./documento";
+import { sendOpsAlertEmail } from "./email";
+
+const OWNER_EMAIL = "uniqueappcol@gmail.com";
+
+/** Genera la factura electrónica por una compra ya cobrada y acreditada.
+ * Nunca deja que un fallo acá se propague — el pago y el abono de
+ * créditos ya pasaron; si Dataico falla, se avisa por correo para
+ * facturar manual en vez de romper la respuesta al comprador. */
+export async function facturarCompra(params: {
+  correo: string;
+  concepto: string;
+  totalConIva: number;
+}): Promise<void> {
+  try {
+    const account = await getUserCreditsByEmail(params.correo);
+    const result = await createElectronicInvoice({
+      concepto: params.concepto,
+      totalConIva: params.totalConIva,
+      correo: params.correo,
+      nombre: account?.nombre ?? "",
+      apellido: account?.apellido ?? "",
+      tipoDocumento:
+        account?.tipoDocumento && isTipoDocumento(account.tipoDocumento) ? account.tipoDocumento : null,
+      cedula: account?.cedula ?? "",
+      telefono: account?.telefono ?? null,
+    });
+    if (!result.ok) {
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: "No se pudo generar la factura electrónica",
+        detalle: `Compra: ${params.concepto}\nCorreo: ${params.correo}\nValor: ${params.totalConIva}\n\nError de Dataico: ${result.error}\n\nHay que facturar esta compra manual mientras se revisa.`,
+      });
+    }
+  } catch (err) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo generar la factura electrónica",
+      detalle: `Compra: ${params.concepto}\nCorreo: ${params.correo}\nValor: ${params.totalConIva}\n\nExcepción: ${err instanceof Error ? err.message : String(err)}\n\nHay que facturar esta compra manual mientras se revisa.`,
+    }).catch(() => {});
+  }
+}
 
 export type ChargeResult =
   | {
@@ -79,6 +122,11 @@ export async function chargeSubscriptionPlan(params: {
   const credited = await claimPagoAprobado(reference, tx.id);
   if (credited) {
     await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
+    await facturarCompra({
+      correo: params.correo,
+      concepto: `Suscripción UNIQUE — Plan ${item.name ?? item.label}`,
+      totalConIva: precio,
+    });
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }
@@ -130,6 +178,11 @@ export async function chargeTopup(params: {
   const credited = await claimPagoAprobado(reference, tx.id);
   if (credited) {
     await addCreditsByEmail(params.correo, item.credits, false);
+    await facturarCompra({
+      correo: params.correo,
+      concepto: `Créditos adicionales UNIQUE — ${item.label}`,
+      totalConIva: item.price,
+    });
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }

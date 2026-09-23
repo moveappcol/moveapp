@@ -5,14 +5,12 @@ import type { TipoDocumento } from "./documento";
  * Documentación: https://app.dataico.com/api-docs — sección "facturas",
  * POST /invoices ("Crear una nueva factura").
  *
- * OJO — hay 3-4 valores de enumeración (party_identification_type,
- * tax_level_code, payment_means / payment_means_type) que la documentación
- * de Swagger solo muestra con UN ejemplo cada uno, no la lista completa de
- * valores válidos. Se usaron los más razonables según ese ejemplo y los
- * códigos estándar de la DIAN, pero quedan marcados abajo — la primera
- * factura real en modo PRUEBAS puede rebotar con un error de validación
- * señalando cuál exactamente hay que ajustar (Dataico devuelve el campo
- * exacto en {"errors": {"campo": ["mensaje"]}}).
+ * party_identification_type, party_type, payment_means y measuring-unit ya
+ * están confirmados con soporte de Dataico (2026-09-23) — ver comentarios
+ * en cada valor. payment_means_type ("CONTADO") sigue sin confirmar contra
+ * un ejemplo real de ellos; si una factura rebota señalando ese campo
+ * específico, Dataico devuelve el nombre exacto en
+ * {"errors": {"campo": ["mensaje"]}}.
  */
 
 const DATAICO_API_URL = "https://api.dataico.com/direct/dataico_api/v2/invoices";
@@ -114,9 +112,11 @@ export async function createElectronicInvoice(
         prefix: RESOLUTION_PREFIX,
         flexible: true,
       },
-      // Pago con tarjeta a través de Wompi, siempre de contado.
+      // Pago con tarjeta a través de Wompi, siempre de contado. Valor de
+      // payment_means confirmado con soporte de Dataico (2026-09-23):
+      // "CREDIT_CARD", no "TARJETA_CREDITO".
       payment_means_type: "CONTADO",
-      payment_means: "TARJETA_CREDITO",
+      payment_means: "CREDIT_CARD",
       customer: {
         party_type: "PERSONA_NATURAL",
         first_name: params.nombre,
@@ -132,7 +132,9 @@ export async function createElectronicInvoice(
           description: params.concepto,
           quantity: 1,
           price: base,
-          "measuring-unit": "UND",
+          // "94" = código DIAN/UN-CEFACT para "unidad de servicio", según
+          // soporte de Dataico (2026-09-23) — no "UND".
+          "measuring-unit": "94",
           taxes: [
             {
               "tax-category": "IVA",

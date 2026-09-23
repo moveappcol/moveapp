@@ -43,6 +43,7 @@ export async function startCheckout(kind: PurchaseKind, itemId: string): Promise
     tipo: kind,
     item: itemId,
     creditos: item.credits,
+    valor: item.price,
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

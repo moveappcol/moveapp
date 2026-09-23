@@ -47,13 +47,23 @@ export async function POST(req: NextRequest) {
   if (!parsed) return NextResponse.json({ ok: true });
 
   const item = findCatalogItem(parsed.kind, parsed.itemId);
-  if (!item || item.price * 100 !== tx.amount_in_cents) {
-    // El monto no coincide con el catálogo — no acreditamos por seguridad.
-    return NextResponse.json({ ok: true });
-  }
+  if (!item) return NextResponse.json({ ok: true });
 
   const pago = await findPagoByReferencia(tx.reference);
   if (!pago) return NextResponse.json({ ok: true });
+
+  // El monto esperado es el que se guardó al crear el pago (pago.valor), NO
+  // el precio de catálogo — una compra con cupón cuesta menos que el
+  // catálogo, y comparar contra item.price rechazaría (sin acreditar) todo
+  // pago con descuento que se apruebe tarde por este webhook. pago.valor
+  // puede ser null en pagos de antes de agregar ese campo, ahí sí toca
+  // comparar contra catálogo.
+  const montoEsperado = pago.valor ?? item.price;
+  if (montoEsperado * 100 !== tx.amount_in_cents) {
+    // El monto no coincide con lo que se esperaba — no acreditamos por
+    // seguridad.
+    return NextResponse.json({ ok: true });
+  }
 
   const nextEstado = statusToEstado(tx.status);
 
@@ -104,7 +114,7 @@ export async function POST(req: NextRequest) {
       pago.tipo === "plan"
         ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`
         : `Créditos adicionales UNIQUE — ${item.label}`,
-    totalConIva: item.price,
+    totalConIva: montoEsperado,
     pagoId: pago.id,
   });
   if (pago.tipo === "plan") {

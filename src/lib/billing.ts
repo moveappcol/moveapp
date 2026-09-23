@@ -162,6 +162,7 @@ export async function chargeSubscriptionPlan(params: {
     tipo: "plan",
     item: params.planId,
     creditos: item.credits,
+    valor: precio,
     paymentSourceId: params.paymentSourceId,
   });
 
@@ -226,6 +227,7 @@ export async function chargeTopup(params: {
     tipo: "topup",
     item: params.topupId,
     creditos: item.credits,
+    valor: item.price,
   });
 
   let tx;

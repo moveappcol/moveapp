@@ -32,6 +32,11 @@ import type { PurchaseKind } from "./orders";
  *      factura ya generada se anula después y hay que anular esa factura
  *      ante la DIAN — también sirve como marca de "esta reversión ya
  *      emitió su nota crédito", para no duplicarla.)
+ *   - "Valor" (número, el valor real en COP que se cobró — YA con
+ *      cualquier descuento/cupón aplicado. Se guarda al crear el pago
+ *      (createPendingPago) para poder facturar el monto exacto sin tener
+ *      que recalcularlo — el webhook de Wompi, a diferencia del cobro
+ *      síncrono, no tiene a mano el descuento que se haya aplicado.)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -54,6 +59,9 @@ export type Pago = {
   /** Número de la nota crédito ya emitida para este pago, si la hay — sirve
    * de marca de idempotencia: si ya tiene una, no hay que emitir otra. */
   notaCredito: number | null;
+  /** Valor real en COP cobrado (con descuento ya aplicado, si hubo). Null en
+   * pagos creados antes de agregar este campo. */
+  valor: number | null;
 };
 
 function mapRecordToPago(
@@ -72,6 +80,7 @@ function mapRecordToPago(
     paymentSourceId: paymentSourceId !== undefined && paymentSourceId !== null ? paymentSourceId : null,
     facturaPdfUrl: (record.get("Factura PDF") as string) || null,
     notaCredito: (record.get("NotaCredito") as number) || null,
+    valor: (record.get("Valor") as number) || null,
   };
 }
 
@@ -81,6 +90,10 @@ export async function createPendingPago(params: {
   tipo: PurchaseKind;
   item: string;
   creditos: number;
+  /** Valor real en COP que se va a cobrar (con descuento ya aplicado, si
+   * hubo) — se guarda para poder facturar el monto exacto después, sin
+   * tener que recalcularlo desde el catálogo (que no sabe de descuentos). */
+  valor: number;
   paymentSourceId?: number;
 }): Promise<string> {
   const base = getAirtableBase();
@@ -93,6 +106,7 @@ export async function createPendingPago(params: {
           Tipo: params.tipo === "plan" ? "Plan" : "Adicional",
           item: params.item,
           Creditos: params.creditos,
+          Valor: params.valor,
           Estado: "Pendiente",
           ...(params.paymentSourceId !== undefined ? { PaymentSourceId: params.paymentSourceId } : {}),
         },

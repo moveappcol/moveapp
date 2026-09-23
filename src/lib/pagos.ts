@@ -196,8 +196,12 @@ export async function updatePagoFactura(
 export async function reserveNextFacturaNumero(recordId: string): Promise<number> {
   return withLock("dataico:numeracion", async () => {
     const base = getAirtableBase();
+    // OJO: "{Campo} != ''" NO filtra los vacíos en un campo numérico —
+    // Airtable trata un número vacío como 0 al evaluar la fórmula, y
+    // "0 != ''" da verdadero, así que esa fórmula trae la tabla completa.
+    // ">  0" sí excluye los vacíos de verdad.
     const usados = await base(PAGOS_TABLE)
-      .select({ filterByFormula: `{Factura Numero} != ""`, fields: ["Factura Numero"] })
+      .select({ filterByFormula: `{Factura Numero} > 0`, fields: ["Factura Numero"] })
       .all();
     const max = usados.reduce((m, r) => Math.max(m, Number(r.get("Factura Numero")) || 0), 0);
     const numero = max + 1;
@@ -215,7 +219,7 @@ export async function reserveNextNotaCreditoNumero(recordId: string): Promise<nu
   return withLock("dataico:numeracion-nc", async () => {
     const base = getAirtableBase();
     const usados = await base(PAGOS_TABLE)
-      .select({ filterByFormula: `{NotaCredito} != ""`, fields: ["NotaCredito"] })
+      .select({ filterByFormula: `{NotaCredito} > 0`, fields: ["NotaCredito"] })
       .all();
     const max = usados.reduce((m, r) => Math.max(m, Number(r.get("NotaCredito")) || 0), 0);
     const numero = max + 1;

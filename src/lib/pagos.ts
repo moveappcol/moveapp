@@ -19,6 +19,12 @@ import type { PurchaseKind } from "./orders";
  *      o si falló, ver la alerta por correo en ese caso)
  *   - "Factura CUFE" (texto, opcional — código único de la factura ante la
  *      DIAN, para referencia/soporte)
+ *   - "Factura Numero" (número entero, opcional — el consecutivo dentro del
+ *      rango autorizado por la resolución DIAN de UNIQUE, ej. 1-5000;
+ *      Dataico lo exige explícito, no lo asigna solo. Se reserva ANTES de
+ *      llamar a Dataico, así que puede quedar puesto en un pago cuya
+ *      factura terminó fallando — eso deja un hueco en la numeración, que
+ *      es normal y está permitido en facturación electrónica.)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -148,4 +154,25 @@ export async function updatePagoFactura(
     [{ id: recordId, fields: { "Factura PDF": factura.pdfUrl, "Factura CUFE": factura.cufe } }],
     { typecast: true }
   );
+}
+
+/** Reserva el siguiente número de factura dentro del rango de la resolución
+ * DIAN, bajo un lock global para que dos compras al mismo tiempo nunca
+ * terminen usando el mismo número. Se guarda en el propio Pago antes de
+ * llamar a Dataico — si la factura falla después, el número queda "gastado"
+ * (hueco en la numeración), lo cual es válido, en vez de arriesgarse a
+ * reutilizarlo. */
+export async function reserveNextFacturaNumero(recordId: string): Promise<number> {
+  return withLock("dataico:numeracion", async () => {
+    const base = getAirtableBase();
+    const usados = await base(PAGOS_TABLE)
+      .select({ filterByFormula: `{Factura Numero} != ""`, fields: ["Factura Numero"] })
+      .all();
+    const max = usados.reduce((m, r) => Math.max(m, Number(r.get("Factura Numero")) || 0), 0);
+    const numero = max + 1;
+    await base(PAGOS_TABLE).update([{ id: recordId, fields: { "Factura Numero": numero } }], {
+      typecast: true,
+    });
+    return numero;
+  });
 }

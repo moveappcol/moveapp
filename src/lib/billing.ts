@@ -1,6 +1,12 @@
 import { chargeWithPaymentSource } from "./wompi";
 import { findCatalogItem, buildReference } from "./orders";
-import { createPendingPago, updatePagoEstado, updatePagoFactura, claimPagoAprobado } from "./pagos";
+import {
+  createPendingPago,
+  updatePagoEstado,
+  updatePagoFactura,
+  claimPagoAprobado,
+  reserveNextFacturaNumero,
+} from "./pagos";
 import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
 import { createElectronicInvoice } from "./dataico";
 import { isTipoDocumento } from "./documento";
@@ -14,16 +20,32 @@ const OWNER_EMAIL = "uniqueappcol@gmail.com";
  * facturar manual en vez de romper la respuesta al comprador. */
 export async function facturarCompra(params: {
   correo: string;
+  /** Id del catálogo (ej. "topup-5", "plan-starter") — Dataico lo exige
+   * como "sku" de cada ítem de la factura. */
+  sku: string;
   concepto: string;
   totalConIva: number;
   /** Record de "Pagos" a actualizar con el link al PDF y el CUFE cuando la
-   * factura se genera bien — opcional porque el webhook a veces no tiene
-   * a mano el mismo record que el cobro síncrono ya actualizó. */
+   * factura se genera bien, y donde se reserva el número de factura —
+   * siempre debería venir; si no, no hay dónde reservar el número y no se
+   * puede facturar. */
   pagoId?: string;
 }): Promise<void> {
   try {
+    if (!params.pagoId) {
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: "No se pudo generar la factura electrónica",
+        detalle: `Compra: ${params.concepto}\nCorreo: ${params.correo}\nValor: ${params.totalConIva}\n\nFalta el pagoId — no hay dónde reservar el número de factura.\n\nHay que facturar esta compra manual mientras se revisa.`,
+      });
+      return;
+    }
+    const pagoId = params.pagoId;
+    const numero = await reserveNextFacturaNumero(pagoId);
     const account = await getUserCreditsByEmail(params.correo);
     const result = await createElectronicInvoice({
+      numero,
+      sku: params.sku,
       concepto: params.concepto,
       totalConIva: params.totalConIva,
       correo: params.correo,
@@ -35,9 +57,7 @@ export async function facturarCompra(params: {
       telefono: account?.telefono ?? null,
     });
     if (result.ok) {
-      if (params.pagoId) {
-        await updatePagoFactura(params.pagoId, { pdfUrl: result.pdfUrl, cufe: result.cufe });
-      }
+      await updatePagoFactura(pagoId, { pdfUrl: result.pdfUrl, cufe: result.cufe });
     } else {
       await sendOpsAlertEmail({
         ownerEmail: OWNER_EMAIL,
@@ -132,6 +152,7 @@ export async function chargeSubscriptionPlan(params: {
     await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
     await facturarCompra({
       correo: params.correo,
+      sku: item.id,
       concepto: `Suscripción UNIQUE — Plan ${item.name ?? item.label}`,
       totalConIva: precio,
       pagoId,
@@ -189,6 +210,7 @@ export async function chargeTopup(params: {
     await addCreditsByEmail(params.correo, item.credits, false);
     await facturarCompra({
       correo: params.correo,
+      sku: item.id,
       concepto: `Créditos adicionales UNIQUE — ${item.label}`,
       totalConIva: item.price,
       pagoId,

@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
   await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
   await facturarCompra({
     correo: pago.correo,
+    sku: item.id,
     concepto:
       pago.tipo === "plan"
         ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`

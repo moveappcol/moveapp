@@ -55,6 +55,12 @@ function formatFechaHoraDian(d: Date): string {
 }
 
 export type CreateInvoiceParams = {
+  /** Consecutivo dentro del rango de la resolución DIAN — ya reservado por
+   * el llamador (ver reserveNextFacturaNumero en pagos.ts). */
+  numero: number;
+  /** Referencia/SKU del ítem del catálogo (ej. "topup-5", "plan-starter") —
+   * Dataico lo exige para poder facturar (soporte, 2026-09-23). */
+  sku: string;
   concepto: string;
   /** Total en COP que ya pagó la persona — con IVA incluido (así se le
    * muestra el precio en toda la plataforma). Se desglosa acá mismo en
@@ -107,20 +113,28 @@ export async function createElectronicInvoice(
       issue_date: formatFechaDian(now),
       payment_date: formatFechaHoraDian(now),
       currency: "COP",
+      // Dataico exige el número explícito aunque la numeración sea
+      // "flexible" — no lo asigna solo (confirmado en pruebas, 2026-09-23).
+      number: params.numero,
       numbering: {
         resolution_number: RESOLUTION_NUMBER,
         prefix: RESOLUTION_PREFIX,
         flexible: true,
       },
-      // Pago con tarjeta a través de Wompi, siempre de contado. Valor de
-      // payment_means confirmado con soporte de Dataico (2026-09-23):
-      // "CREDIT_CARD", no "TARJETA_CREDITO".
-      payment_means_type: "CONTADO",
+      // Pago con tarjeta a través de Wompi. Valores confirmados con soporte
+      // de Dataico (2026-09-23): payment_means "CREDIT_CARD" (no
+      // "TARJETA_CREDITO"); payment_means_type solo acepta
+      // "CREDITO"/"DEBITO" (no "CONTADO") — Wompi siempre cobra crédito.
+      payment_means_type: "CREDITO",
       payment_means: "CREDIT_CARD",
       customer: {
         party_type: "PERSONA_NATURAL",
         first_name: params.nombre,
-        last_name: params.apellido,
+        // El campo del apellido en el esquema de Dataico se llama
+        // "family_name", no "last_name" (visto en su ejemplo de
+        // documentación) — con "last_name" el apellido no se reconocía y
+        // Dataico rechazaba con "El nombre del tercero es incorrecto."
+        family_name: params.apellido,
         party_identification_type:
           (params.tipoDocumento && DIAN_IDENTIFICATION_TYPE[params.tipoDocumento]) || "CC",
         party_identification: params.cedula,
@@ -129,6 +143,7 @@ export async function createElectronicInvoice(
       },
       items: [
         {
+          sku: params.sku,
           description: params.concepto,
           quantity: 1,
           price: base,
@@ -140,7 +155,12 @@ export async function createElectronicInvoice(
               "tax-category": "IVA",
               "tax-rate": IVA_RATE,
               "tax-amount": iva,
-              "tax-base": base,
+              // "tax-base" no es el monto — es el % del ítem sujeto al
+              // impuesto (100 = todo el ítem), tiene que estar entre 1 y
+              // 100 (confirmado en pruebas, 2026-09-23). El monto real va
+              // en "base-amount".
+              "tax-base": 100,
+              "base-amount": base,
             },
           ],
         },

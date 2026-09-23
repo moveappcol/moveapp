@@ -217,9 +217,13 @@ async function fetchInvoiceItems(uuid: string, apiKey: string): Promise<InvoiceI
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json: any = await res.json().catch(() => null);
-  if (!res.ok || !Array.isArray(json?.items)) return null;
+  // GET /invoices/{uuid} devuelve los datos anidados bajo "invoice" (a
+  // diferencia de POST /invoices, que los devuelve en la raíz) — confirmado
+  // en pruebas, 2026-09-23.
+  const items = json?.invoice?.items;
+  if (!res.ok || !Array.isArray(items)) return null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return json.items.map((it: any) => ({
+  return items.map((it: any) => ({
     sku: String(it.sku ?? ""),
     description: String(it.description ?? ""),
     quantity: Number(it.quantity) || 1,

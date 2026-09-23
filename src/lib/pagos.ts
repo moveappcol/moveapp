@@ -25,8 +25,8 @@ import type { PurchaseKind } from "./orders";
  *      llamar a Dataico, así que puede quedar puesto en un pago cuya
  *      factura terminó fallando — eso deja un hueco en la numeración, que
  *      es normal y está permitido en facturación electrónica.)
- *   - "NotaCredito Numero" (número entero, opcional — el consecutivo dentro
- *      del rango de la resolución DIAN de NOTAS CRÉDITO, que es un tipo de
+ *   - "NotaCredito" (número entero, opcional — el consecutivo dentro del
+ *      rango de la resolución DIAN de NOTAS CRÉDITO, que es un tipo de
  *      documento y una resolución aparte de la de facturas. Se pone cuando
  *      un pago con factura ya generada se anula después y hay que anular
  *      esa factura ante la DIAN — también sirve como marca de "esta
@@ -196,11 +196,11 @@ export async function reserveNextNotaCreditoNumero(recordId: string): Promise<nu
   return withLock("dataico:numeracion-nc", async () => {
     const base = getAirtableBase();
     const usados = await base(PAGOS_TABLE)
-      .select({ filterByFormula: `{NotaCredito Numero} != ""`, fields: ["NotaCredito Numero"] })
+      .select({ filterByFormula: `{NotaCredito} != ""`, fields: ["NotaCredito"] })
       .all();
-    const max = usados.reduce((m, r) => Math.max(m, Number(r.get("NotaCredito Numero")) || 0), 0);
+    const max = usados.reduce((m, r) => Math.max(m, Number(r.get("NotaCredito")) || 0), 0);
     const numero = max + 1;
-    await base(PAGOS_TABLE).update([{ id: recordId, fields: { "NotaCredito Numero": numero } }], {
+    await base(PAGOS_TABLE).update([{ id: recordId, fields: { NotaCredito: numero } }], {
       typecast: true,
     });
     return numero;

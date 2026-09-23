@@ -14,6 +14,7 @@ import type { TipoDocumento } from "./documento";
  */
 
 const DATAICO_API_URL = "https://api.dataico.com/direct/dataico_api/v2/invoices";
+const DATAICO_CREDIT_NOTES_URL = "https://api.dataico.com/direct/dataico_api/v2/credit_notes";
 
 /** Cuenta y resolución de facturación de UNIQUE APP S.A.S. — no son
  * secretos (a diferencia del API key, que vive en DATAICO_API_KEY), así
@@ -192,4 +193,139 @@ export async function createElectronicInvoice(
   }
 
   return { ok: true, uuid: json.uuid, pdfUrl: json.pdf_url, cufe: json.cufe };
+}
+
+type InvoiceItemSnapshot = { sku: string; description: string; quantity: number; price: number; taxRate: number };
+
+/** Lee de vuelta los ítems ya guardados de una factura aceptada — se usa
+ * para armar la nota crédito con exactamente los mismos valores que quedaron
+ * en la DIAN, en vez de recalcularlos acá (evita que un descuento aplicado
+ * en su momento, o cualquier otra diferencia, deje la nota crédito
+ * descuadrada frente a la factura que anula). */
+async function fetchInvoiceItems(uuid: string, apiKey: string): Promise<InvoiceItemSnapshot[] | null> {
+  let res: Response;
+  try {
+    res = await fetch(`${DATAICO_API_URL}/${uuid}`, { headers: { "auth-token": apiKey } });
+  } catch {
+    return null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json: any = await res.json().catch(() => null);
+  if (!res.ok || !Array.isArray(json?.items)) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return json.items.map((it: any) => ({
+    sku: String(it.sku ?? ""),
+    description: String(it.description ?? ""),
+    quantity: Number(it.quantity) || 1,
+    price: Number(it.price) || 0,
+    taxRate: Number(it.taxes?.[0]?.tax_rate) || 0,
+  }));
+}
+
+export type CreateCreditNoteParams = {
+  /** UUID de la factura original en Dataico (no el CUFE) — se guarda en el
+   * link del PDF de la factura (query param "document-id"). */
+  invoiceUuid: string;
+  /** Consecutivo dentro del rango de la resolución DIAN de notas crédito —
+   * ya reservado por el llamador (ver reserveNextNotaCreditoNumero en
+   * pagos.ts). Es una resolución DIAN distinta a la de facturas. */
+  numero: number;
+};
+
+export type CreateCreditNoteResult =
+  | { ok: true; uuid: string; pdfUrl: string; cufe: string }
+  | { ok: false; error: string };
+
+/** Anula ante la DIAN una factura ya aceptada, emitiendo la nota crédito que
+ * la referencia — hace falta cuando un pago que ya tenía factura generada
+ * se anula después (ej. reembolso manual desde el dashboard de Wompi):
+ * anular el pago ahí NO anula la factura electrónica, es un documento legal
+ * aparte. Requiere una resolución DIAN de notas crédito — es un tipo de
+ * documento distinto al de facturas de venta, hay que tramitarla aparte
+ * ante la DIAN y configurarla en Dataico. Mientras no esté configurada acá
+ * (DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER / DATAICO_CREDIT_NOTE_PREFIX),
+ * devuelve el error explicando qué falta en vez de intentar la llamada. */
+export async function createCreditNote(params: CreateCreditNoteParams): Promise<CreateCreditNoteResult> {
+  const apiKey = process.env.DATAICO_API_KEY;
+  if (!apiKey) return { ok: false, error: "Falta la variable de entorno DATAICO_API_KEY." };
+
+  const resolutionNumber = process.env.DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER;
+  const prefix = process.env.DATAICO_CREDIT_NOTE_PREFIX;
+  if (!resolutionNumber || !prefix) {
+    return {
+      ok: false,
+      error:
+        "Falta la resolución DIAN de notas crédito (documento distinto al de facturas — hay que tramitarla ante la DIAN) y configurar DATAICO_CREDIT_NOTE_RESOLUTION_NUMBER / DATAICO_CREDIT_NOTE_PREFIX en Railway.",
+    };
+  }
+
+  const items = await fetchInvoiceItems(params.invoiceUuid, apiKey);
+  if (!items || items.length === 0) {
+    return {
+      ok: false,
+      error: `No se pudo leer la factura original (uuid ${params.invoiceUuid}) para armar la nota crédito.`,
+    };
+  }
+
+  const now = new Date();
+  const body = {
+    actions: { send_dian: true, send_email: false },
+    credit_note: {
+      env: dataicoEnv(),
+      dataico_account_id: DATAICO_ACCOUNT_ID,
+      number: params.numero,
+      numbering: { resolution_number: resolutionNumber, prefix, flexible: true },
+      invoice_id: params.invoiceUuid,
+      issue_date: formatFechaHoraDian(now),
+      sin_factura_referenciada: false,
+      // "ANULACION" = anulación de factura electrónica (valor del enum
+      // confirmado en el esquema de Dataico, 2026-09-23) — es exactamente
+      // nuestro caso: el pago que generó la factura se anuló después.
+      reason: "ANULACION",
+      items: items.map((it) => ({
+        sku: it.sku,
+        description: it.description,
+        quantity: it.quantity,
+        price: it.price,
+        taxes: [
+          {
+            tax_category: "IVA",
+            tax_rate: it.taxRate,
+            tax_amount: Math.round((it.price * it.taxRate) / 100),
+            tax_base: 100,
+            base_amount: it.price,
+          },
+        ],
+      })),
+    },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(DATAICO_CREDIT_NOTES_URL, {
+      method: "POST",
+      headers: { "Content-type": "application/json", "auth-token": apiKey },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    return { ok: false, error: `No se pudo conectar con Dataico: ${err instanceof Error ? err.message : String(err)}` };
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json: any = await res.json().catch(() => null);
+  if (!res.ok || !json?.uuid) {
+    return { ok: false, error: `Dataico respondió ${res.status}: ${JSON.stringify(json ?? {})}` };
+  }
+  return { ok: true, uuid: json.uuid, pdfUrl: json.pdf_url, cufe: json.cufe };
+}
+
+/** Extrae el UUID de la factura del link de su PDF (query param
+ * "document-id") — así no hace falta guardar el UUID aparte en Airtable,
+ * ya viaja dentro del link que se guarda de todas formas. */
+export function extractInvoiceUuidFromPdfUrl(pdfUrl: string): string | null {
+  try {
+    return new URL(pdfUrl).searchParams.get("document-id");
+  } catch {
+    return null;
+  }
 }

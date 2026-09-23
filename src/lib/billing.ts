@@ -6,9 +6,11 @@ import {
   updatePagoFactura,
   claimPagoAprobado,
   reserveNextFacturaNumero,
+  reserveNextNotaCreditoNumero,
+  type Pago,
 } from "./pagos";
 import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
-import { createElectronicInvoice } from "./dataico";
+import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl } from "./dataico";
 import { isTipoDocumento } from "./documento";
 import { sendOpsAlertEmail } from "./email";
 
@@ -70,6 +72,49 @@ export async function facturarCompra(params: {
       ownerEmail: OWNER_EMAIL,
       asunto: "No se pudo generar la factura electrónica",
       detalle: `Compra: ${params.concepto}\nCorreo: ${params.correo}\nValor: ${params.totalConIva}\n\nExcepción: ${err instanceof Error ? err.message : String(err)}\n\nHay que facturar esta compra manual mientras se revisa.`,
+    }).catch(() => {});
+  }
+}
+
+/** Anula ante la DIAN la factura de un pago que ya se había facturado y
+ * luego se revirtió (ej. anulación manual desde el dashboard de Wompi) —
+ * anular el pago ahí NO anula la factura electrónica, hace falta emitir una
+ * nota crédito aparte. No hace nada si el pago nunca llegó a tener factura
+ * (compra que nunca se facturó, o falló). Nunca deja que un fallo acá se
+ * propague — si Dataico falla (ej. todavía no hay resolución DIAN de notas
+ * crédito configurada), se avisa por correo para anularla manual. */
+export async function anularFacturaPorReversion(pago: Pago): Promise<void> {
+  if (!pago.facturaPdfUrl) return;
+  try {
+    const invoiceUuid = extractInvoiceUuidFromPdfUrl(pago.facturaPdfUrl);
+    if (!invoiceUuid) {
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: "No se pudo anular la factura electrónica",
+        detalle: `Correo: ${pago.correo}\nItem: ${pago.item}\nReferencia: ${pago.referencia}\n\nEl pago tenía factura generada pero no se pudo leer el UUID de su link (${pago.facturaPdfUrl}).\n\nHay que anularla manual con una nota crédito en Dataico.`,
+      });
+      return;
+    }
+    const numero = await reserveNextNotaCreditoNumero(pago.id);
+    const result = await createCreditNote({ invoiceUuid, numero });
+    if (!result.ok) {
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: "No se pudo anular la factura electrónica",
+        detalle: `Correo: ${pago.correo}\nItem: ${pago.item}\nReferencia: ${pago.referencia}\nFactura: ${pago.facturaPdfUrl}\n\nError de Dataico al emitir la nota crédito: ${result.error}\n\nHay que anularla manual mientras se resuelve.`,
+      });
+      return;
+    }
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "Factura electrónica anulada (nota crédito emitida)",
+      detalle: `Correo: ${pago.correo}\nItem: ${pago.item}\nReferencia: ${pago.referencia}\n\nSe emitió la nota crédito que anula la factura ante la DIAN.\nCUFE nota crédito: ${result.cufe}\nPDF: ${result.pdfUrl}`,
+    });
+  } catch (err) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo anular la factura electrónica",
+      detalle: `Correo: ${pago.correo}\nItem: ${pago.item}\nReferencia: ${pago.referencia}\nFactura: ${pago.facturaPdfUrl}\n\nExcepción: ${err instanceof Error ? err.message : String(err)}\n\nHay que anularla manual mientras se revisa.`,
     }).catch(() => {});
   }
 }

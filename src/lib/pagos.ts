@@ -25,6 +25,12 @@ import type { PurchaseKind } from "./orders";
  *      llamar a Dataico, así que puede quedar puesto en un pago cuya
  *      factura terminó fallando — eso deja un hueco en la numeración, que
  *      es normal y está permitido en facturación electrónica.)
+ *   - "NotaCredito Numero" (número entero, opcional — el consecutivo dentro
+ *      del rango de la resolución DIAN de NOTAS CRÉDITO, que es un tipo de
+ *      documento y una resolución aparte de la de facturas. Se pone cuando
+ *      un pago con factura ya generada se anula después y hay que anular
+ *      esa factura ante la DIAN — también sirve como marca de "esta
+ *      reversión ya emitió su nota crédito", para no duplicarla.)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -39,6 +45,11 @@ export type Pago = {
   creditos: number;
   estado: PagoEstado;
   paymentSourceId: number | null;
+  /** Link al PDF de la factura electrónica ya generada, si la hay — trae el
+   * UUID de la factura en Dataico (query param "document-id"), necesario
+   * para poder anularla con una nota crédito si el pago se revierte
+   * después. Null si nunca se facturó (o falló). */
+  facturaPdfUrl: string | null;
 };
 
 function mapRecordToPago(
@@ -55,6 +66,7 @@ function mapRecordToPago(
     creditos: (record.get("Creditos") as number) ?? 0,
     estado: ((record.get("Estado") as string) ?? "Pendiente") as PagoEstado,
     paymentSourceId: paymentSourceId !== undefined && paymentSourceId !== null ? paymentSourceId : null,
+    facturaPdfUrl: (record.get("Factura PDF") as string) || null,
   };
 }
 
@@ -171,6 +183,24 @@ export async function reserveNextFacturaNumero(recordId: string): Promise<number
     const max = usados.reduce((m, r) => Math.max(m, Number(r.get("Factura Numero")) || 0), 0);
     const numero = max + 1;
     await base(PAGOS_TABLE).update([{ id: recordId, fields: { "Factura Numero": numero } }], {
+      typecast: true,
+    });
+    return numero;
+  });
+}
+
+/** Igual que reserveNextFacturaNumero, pero para la resolución DIAN de
+ * notas crédito (rango y prefijo aparte de la de facturas) — lock y campo
+ * separados para que las dos numeraciones nunca se mezclen. */
+export async function reserveNextNotaCreditoNumero(recordId: string): Promise<number> {
+  return withLock("dataico:numeracion-nc", async () => {
+    const base = getAirtableBase();
+    const usados = await base(PAGOS_TABLE)
+      .select({ filterByFormula: `{NotaCredito Numero} != ""`, fields: ["NotaCredito Numero"] })
+      .all();
+    const max = usados.reduce((m, r) => Math.max(m, Number(r.get("NotaCredito Numero")) || 0), 0);
+    const numero = max + 1;
+    await base(PAGOS_TABLE).update([{ id: recordId, fields: { "NotaCredito Numero": numero } }], {
       typecast: true,
     });
     return numero;

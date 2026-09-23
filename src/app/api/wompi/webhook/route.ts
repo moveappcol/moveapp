@@ -16,7 +16,7 @@ import {
   markSubscriptionRenewed,
   cancelSubscription,
 } from "@/lib/subscriptions";
-import { facturarCompra } from "@/lib/billing";
+import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
 import { sendOpsAlertEmail } from "@/lib/email";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
@@ -79,6 +79,11 @@ export async function POST(req: NextRequest) {
           asunto: "Pago anulado — créditos revertidos",
           detalle: `Correo: ${revertido.correo}\nItem: ${revertido.item}\nCréditos revertidos: ${revertido.creditos}\nReferencia: ${revertido.referencia}${revertido.tipo === "plan" ? "\n\nEra un plan — se canceló la suscripción." : ""}`,
         });
+        // Si el pago ya tenía factura electrónica generada, anularla no es
+        // opcional — un pago anulado no se puede quedar con una factura
+        // vigente ante la DIAN. anularFacturaPorReversion no hace nada si
+        // nunca hubo factura (y avisa por correo si falla).
+        await anularFacturaPorReversion(revertido);
       }
     }
     return NextResponse.json({ ok: true });

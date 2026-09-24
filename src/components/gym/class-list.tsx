@@ -250,7 +250,6 @@ export default function ClassList({
   const clasesDelDia = classes.filter(
     (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
   );
-  const sinFecha = classes.filter((c) => !c.fecha);
 
   return (
     <div className="space-y-6">
@@ -303,28 +302,6 @@ export default function ClassList({
           </ul>
         )}
       </div>
-
-      {sinFecha.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-heading text-lg font-bold text-move-green">{t.fechaPorConfirmar}</h3>
-          <ul className="space-y-4">
-            {sinFecha.map((clase) => (
-              <ClaseCard
-                key={clase.id}
-                clase={clase}
-                gimnasioId={gimnasioId}
-                waitlistStatus={waitlistStatus?.[clase.id]}
-                yaReservada={reservedSet.has(clase.id)}
-                bookingCutoffMinutes={bookingCutoffMinutes}
-                locale={locale}
-                t={t}
-                reservasAbiertas={reservasAbiertas}
-                reservasAbrenLabel={reservasAbrenLabel}
-              />
-            ))}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

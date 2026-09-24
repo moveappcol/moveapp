@@ -171,7 +171,6 @@ export const es = {
     creditosRestantes: (n: number) => `Créditos restantes: ${n}.`,
     listo: "Listo",
     sinClasesProgramadas: "Este gimnasio todavía no tiene clases programadas.",
-    fechaPorConfirmar: "Fecha por confirmar",
     noHayClasesEsteDia: "No hay clases programadas para este día.",
     waitlist: {
       enEspera: (posicion: number | null) =>

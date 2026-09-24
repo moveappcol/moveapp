@@ -172,7 +172,6 @@ export const en: Dictionary = {
     creditosRestantes: (n: number) => `Credits remaining: ${n}.`,
     listo: "Done",
     sinClasesProgramadas: "This gym doesn't have any classes scheduled yet.",
-    fechaPorConfirmar: "Date to be confirmed",
     noHayClasesEsteDia: "No classes scheduled for this day.",
     waitlist: {
       enEspera: (posicion: number | null) =>

@@ -18,9 +18,20 @@ function safeRedirectPath(to: string | null): string {
   return to;
 }
 
+/** req.nextUrl.origin refleja la dirección INTERNA del contenedor detrás
+ * del proxy de Railway (ej. "localhost:8080"), no el dominio público real
+ * — hay que armar el origen a partir de los headers que sí pone el proxy
+ * (confirmado en pruebas, 2026-09-24: sin esto, el redirect apuntaba a
+ * localhost y no funcionaba para nadie). */
+function resolveOrigin(req: NextRequest): string {
+  const forwardedHost = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") ?? "https";
+  return forwardedHost ? `${forwardedProto}://${forwardedHost}` : req.nextUrl.origin;
+}
+
 export async function GET(req: NextRequest) {
   const to = safeRedirectPath(req.nextUrl.searchParams.get("to"));
-  const url = new URL(to, req.nextUrl.origin);
+  const url = new URL(to, resolveOrigin(req));
   const res = NextResponse.redirect(url);
   res.cookies.set(LOCALE_COOKIE, "en", {
     maxAge: ONE_YEAR_SECONDS,

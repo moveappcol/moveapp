@@ -6,6 +6,7 @@ import {
   formatCOP,
 } from "@/lib/credits-pricing";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
+import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
 import CreditCalculator from "./credit-calculator";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -24,6 +25,17 @@ export default async function PlansSection() {
       hasActiveSubscription = subscription?.estado === "Activa";
     }
   }
+
+  // Mismo cupón que se aplica solo en el checkout (ver DEFAULT_COUPON_CODE)
+  // — se valida acá también para mostrar el precio ya descontado en la
+  // tarjeta del plan, a cualquiera que entre, tenga o no cuenta. Si el
+  // cupón se desactiva o vence en Airtable, esto deja de mostrarse solo,
+  // sin tocar código.
+  const descuentoResult = await validateCoupon(DEFAULT_COUPON_CODE);
+  const descuentoPorcentaje =
+    descuentoResult.ok && descuentoResult.cupon.tipo === "Descuento"
+      ? descuentoResult.cupon.descuentoPorcentaje
+      : null;
 
   return (
     <section id="planes" className="bg-move-green/[0.03]">
@@ -54,9 +66,23 @@ export default async function PlansSection() {
               <p className="mt-1 font-heading text-lg font-semibold text-move-green">
                 {plan.label}
               </p>
-              <p className="mt-2 font-heading text-3xl font-bold text-move-green">
-                {formatCOP(plan.price)}
-              </p>
+              {descuentoPorcentaje ? (
+                <div className="mt-2 flex flex-wrap items-baseline gap-2">
+                  <p className="font-body text-lg text-move-green/40 line-through">
+                    {formatCOP(plan.price)}
+                  </p>
+                  <span className="rounded-full bg-move-coral px-2 py-0.5 font-heading text-xs font-bold text-white">
+                    -{descuentoPorcentaje}%
+                  </span>
+                  <p className="w-full font-heading text-3xl font-bold text-move-green">
+                    {formatCOP(Math.round(plan.price * (1 - descuentoPorcentaje / 100)))}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 font-heading text-3xl font-bold text-move-green">
+                  {formatCOP(plan.price)}
+                </p>
+              )}
               <p className="mt-1 font-body text-sm text-move-green/60">{t.billedMonthly}</p>
               {userId ? (
                 <Link

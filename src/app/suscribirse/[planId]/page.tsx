@@ -14,12 +14,7 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getMetaRequestContext } from "@/lib/meta-request-context";
 import { sendMetaInitiateCheckoutEvent } from "@/lib/meta-conversions-api";
-
-/** Cupón que se intenta aplicar por defecto a cualquier persona que llegue
- * al checkout, sin necesidad de un link de campaña — mientras siga activo
- * en Airtable. Un ?cupon= capturado de la URL (ver coupon-capture.tsx)
- * tiene prioridad sobre este default. */
-const DEFAULT_COUPON_CODE = "UNIQUE1";
+import { DEFAULT_COUPON_CODE } from "@/lib/cupones";
 
 export default async function SuscribirsePage({
   params,

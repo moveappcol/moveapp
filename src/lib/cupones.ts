@@ -6,6 +6,14 @@ import { getAirtableBase } from "./airtable";
  * termine la promo. */
 export const LANZAMIENTO_INICIO_DIFERIDO = "2026-09-28";
 
+/** Cupón que se intenta aplicar por defecto a cualquier persona, sin
+ * necesidad de un link de campaña — mientras siga activo en Airtable. Un
+ * ?cupon= capturado de la URL (ver coupon-capture.tsx) tiene prioridad sobre
+ * este default. También se usa para mostrar el precio ya descontado en la
+ * sección de planes del home (ver plans-section.tsx) — un solo lugar para
+ * no desincronizar el código del cupón. */
+export const DEFAULT_COUPON_CODE = "UNIQUE1";
+
 /** Un `inicioDiferido` ya pasado (promo vencida, o ya pasamos la fecha de
  * lanzamiento) se ignora — el plan simplemente empieza hoy, como siempre. */
 export function fechaInicioVigente(inicioDiferido: string | null): string | undefined {

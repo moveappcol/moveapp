@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -11,6 +12,8 @@ import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
 import { COUPON_COOKIE_NAME } from "@/components/landing/coupon-capture";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getMetaRequestContext } from "@/lib/meta-request-context";
+import { sendMetaInitiateCheckoutEvent } from "@/lib/meta-conversions-api";
 
 /** Cupón que se intenta aplicar por defecto a cualquier persona que llegue
  * al checkout, sin necesidad de un link de campaña — mientras siga activo
@@ -51,9 +54,25 @@ export default async function SuscribirsePage({
   const cookieStore = await cookies();
   const initialCouponCode = cookieStore.get(COUPON_COOKIE_NAME)?.value || DEFAULT_COUPON_CODE;
 
+  const checkoutEventId = crypto.randomUUID();
+  const metaContext = await getMetaRequestContext();
+  await sendMetaInitiateCheckoutEvent({
+    eventId: checkoutEventId,
+    value: plan.price,
+    contentId: plan.id,
+    contentName: plan.name ?? plan.label,
+    email,
+    ...metaContext,
+  });
+
   return (
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
-      <CheckoutViewTracker planId={plan.id} planName={plan.name ?? plan.label} value={plan.price} />
+      <CheckoutViewTracker
+        planId={plan.id}
+        planName={plan.name ?? plan.label}
+        value={plan.price}
+        eventId={checkoutEventId}
+      />
       <h1 className="font-heading text-2xl font-bold text-move-green">
         {t.subscribe.title(plan.name ?? "", plan.label)}
       </h1>

@@ -37,6 +37,13 @@ import type { PurchaseKind } from "./orders";
  *      (createPendingPago) para poder facturar el monto exacto sin tener
  *      que recalcularlo — el webhook de Wompi, a diferencia del cobro
  *      síncrono, no tiene a mano el descuento que se haya aplicado.)
+ *   - "Fbp" / "Fbc" (texto, opcional — las cookies "_fbp"/"_fbc" del pixel
+ *      de Meta en el navegador de quien compró, leídas al crear el pago.
+ *      Se guardan acá porque el webhook de Wompi que confirma el pago
+ *      llega server-to-server, sin esas cookies a mano — así el aviso de
+ *      "Purchase" que se manda por Conversions API desde el webhook igual
+ *      puede llevarlas, que es lo que más sube la calidad del match según
+ *      el Administrador de eventos de Meta.)
  */
 const PAGOS_TABLE = "Pagos";
 
@@ -62,6 +69,11 @@ export type Pago = {
   /** Valor real en COP cobrado (con descuento ya aplicado, si hubo). Null en
    * pagos creados antes de agregar este campo. */
   valor: number | null;
+  /** Cookies "_fbp"/"_fbc" del pixel de Meta en el navegador de quien
+   * compró, leídas al crear el pago — null si no había (ej. compra desde
+   * la app móvil, que no tiene pixel) o el pago es de antes de este campo. */
+  fbp: string | null;
+  fbc: string | null;
 };
 
 function mapRecordToPago(
@@ -81,6 +93,8 @@ function mapRecordToPago(
     facturaPdfUrl: (record.get("Factura PDF") as string) || null,
     notaCredito: (record.get("NotaCredito") as number) || null,
     valor: (record.get("Valor") as number) || null,
+    fbp: (record.get("Fbp") as string) || null,
+    fbc: (record.get("Fbc") as string) || null,
   };
 }
 
@@ -95,26 +109,44 @@ export async function createPendingPago(params: {
    * tener que recalcularlo desde el catálogo (que no sabe de descuentos). */
   valor: number;
   paymentSourceId?: number;
+  /** Cookies "_fbp"/"_fbc" del pixel de Meta, si había (ver
+   * getMetaRequestContext) — se guardan para poder mandarlas con el aviso
+   * de "Purchase" por Conversions API cuando el webhook de Wompi confirme
+   * el pago más tarde. */
+  fbp?: string | null;
+  fbc?: string | null;
 }): Promise<string> {
   const base = getAirtableBase();
-  const created = await base(PAGOS_TABLE).create(
-    [
-      {
-        fields: {
-          Referencia: params.referencia,
-          Correo: params.correo,
-          Tipo: params.tipo === "plan" ? "Plan" : "Adicional",
-          item: params.item,
-          Creditos: params.creditos,
-          Valor: params.valor,
-          Estado: "Pendiente",
-          ...(params.paymentSourceId !== undefined ? { PaymentSourceId: params.paymentSourceId } : {}),
-        },
-      },
-    ],
-    { typecast: true }
-  );
-  return created[0].id;
+  const baseFields = {
+    Referencia: params.referencia,
+    Correo: params.correo,
+    Tipo: params.tipo === "plan" ? "Plan" : "Adicional",
+    item: params.item,
+    Creditos: params.creditos,
+    Valor: params.valor,
+    Estado: "Pendiente",
+    ...(params.paymentSourceId !== undefined ? { PaymentSourceId: params.paymentSourceId } : {}),
+  };
+  const fbFields = {
+    ...(params.fbp ? { Fbp: params.fbp } : {}),
+    ...(params.fbc ? { Fbc: params.fbc } : {}),
+  };
+
+  try {
+    const created = await base(PAGOS_TABLE).create(
+      [{ fields: { ...baseFields, ...fbFields } }],
+      { typecast: true }
+    );
+    return created[0].id;
+  } catch (err) {
+    // Si "Fbp"/"Fbc" todavía no existen como columnas en Airtable, Airtable
+    // rechaza el create completo por "Unknown field name" — un pago real no
+    // se puede perder por esto, así que se reintenta sin esos dos campos
+    // (el resto del flujo sigue igual, solo sin ese dato extra para Meta).
+    if (Object.keys(fbFields).length === 0) throw err;
+    const created = await base(PAGOS_TABLE).create([{ fields: baseFields }], { typecast: true });
+    return created[0].id;
+  }
 }
 
 export async function findPagoByReferencia(referencia: string): Promise<Pago | null> {

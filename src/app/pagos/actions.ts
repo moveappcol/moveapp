@@ -14,6 +14,7 @@ import { buildReference, findCatalogItem, type PurchaseKind } from "@/lib/orders
 import { createPendingPago } from "@/lib/pagos";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { chargeTopup } from "@/lib/billing";
+import { getMetaRequestContext } from "@/lib/meta-request-context";
 
 export async function startCheckout(kind: PurchaseKind, itemId: string): Promise<void> {
   const { userId } = await auth();
@@ -37,6 +38,7 @@ export async function startCheckout(kind: PurchaseKind, itemId: string): Promise
   const amountInCents = item.price * 100;
   const signature = buildIntegritySignature(reference, amountInCents, "COP");
 
+  const { fbp, fbc } = await getMetaRequestContext();
   await createPendingPago({
     referencia: reference,
     correo: email,
@@ -44,6 +46,8 @@ export async function startCheckout(kind: PurchaseKind, itemId: string): Promise
     item: itemId,
     creditos: item.credits,
     valor: item.price,
+    fbp,
+    fbc,
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -97,11 +101,14 @@ export async function buyTopup(topupId: string, cardToken: string): Promise<BuyT
     return { ok: false, error: err instanceof Error ? err.message : "No pudimos guardar la tarjeta." };
   }
 
+  const { fbp, fbc } = await getMetaRequestContext();
   const result = await chargeTopup({
     correo: email,
     topupId,
     paymentSourceId: paymentSource.id,
     ownerRef: userId,
+    fbp,
+    fbc,
   });
 
   if (!result.ok) return result;

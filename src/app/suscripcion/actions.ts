@@ -4,6 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeSubscriptionPlan } from "@/lib/billing";
+import { getMetaRequestContext } from "@/lib/meta-request-context";
 import {
   upsertSubscription,
   cancelSubscription,
@@ -106,6 +107,7 @@ export async function subscribeToPlan(
     return { ok: false, error: err instanceof Error ? err.message : "No pudimos guardar la tarjeta." };
   }
 
+  const { fbp, fbc } = await getMetaRequestContext();
   const result = await chargeSubscriptionPlan({
     correo: email,
     planId,
@@ -113,6 +115,8 @@ export async function subscribeToPlan(
     ownerRef: userId,
     descuento,
     fechaInicio,
+    fbp,
+    fbc,
   });
 
   if (!result.ok) return result;

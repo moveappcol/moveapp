@@ -149,6 +149,11 @@ export async function chargeSubscriptionPlan(params: {
    * promos de prepago (ver Cupon.inicioDiferido). Si no se pasa, el plan
    * empieza a correr desde hoy, como siempre. */
   fechaInicio?: string;
+  /** Cookies "_fbp"/"_fbc" del pixel de Meta (ver getMetaRequestContext) —
+   * solo vienen en el primer cobro (desde el navegador de la persona); la
+   * renovación mensual del cron no tiene de dónde sacarlas. */
+  fbp?: string | null;
+  fbc?: string | null;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("plan", params.planId);
   if (!item) return { ok: false, error: "Plan desconocido." };
@@ -162,6 +167,8 @@ export async function chargeSubscriptionPlan(params: {
     tipo: "plan",
     item: params.planId,
     creditos: item.credits,
+    fbp: params.fbp,
+    fbc: params.fbc,
     valor: precio,
     paymentSourceId: params.paymentSourceId,
   });
@@ -216,6 +223,8 @@ export async function chargeTopup(params: {
   topupId: string;
   paymentSourceId: number;
   ownerRef: string;
+  fbp?: string | null;
+  fbc?: string | null;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("topup", params.topupId);
   if (!item) return { ok: false, error: "Paquete de créditos desconocido." };
@@ -227,6 +236,8 @@ export async function chargeTopup(params: {
     tipo: "topup",
     item: params.topupId,
     creditos: item.credits,
+    fbp: params.fbp,
+    fbc: params.fbc,
     valor: item.price,
   });
 

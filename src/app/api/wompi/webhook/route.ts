@@ -139,8 +139,13 @@ export async function POST(req: NextRequest) {
   const persona = await getUserCreditsByEmail(pago.correo);
   await sendMetaPurchaseEvent({
     eventId: tx.id,
-    value: item.price,
+    // pago.valor es el monto real cobrado (con descuento aplicado, si
+    // hubo) — item.price es solo el precio de catálogo (ver mismo fix en
+    // montoEsperado, arriba).
+    value: montoEsperado,
     email: persona?.trackingConsent === false ? undefined : pago.correo,
+    fbp: pago.fbp,
+    fbc: pago.fbc,
   });
 
   return NextResponse.json({ ok: true });

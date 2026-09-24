@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
@@ -9,6 +10,8 @@ import BuyTopupForm from "@/components/pagos/buy-topup-form";
 import CheckoutViewTracker from "@/components/analytics/checkout-view-tracker";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { getMetaRequestContext } from "@/lib/meta-request-context";
+import { sendMetaInitiateCheckoutEvent } from "@/lib/meta-conversions-api";
 
 export default async function ComprarCreditosPage({
   params,
@@ -37,9 +40,25 @@ export default async function ComprarCreditosPage({
 
   const tokens = await fetchAcceptanceTokens();
 
+  const checkoutEventId = crypto.randomUUID();
+  const metaContext = await getMetaRequestContext();
+  await sendMetaInitiateCheckoutEvent({
+    eventId: checkoutEventId,
+    value: topup.price,
+    contentId: topup.id,
+    contentName: topup.label,
+    email,
+    ...metaContext,
+  });
+
   return (
     <section className="mx-auto max-w-lg px-4 py-16 sm:px-6">
-      <CheckoutViewTracker planId={topup.id} planName={topup.label} value={topup.price} />
+      <CheckoutViewTracker
+        planId={topup.id}
+        planName={topup.label}
+        value={topup.price}
+        eventId={checkoutEventId}
+      />
       <h1 className="font-heading text-2xl font-bold text-move-green">{t.topup.comprar(topup.label)}</h1>
       <p className="mt-2 font-body text-sm text-move-green/70">{t.topup.subtitle(formatCOP(topup.price))}</p>
 

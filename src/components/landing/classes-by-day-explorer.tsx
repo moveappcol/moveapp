@@ -226,6 +226,13 @@ export default function ClassesByDayExplorer({
                           : t.ultimos2Cupos
                         : t.cuposDisponibles}
                     </p>
+
+                    <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white">
+                      {t.irALaClase}
+                      <svg viewBox="0 0 24 24" className="h-3 w-3 fill-none stroke-current stroke-[3]">
+                        <path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
                   </Link>
                 </li>
               );

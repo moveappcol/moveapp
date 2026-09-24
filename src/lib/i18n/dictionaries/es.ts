@@ -81,6 +81,7 @@ export const es = {
       gimnasioGenerico: "Gimnasio",
       todasLasActividades: "Todas las actividades",
       todosLosHorarios: "Todo el día",
+      irALaClase: "Ir a la clase",
     },
     plans: {
       title: "Planes de créditos",

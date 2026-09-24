@@ -79,6 +79,7 @@ export const en: Dictionary = {
       gimnasioGenerico: "Gym",
       todasLasActividades: "All activities",
       todosLosHorarios: "All day",
+      irALaClase: "Go to class",
     },
     plans: {
       title: "Credit plans",

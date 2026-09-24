@@ -30,19 +30,6 @@ function resolveOrigin(req: NextRequest): string {
 }
 
 export async function GET(req: NextRequest) {
-  // TEMPORAL — para ver qué headers manda de verdad el proxy de Railway,
-  // ya que req.nextUrl.origin resultó apuntar a localhost. Quitar este
-  // bloque en cuanto quede confirmado.
-  if (req.nextUrl.searchParams.get("debug") === "1") {
-    return NextResponse.json({
-      nextUrlOrigin: req.nextUrl.origin,
-      host: req.headers.get("host"),
-      xForwardedHost: req.headers.get("x-forwarded-host"),
-      xForwardedProto: req.headers.get("x-forwarded-proto"),
-      xForwardedFor: req.headers.get("x-forwarded-for"),
-    });
-  }
-
   const to = safeRedirectPath(req.nextUrl.searchParams.get("to"));
   const url = new URL(to, resolveOrigin(req));
   const res = NextResponse.redirect(url);

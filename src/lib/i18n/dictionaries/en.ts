@@ -32,6 +32,7 @@ export const en: Dictionary = {
   home: {
     hero: {
       badge: "One plan, every gym",
+      discountBadge: "25% OFF your first plan",
       titleLine1: "Train wherever you want,",
       titleLine2: "whenever you want.",
       body: "With a UNIQUE credit plan, you get access to cycling, boxing, yoga, and many more disciplines at the best affiliated gyms and studios, with no strings attached to just one.",

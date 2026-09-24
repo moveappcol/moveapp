@@ -30,6 +30,11 @@ export const es = {
   home: {
     hero: {
       badge: "Un solo plan, todos los gimnasios",
+      // OJO: coincide con el cupón "UNIQUE1" (25% de descuento, se aplica
+      // solo al llegar al checkout, ver DEFAULT_COUPON_CODE en
+      // suscribirse/[planId]/page.tsx) — si cambia el % del cupón en
+      // Airtable, actualizar este texto también.
+      discountBadge: "25% OFF en tu primer plan",
       titleLine1: "Entrena donde quieras,",
       titleLine2: "cuando quieras.",
       body: "Con un plan de créditos UNIQUE accedes a cycling, boxing, yoga y muchas más disciplinas en los mejores gimnasios y estudios afiliados, sin ataduras a uno solo.",

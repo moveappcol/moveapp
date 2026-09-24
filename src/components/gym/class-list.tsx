@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Show } from "@clerk/nextjs";
@@ -79,6 +79,7 @@ function ClaseCard({
   t,
   reservasAbiertas,
   reservasAbrenLabel,
+  highlighted,
 }: {
   clase: Clase;
   gimnasioId: string;
@@ -89,6 +90,10 @@ function ClaseCard({
   t: T;
   reservasAbiertas: boolean;
   reservasAbrenLabel: string;
+  /** true cuando se llegó acá con un link directo a esta clase (ej. desde
+   * el explorador "por día" del home) — le pone un aro de color para que
+   * sea obvio cuál es, sin tener que volver a buscarla en la lista. */
+  highlighted?: boolean;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -106,7 +111,12 @@ function ClaseCard({
   const justBooked = bookState?.ok && !dismissed;
 
   return (
-    <li className="rounded-2xl border border-move-green/10 bg-white p-5">
+    <li
+      id={`clase-${clase.id}`}
+      className={`rounded-2xl border bg-white p-5 transition-shadow ${
+        highlighted ? "border-move-coral ring-2 ring-move-coral/40" : "border-move-green/10"
+      }`}
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-heading text-base font-semibold text-move-green">{clase.name}</p>
@@ -220,6 +230,7 @@ export default function ClassList({
   locale,
   reservasAbiertas,
   reservasAbrenLabel,
+  targetClaseId,
 }: {
   gimnasioId: string;
   classes: Clase[];
@@ -229,6 +240,11 @@ export default function ClassList({
   locale: Locale;
   reservasAbiertas: boolean;
   reservasAbrenLabel: string;
+  /** Id de la clase a la que se llegó con un link directo (ej. desde el
+   * explorador "por día" del home) — si viene, se abre de una en el día
+   * correcto y se resalta, en vez de que la persona tenga que volver a
+   * buscarla entre todos los días. */
+  targetClaseId?: string;
 }) {
   // No se recibe `t` como prop porque este componente es la primera
   // frontera cliente — algunas claves de dict.gimnasio son funciones
@@ -239,8 +255,25 @@ export default function ClassList({
   // donde pasar funciones sí es válido.
   const t = getDictionary(locale).gimnasio;
   const semana = useMemo(() => semanaActual(locale), [locale]);
-  const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
+  const targetClase = useMemo(
+    () => (targetClaseId ? classes.find((c) => c.id === targetClaseId) : undefined),
+    [classes, targetClaseId]
+  );
+  const targetDiaKey =
+    targetClase?.fecha && DAY_KEY_FORMATTER.format(new Date(targetClase.fecha));
+  const [diaSeleccionado, setDiaSeleccionado] = useState(
+    () => semana.find((d) => d.key === targetDiaKey)?.key ?? semana[0].key
+  );
   const reservedSet = useMemo(() => new Set(reservedClaseIds ?? []), [reservedClaseIds]);
+  const scrolledRef = useRef(false);
+
+  useEffect(() => {
+    if (!targetClaseId || scrolledRef.current) return;
+    const el = document.getElementById(`clase-${targetClaseId}`);
+    if (!el) return;
+    scrolledRef.current = true;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
 
   if (classes.length === 0) {
     return <p className="font-body text-sm text-move-green/60">{t.sinClasesProgramadas}</p>;
@@ -297,6 +330,7 @@ export default function ClassList({
                 t={t}
                 reservasAbiertas={reservasAbiertas}
                 reservasAbrenLabel={reservasAbrenLabel}
+                highlighted={clase.id === targetClaseId}
               />
             ))}
           </ul>

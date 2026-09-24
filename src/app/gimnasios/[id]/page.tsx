@@ -27,8 +27,10 @@ function InfoSection({ title, text }: { title: string; text: string | null }) {
 
 export default async function GymPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ clase?: string }>;
 }) {
   // La sección de gimnasios todavía no es pública — mientras se termina de
   // construir, el link directo tampoco debe abrir en producción. En local
@@ -42,6 +44,7 @@ export default async function GymPage({
   const reservasAbrenLabel = reservationsOpenLabel(locale);
 
   const { id } = await params;
+  const { clase: targetClaseId } = await searchParams;
   const gym = await getGymById(id);
   if (!gym) notFound();
 
@@ -167,6 +170,7 @@ export default async function GymPage({
           locale={locale}
           reservasAbiertas={reservasAbiertas}
           reservasAbrenLabel={reservasAbrenLabel}
+          targetClaseId={targetClaseId}
         />
       </div>
     </section>

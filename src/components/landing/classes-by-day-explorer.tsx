@@ -186,7 +186,7 @@ export default function ClassesByDayExplorer({
               return (
                 <li key={clase.id}>
                   <Link
-                    href={`/gimnasios/${clase.gimnasioId}`}
+                    href={`/gimnasios/${clase.gimnasioId}?clase=${clase.id}`}
                     className="block h-full rounded-2xl border border-move-green/10 bg-white p-5 transition-shadow hover:shadow-md"
                   >
                     <p className="font-heading text-xs font-semibold uppercase tracking-wide text-move-coral">

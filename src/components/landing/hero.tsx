@@ -12,9 +12,14 @@ export default async function Hero() {
     <section className="relative overflow-hidden bg-background">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-2 md:items-center md:py-28">
         <div>
-          <span className="inline-flex items-center rounded-full bg-move-lime/40 px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-green">
-            {t.badge}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center rounded-full bg-move-lime/40 px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-green">
+              {t.badge}
+            </span>
+            <span className="inline-flex items-center rounded-full bg-move-coral px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-white">
+              {t.discountBadge}
+            </span>
+          </div>
           <h1 className="mt-6 font-heading text-4xl font-bold leading-tight text-move-green sm:text-5xl">
             {t.titleLine1}
             <br />

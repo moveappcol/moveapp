@@ -35,6 +35,9 @@ export type Clase = {
    * el filtro de actividad del explorador "por día"; mientras no esté
    * puesta, ese filtro cae de vuelta a las actividades del gimnasio. */
   actividad: string | null;
+  /** Descripción de la clase (de qué se trata) — opcional, null si el staff
+   * todavía no la puso en Airtable. */
+  descripcion: string | null;
 };
 
 /** Los créditos que realmente se cobran al reservar — el descuento si
@@ -69,6 +72,9 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *      interfaz (m:ss, h:mm:ss, etc.), opcional — si está vacío se asume
  *      60 min; se usa para saber cuándo termina la clase: calificaciones y
  *      el correo "AFTER CLASS". Ojo con este campo — ver DEFAULT_DURACION_MINUTOS.)
+ *   - "Descripción "  (texto largo, opcional — OJO: trae un espacio al
+ *      final del nombre del campo; se le muestra a la persona al ver la
+ *      clase)
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
  *
@@ -76,6 +82,7 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  * número de Reservas activas (Estado = "Reservado") para esa clase.
  */
 const GIMNASIO_FIELD = "Gimnasio ";
+const DESCRIPCION_FIELD = "Descripción ";
 const DEFAULT_DURACION_MINUTOS = 60;
 
 async function getActiveReservationCounts(): Promise<Map<string, number>> {
@@ -123,6 +130,7 @@ function mapRecordToClase(
   const precio = record.get("Precio") as number | undefined;
   const tipo = firstSelectValue(record.get("Tipo"));
   const actividad = firstSelectValue(record.get("Actividad"));
+  const descripcion = (record.get(DESCRIPCION_FIELD) as string)?.trim();
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
@@ -137,6 +145,7 @@ function mapRecordToClase(
     // El campo "Duración" es un Duration de Airtable → llega en segundos.
     duracionMinutos: duracion && duracion > 0 ? duracion / 60 : DEFAULT_DURACION_MINUTOS,
     actividad: actividad || null,
+    descripcion: descripcion || null,
   };
 }
 

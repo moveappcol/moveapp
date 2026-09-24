@@ -26,6 +26,15 @@ function pad(n: number): string {
 
 const DIAS_VISIBLES = 7;
 
+/** Los gimnasios recién están cargando las clases desde el lunes 28 de
+ * septiembre de 2026 en adelante — antes de esa fecha, la ventana normal
+ * (arrancando en "hoy") le mostraría a cualquiera que entre varios días
+ * seguidos sin ninguna clase. Mientras tanto, la ventana arranca directo en
+ * ese lunes, que sí tiene clases. Se autodesactiva sola: en cuanto llegue
+ * el 28, "hoy" ya es esa fecha o una posterior y esta rama nunca se toma —
+ * no hay que acordarse de quitarlo después. */
+const VENTANA_DESDE = Date.UTC(2026, 8, 28);
+
 /** Ventana rodante: "Hoy" primero, seguido de los siguientes 6 días —
  * siempre 7 días hacia adelante sin importar qué día de la semana sea hoy
  * (antes se cortaba en el domingo de esta semana, lo que escondía una
@@ -37,10 +46,11 @@ const DIAS_VISIBLES = 7;
 export function semanaActual(locale: Locale = "es"): DiaTab[] {
   const [yStr, mStr, dStr] = DAY_KEY_FORMATTER.format(new Date()).split("-");
   const hoyUTC = Date.UTC(Number(yStr), Number(mStr) - 1, Number(dStr));
-  const diaSemanaISO = (new Date(hoyUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
+  const baseUTC = hoyUTC < VENTANA_DESDE ? VENTANA_DESDE : hoyUTC;
+  const diaSemanaISO = (new Date(baseUTC).getUTCDay() + 6) % 7; // lunes=0 ... domingo=6
 
   return Array.from({ length: DIAS_VISIBLES }, (_, i) => {
-    const fecha = new Date(hoyUTC + i * 86_400_000);
+    const fecha = new Date(baseUTC + i * 86_400_000);
     const y = fecha.getUTCFullYear();
     const m = fecha.getUTCMonth() + 1;
     const d = fecha.getUTCDate();
@@ -48,7 +58,11 @@ export function semanaActual(locale: Locale = "es"): DiaTab[] {
     const nombre = NOMBRES_DIA[locale][(diaSemanaISO + i) % 7];
     const mes = NOMBRES_MES[locale][m - 1];
     const fechaLabel = locale === "en" ? `${mes} ${d}` : `${d} de ${mes}`;
-    return { key, label: i === 0 ? HOY_LABEL[locale] : nombre, fechaLabel };
+    // Solo se llama "Hoy" cuando la ventana de verdad arranca en el día de
+    // hoy real — si todavía estamos antes del 28, el primer día mostrado es
+    // el lunes 28 (un día futuro), y llamarlo "Hoy" sería engañoso.
+    const esHoyReal = baseUTC === hoyUTC && i === 0;
+    return { key, label: esHoyReal ? HOY_LABEL[locale] : nombre, fechaLabel };
   });
 }
 

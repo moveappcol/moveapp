@@ -113,6 +113,9 @@ function ClaseCard({
           <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
             {clase.fecha ? formatHora(clase.fecha, locale) : t.horaPorConfirmar}
           </p>
+          {clase.descripcion && (
+            <p className="mt-1 font-body text-sm text-move-green/70">{clase.descripcion}</p>
+          )}
           <CuposAviso cuposDisponibles={clase.cuposDisponibles} t={t} />
         </div>
         <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">

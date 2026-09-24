@@ -211,6 +211,12 @@ export default function ClassesByDayExplorer({
                       </span>
                     </div>
 
+                    {clase.descripcion && (
+                      <p className="mt-2 font-body text-sm text-move-green/70">
+                        {clase.descripcion}
+                      </p>
+                    )}
+
                     <p className="mt-3 font-body text-sm font-medium text-move-green/70">
                       {yaReservada
                         ? t.yaReservada

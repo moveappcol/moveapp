@@ -12,6 +12,7 @@ import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
+import ViewTracker from "@/components/analytics/view-tracker";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -79,6 +80,14 @@ export default async function GymPage({
 
   return (
     <section className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      <ViewTracker
+        event="ViewContent"
+        params={{
+          content_ids: [gym.id],
+          content_name: gym.name,
+          content_category: gym.activities.join(", "),
+        }}
+      />
       <p className="font-heading text-sm font-medium text-move-green/60">
         {gym.activities.join(", ")}
       </p>

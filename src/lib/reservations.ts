@@ -277,6 +277,8 @@ export async function getActiveReservationClaseIds(userEmail: string): Promise<S
   return ids;
 }
 
+const RESERVATION_HISTORY_WINDOW_HOURS = 24;
+
 export async function getReservationsForUser(userEmail: string): Promise<Reservation[]> {
   const base = getAirtableBase();
   const records = await base("Reservas")
@@ -284,6 +286,8 @@ export async function getReservationsForUser(userEmail: string): Promise<Reserva
       filterByFormula: `LOWER({Correo}) = LOWER("${escapeFormulaValue(userEmail)}")`,
     })
     .all();
+
+  const now = Date.now();
 
   return records
     .map((record) => ({
@@ -296,6 +300,12 @@ export async function getReservationsForUser(userEmail: string): Promise<Reserva
       calificacion: (record.get("Calificación") as number) ?? null,
       comentario: (record.get("Comentario") as string) ?? null,
     }))
+    // Una vez pasa la fecha de la clase, la reserva se sigue mostrando 24h
+    // más y después desaparece de "Mis reservas" (no se borra de Airtable —
+    // liquidaciones y otros reportes siguen leyendo la tabla completa).
+    .filter(
+      (r) => !r.fecha || now - new Date(r.fecha).getTime() < RESERVATION_HISTORY_WINDOW_HOURS * 60 * 60 * 1000
+    )
     .sort((a, b) => (b.fecha ?? "").localeCompare(a.fecha ?? ""));
 }
 

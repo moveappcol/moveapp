@@ -1,4 +1,5 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { withLock } from "./server-cache";
 
 /**
  * Esquema en Airtable — tabla "Suscripciones" (una fila por persona con
@@ -55,7 +56,14 @@ function oneMonthFrom(dateISO: string): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Crea o reactiva la suscripción de una persona (primer cobro exitoso). */
+/** Crea o reactiva la suscripción de una persona (primer cobro exitoso).
+ *
+ * El cobro sincrónico (al suscribirse) y el webhook de Wompi pueden confirmar
+ * el mismo pago casi al mismo tiempo — sin este candado, los dos podían
+ * revisar "¿ya existe?" antes de que cualquiera alcanzara a crear la fila, y
+ * terminaban creando una cada uno para la misma persona (visto en
+ * producción). El candado es por correo, así que solo serializa entre sí a
+ * las llamadas de la misma persona, no afecta a las demás. */
 export async function upsertSubscription(params: {
   correo: string;
   plan: string;
@@ -64,22 +72,24 @@ export async function upsertSubscription(params: {
    * mes después de esta fecha en vez de un mes después de hoy. */
   fechaInicio?: string;
 }): Promise<void> {
-  const base = getAirtableBase();
-  const existing = await getSubscriptionByEmail(params.correo);
-  const proximoCobro = oneMonthFrom(params.fechaInicio ?? new Date().toISOString());
-  const fields = {
-    Correo: params.correo,
-    Plan: params.plan,
-    WompiPaymentSourceId: String(params.paymentSourceId),
-    Estado: "Activa",
-    ProximoCobro: proximoCobro,
-    PlanSiguiente: "",
-  };
-  if (existing) {
-    await base(SUSCRIPCIONES_TABLE).update([{ id: existing.id, fields }], { typecast: true });
-  } else {
-    await base(SUSCRIPCIONES_TABLE).create([{ fields }], { typecast: true });
-  }
+  await withLock(`suscripcion:${params.correo.toLowerCase()}`, async () => {
+    const base = getAirtableBase();
+    const existing = await getSubscriptionByEmail(params.correo);
+    const proximoCobro = oneMonthFrom(params.fechaInicio ?? new Date().toISOString());
+    const fields = {
+      Correo: params.correo,
+      Plan: params.plan,
+      WompiPaymentSourceId: String(params.paymentSourceId),
+      Estado: "Activa",
+      ProximoCobro: proximoCobro,
+      PlanSiguiente: "",
+    };
+    if (existing) {
+      await base(SUSCRIPCIONES_TABLE).update([{ id: existing.id, fields }], { typecast: true });
+    } else {
+      await base(SUSCRIPCIONES_TABLE).create([{ fields }], { typecast: true });
+    }
+  });
 }
 
 export async function cancelSubscription(email: string): Promise<void> {

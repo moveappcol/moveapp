@@ -81,6 +81,12 @@ export async function GET(req: NextRequest) {
     generated += 1;
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
+
+    // Sin reservas no hay nada que avisarle al gimnasio — mandarle el PDF
+    // igual solo le llena la bandeja de correos vacíos. La liquidación en
+    // $0 ya quedó creada arriba, eso sí importa para el registro contable.
+    if (confirmadas.length === 0) continue;
+
     const pdf = await buildReservasFinalesPdf({
       variant: { kind: "24h" },
       fecha: formatFechaLarga(clase.fecha),

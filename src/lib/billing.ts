@@ -12,7 +12,7 @@ import {
 import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
 import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl } from "./dataico";
 import { isTipoDocumento } from "./documento";
-import { sendOpsAlertEmail } from "./email";
+import { sendOpsAlertEmail, sendInvoiceEmail } from "./email";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -60,6 +60,22 @@ export async function facturarCompra(params: {
     });
     if (result.ok) {
       await updatePagoFactura(pagoId, { pdfUrl: result.pdfUrl, cufe: result.cufe });
+      try {
+        await sendInvoiceEmail({
+          correo: params.correo,
+          concepto: params.concepto,
+          totalConIva: params.totalConIva,
+          pdfUrl: result.pdfUrl,
+        });
+      } catch (err) {
+        // La factura ya quedó generada y guardada — que falle el aviso por
+        // correo no debe bloquear nada más, solo se deja constancia.
+        await sendOpsAlertEmail({
+          ownerEmail: OWNER_EMAIL,
+          asunto: "No se pudo enviar el correo de la factura",
+          detalle: `Compra: ${params.concepto}\nCorreo: ${params.correo}\nFactura: ${result.pdfUrl}\n\nError: ${err instanceof Error ? err.message : String(err)}\n\nLa factura sí se generó bien, solo falló el aviso por correo.`,
+        }).catch(() => {});
+      }
     } else {
       await sendOpsAlertEmail({
         ownerEmail: OWNER_EMAIL,

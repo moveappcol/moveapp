@@ -1,3 +1,5 @@
+import { formatCOP } from "./credits-pricing";
+
 type EmailAttachment = { filename: string; content: string };
 
 // Sin esto, un fetch que Resend deja colgado (así sea rara vez) se queda
@@ -290,6 +292,34 @@ export async function sendLowRatingAlertEmail(params: {
   await sendEmail({
     to: [params.ownerEmail],
     subject: `URGENTE CALIFICACIÓN — ${params.calificacion}★ en ${params.clase}`,
+    html,
+  });
+}
+
+/** Factura electrónica de una compra (plan o créditos) — se manda apenas
+ * Dataico confirma la generación (ver facturarCompra en billing.ts). Enlaza
+ * al PDF de Dataico en vez de adjuntarlo — ese link ya queda vigente de
+ * forma permanente del lado de Dataico. */
+export async function sendInvoiceEmail(params: {
+  correo: string;
+  concepto: string;
+  totalConIva: number;
+  pdfUrl: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>¡Gracias por tu compra!</p>
+      <p><strong>${escapeHtml(params.concepto)}</strong> — ${formatCOP(params.totalConIva)}</p>
+      <p>Adjunto va el link a tu factura electrónica:</p>
+      <p><a href="${params.pdfUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver factura electrónica</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.correo],
+    subject: "Tu factura electrónica — UNIQUE",
     html,
   });
 }

@@ -100,6 +100,16 @@ export async function GET(req: NextRequest) {
     }
 
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
+
+    // Sin reservas no hay lista final que avisar — se marca como procesada
+    // igual para que el cron no la siga revisando cada vez que corre, pero
+    // no se genera ni se manda ningún PDF vacío.
+    if (confirmadas.length === 0) {
+      await markReservasFinalesEnviadas(liquidacion.id);
+      skipped += 1;
+      continue;
+    }
+
     const pdf = await buildReservasFinalesPdf({
       variant: { kind: "antes", minutos: gym.reservasFinalesMinutes },
       fecha: formatFechaLarga(clase.fecha),

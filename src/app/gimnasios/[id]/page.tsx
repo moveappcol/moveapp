@@ -104,6 +104,20 @@ export default async function GymPage({
         </span>
       )}
 
+      {gym.photoDetailUrls.length > 0 && (
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {gym.photoDetailUrls.map((url) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={url}
+              src={url}
+              alt={gym.name}
+              className="aspect-square w-full rounded-2xl object-cover"
+            />
+          ))}
+        </div>
+      )}
+
       <h2 className="mt-8 font-heading text-xl font-semibold text-move-green">
         {t.clasesDisponibles}
       </h2>
@@ -121,20 +135,6 @@ export default async function GymPage({
           targetClaseId={targetClaseId}
         />
       </div>
-
-      {gym.photoDetailUrls.length > 0 && (
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {gym.photoDetailUrls.map((url) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={gym.name}
-              className="aspect-square w-full rounded-2xl object-cover"
-            />
-          ))}
-        </div>
-      )}
 
       <InfoSection title={t.descripcion} text={gym.description} />
       <InfoSection title={t.puntualidad} text={gym.puntualidad} />

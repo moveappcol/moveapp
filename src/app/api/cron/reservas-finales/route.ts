@@ -10,6 +10,7 @@ import {
   markReservasFinalesEnviadas,
   computeFechaDePago,
   toBogotaDateString,
+  claseKeyForLiquidacion,
 } from "@/lib/liquidaciones";
 import { sendReservasFinalesEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
@@ -68,8 +69,9 @@ export async function GET(req: NextRequest) {
     if (minutesUntilClass > gym.reservasFinalesMinutes) continue;
 
     const fecha = toBogotaDateString(clase.fecha);
+    const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
-    let liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
+    let liquidacion = await findLiquidacion(gym.name, claseKey, fecha);
     const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const precio = clase.precio ?? gym.pricePerReservation;
     const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
@@ -82,7 +84,7 @@ export async function GET(req: NextRequest) {
       // si el cron de las 24h no alcanzó a correr, la creamos igual.
       const { id } = await createLiquidacion({
         gimnasio: gym.name,
-        clase: clase.name,
+        clase: claseKey,
         fecha,
         fechaDePago: computeFechaDePago(clase.fecha),
         counts,

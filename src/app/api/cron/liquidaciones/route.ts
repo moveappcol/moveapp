@@ -8,6 +8,7 @@ import {
   buildCountsFromReservas,
   computeFechaDePago,
   toBogotaDateString,
+  claseKeyForLiquidacion,
 } from "@/lib/liquidaciones";
 import { sendLiquidacionEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
@@ -57,8 +58,9 @@ export async function GET(req: NextRequest) {
     if (!gym) continue;
 
     const fecha = toBogotaDateString(clase.fecha);
+    const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
-    if (await liquidacionExists(gym.name, clase.name, fecha)) {
+    if (await liquidacionExists(gym.name, claseKey, fecha)) {
       skipped += 1;
       continue;
     }
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest) {
 
     await createLiquidacion({
       gimnasio: gym.name,
-      clase: clase.name,
+      clase: claseKey,
       fecha,
       fechaDePago: computeFechaDePago(clase.fecha),
       counts,

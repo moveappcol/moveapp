@@ -29,6 +29,23 @@ import { getAirtableBase } from "./airtable";
  *      "reservas finales" cuando el cron de 15 min corre varias veces)
  */
 const LIQUIDACION_TABLE = "Liquidacion";
+
+/** Un gimnasio puede repetir el mismo nombre de clase varias veces el mismo
+ * día (ej. "Reformer Pilates" a las 6am, 8am y 7pm) — identificar una
+ * liquidación solo por gimnasio+nombre+día hacía que todas esas repeticiones
+ * colapsaran en una sola fila: la primera que procesaba el cron "ganaba" y
+ * las demás quedaban invisibles para siempre (su propia liquidación nunca se
+ * creaba, su correo nunca se mandaba). Se le pega la hora exacta al nombre
+ * para que cada ocurrencia real tenga su propia llave, sin necesitar agregar
+ * una columna nueva en Airtable. */
+export function claseKeyForLiquidacion(claseName: string, claseFechaISO: string): string {
+  const hora = new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(claseFechaISO));
+  return `${claseName} (${hora})`;
+}
 const ESTADO_PAGO_FIELD = "Estado de pago ";
 const TOTAL_A_PAGAR_FIELD = "Total a pagar ";
 const RESERVAS_TIPO_A_FIELD = "Reservas Tipo A";

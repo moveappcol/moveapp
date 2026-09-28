@@ -8,6 +8,7 @@ import {
   updateLiquidacionCounts,
   buildCountsFromReservas,
   toBogotaDateString,
+  claseKeyForLiquidacion,
 } from "@/lib/liquidaciones";
 
 /** Automatización de Airtable → "cuando cambia el Estado de una reserva,
@@ -64,7 +65,8 @@ export async function POST(req: NextRequest) {
   if (!gym) return NextResponse.json({ ok: true, skipped: "gimnasio no encontrado" });
 
   const fecha = toBogotaDateString(fechaReserva);
-  const liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
+  const claseKey = claseKeyForLiquidacion(clase.name, fechaReserva);
+  const liquidacion = await findLiquidacion(gym.name, claseKey, fecha);
   if (!liquidacion) {
     return NextResponse.json({ ok: true, skipped: "todavía no existe liquidación para esta clase" });
   }

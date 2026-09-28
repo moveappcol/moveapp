@@ -88,7 +88,7 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
     const gym = await getGymBillingInfo(clase.gimnasioId);
     if (!gym) continue;
 
-    const reservas = await getReservationsDetailForClase(clase.id);
+    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     if (confirmadas.length === 0) continue;
 

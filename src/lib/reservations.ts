@@ -61,12 +61,30 @@ export type ReservaDetalle = {
 /** Todas las reservas de una clase (cualquier estado), para armar el
  * reporte de liquidación. Se filtra en JS porque ARRAYJOIN sobre un campo
  * de link junta el nombre del link, no su id — filtrar por id en una
- * fórmula no funciona. */
-export async function getReservationsDetailForClase(claseId: string): Promise<ReservaDetalle[]> {
+ * fórmula no funciona.
+ *
+ * `fechaEsperada` (el `fecha` real de la clase, ISO) es un segundo filtro
+ * obligatorio, no cosmético: hay reservas viejas (de antes de que existiera
+ * el flujo real de reservar) cuyo campo "Clase" quedó enlazado a decenas de
+ * clases en vez de una sola — filtrar solo por `Clase[0] === claseId` hacía
+ * que esas reservas aparecieran en la lista de asistentes de clases que esa
+ * persona nunca reservó de verdad (confirmado en producción: gente
+ * apareciendo en listas de clases ajenas). El campo "Fecha" de la reserva sí
+ * queda confiable — se guarda igual a `clase.fecha` al momento de reservar
+ * (ver createReservation) — así que cruzarlo descarta esas reservas mal
+ * enlazadas sin tener que arreglar cada fila vieja a mano. */
+export async function getReservationsDetailForClase(
+  claseId: string,
+  fechaEsperada: string
+): Promise<ReservaDetalle[]> {
   const base = getAirtableBase();
   const records = await base("Reservas").select().all();
   return records
-    .filter((r) => (r.get("Clase") as string[] | undefined)?.[0] === claseId)
+    .filter(
+      (r) =>
+        (r.get("Clase") as string[] | undefined)?.[0] === claseId &&
+        r.get("Fecha") === fechaEsperada
+    )
     .map((r) => ({
       id: r.id,
       userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),

@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     const gym = await getGymById(clase.gimnasioId);
     const mapsUrl = gym ? buildMapsUrl(gym) : null;
 
-    const reservas = await getReservationsDetailForClase(clase.id);
+    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const pendientes = reservas.filter(
       (r) => r.estado !== "Cancelado on time" && !r.recordatorioEnviado
     );

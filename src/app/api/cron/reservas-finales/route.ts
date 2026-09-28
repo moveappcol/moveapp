@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     const fecha = toBogotaDateString(clase.fecha);
 
     let liquidacion = await findLiquidacion(gym.name, clase.name, fecha);
-    const reservas = await getReservationsDetailForClase(clase.id);
+    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const precio = clase.precio ?? gym.pricePerReservation;
     const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
       tipoA: gym.porcentajeTipoA,

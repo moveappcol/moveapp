@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: "todavía no existe liquidación para esta clase" });
   }
 
-  const reservas = await getReservationsDetailForClase(claseId);
+  const reservas = await getReservationsDetailForClase(claseId, fechaReserva);
   const precio = clase.precio ?? gym.pricePerReservation;
   const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
     tipoA: gym.porcentajeTipoA,

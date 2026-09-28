@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
     const minutesSinceEnd = (now - finClase) / (1000 * 60);
     if (minutesSinceEnd < WINDOW_START_MINUTES || minutesSinceEnd > WINDOW_END_MINUTES) continue;
 
-    const reservas = await getReservationsDetailForClase(clase.id);
+    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const pendientes = reservas.filter(
       (r) => r.estado !== "Cancelado on time" && !r.correoDespuesClaseEnviado
     );

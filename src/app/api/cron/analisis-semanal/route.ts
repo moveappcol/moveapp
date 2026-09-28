@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     const gym = await getGymById(clase.gimnasioId);
     if (!gym) continue;
 
-    const reservas = await getReservationsDetailForClase(clase.id);
+    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time").length;
     const cupos = clase.cuposTotales;
 

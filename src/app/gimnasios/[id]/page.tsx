@@ -98,30 +98,29 @@ export default async function GymPage({
         {[gym.address, gym.city].filter(Boolean).join(", ")}
       </p>
 
-      {gym.lat !== null && gym.lng !== null && (
-        <div className="relative mt-4 h-48 overflow-hidden rounded-2xl border border-move-green/10">
-          <iframe
-            src={`https://www.google.com/maps?q=${gym.lat},${gym.lng}&z=15&output=embed`}
-            className="h-full w-full border-0"
-            loading="lazy"
-            title={`Ubicación de ${gym.name}`}
-          />
-          <a
-            href={`https://www.google.com/maps/dir/?api=1&destination=${gym.lat},${gym.lng}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute bottom-3 right-3 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
-          >
-            {t.ir}
-          </a>
-        </div>
-      )}
-
       {generoLabel && (
         <span className="mt-3 inline-block rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-coral">
           {generoLabel}
         </span>
       )}
+
+      <h2 className="mt-8 font-heading text-xl font-semibold text-move-green">
+        {t.clasesDisponibles}
+      </h2>
+      <p className="mt-1 font-body text-xs text-move-green/50">{t.limiteMensual}</p>
+      <div className="mt-4">
+        <ClassList
+          gimnasioId={id}
+          classes={classes}
+          waitlistStatus={waitlistStatus}
+          reservedClaseIds={[...reservedClaseIds]}
+          bookingCutoffMinutes={gym.bookingCutoffMinutes}
+          locale={locale}
+          reservasAbiertas={reservasAbiertas}
+          reservasAbrenLabel={reservasAbrenLabel}
+          targetClaseId={targetClaseId}
+        />
+      </div>
 
       {gym.photoDetailUrls.length > 0 && (
         <div className="mt-6 grid grid-cols-3 gap-3">
@@ -165,23 +164,24 @@ export default async function GymPage({
       <InfoSection title={t.nivelRecomendado} text={gym.nivelRecomendado} />
       <InfoSection title={t.recomendaciones} text={gym.recomendaciones} />
 
-      <h2 className="mt-10 font-heading text-xl font-semibold text-move-green">
-        {t.clasesDisponibles}
-      </h2>
-      <p className="mt-1 font-body text-xs text-move-green/50">{t.limiteMensual}</p>
-      <div className="mt-4">
-        <ClassList
-          gimnasioId={id}
-          classes={classes}
-          waitlistStatus={waitlistStatus}
-          reservedClaseIds={[...reservedClaseIds]}
-          bookingCutoffMinutes={gym.bookingCutoffMinutes}
-          locale={locale}
-          reservasAbiertas={reservasAbiertas}
-          reservasAbrenLabel={reservasAbrenLabel}
-          targetClaseId={targetClaseId}
-        />
-      </div>
+      {gym.lat !== null && gym.lng !== null && (
+        <div className="relative mt-8 h-48 overflow-hidden rounded-2xl border border-move-green/10">
+          <iframe
+            src={`https://www.google.com/maps?q=${gym.lat},${gym.lng}&z=15&output=embed`}
+            className="h-full w-full border-0"
+            loading="lazy"
+            title={`Ubicación de ${gym.name}`}
+          />
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${gym.lat},${gym.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-3 right-3 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
+          >
+            {t.ir}
+          </a>
+        </div>
+      )}
     </section>
   );
 }

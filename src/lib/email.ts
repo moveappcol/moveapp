@@ -498,9 +498,11 @@ const EMAIL_ASSETS_BASE = "https://www.uniqueappcol.com/email";
  * festiva", solo cambian el saludo y el botón. Tabla + estilos inline a
  * propósito (nada de flexbox/grid ni CSS externo): es lo único que los
  * clientes de correo (Gmail, Outlook, Apple Mail) renderizan de forma
- * confiable. El botón se monta sobre la caja abierta con un margen negativo
- * — funciona en Gmail/Apple Mail; en clientes que lo ignoran (Outlook de
- * escritorio) simplemente cae justo debajo de la caja, no se rompe. */
+ * confiable. El botón se monta sobre la caja abierta con `position:relative`
+ * + `top` negativo (un margen negativo directo en la tabla del botón le
+ * rompía el fondo coral — el navegador dejaba de pintarlo) — funciona en
+ * Gmail/Apple Mail; en clientes que ignoran position (Outlook de
+ * escritorio) el botón simplemente cae justo debajo de la caja. */
 function giftEmailHtml(params: {
   saludo: string;
   codigo: string;
@@ -537,7 +539,7 @@ function giftEmailHtml(params: {
         </tr>
         <tr>
           <td style="padding:0 24px;text-align:center;">
-            <table role="presentation" style="margin:-56px auto 0;">
+            <table role="presentation" style="position:relative;top:-56px;margin:0 auto;border-collapse:collapse;">
               <tr>
                 <td style="border-radius:999px;background:#ff4f3f;">
                   <a href="${params.ctaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">
@@ -549,7 +551,7 @@ function giftEmailHtml(params: {
           </td>
         </tr>
         <tr>
-          <td style="padding:28px 32px 4px;text-align:center;">
+          <td style="padding:4px 32px 4px;text-align:center;">
             <p style="margin:0;font-size:13px;line-height:1.6;color:#ffffff;opacity:0.6;">
               ${escapeHtml(params.nota)}
             </p>

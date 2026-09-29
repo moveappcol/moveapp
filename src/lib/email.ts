@@ -484,13 +484,23 @@ export async function sendAgentReportEmail(params: {
   });
 }
 
+/** Fotos de la caja de regalo (cerrada arriba, abierta abajo con el CTA
+ * "adentro") — recortadas y ajustadas de color (rojo -> coral de la marca)
+ * a partir de un render 3D que pasó Paula, alojadas en /public/email para
+ * que cualquier cliente de correo las pueda cargar desde una URL real. Se
+ * usa el dominio de producción siempre (no NEXT_PUBLIC_SITE_URL): quien
+ * abre el correo las carga desde SU navegador, nunca desde donde corre el
+ * servidor que arma el HTML. */
+const EMAIL_ASSETS_BASE = "https://www.uniqueappcol.com/email";
+
 /** Plantilla compartida de las dos variantes del correo de regalo (al
- * comprador y a quien lo recibe) — mismo formato de "tarjeta de regalo",
- * solo cambian el saludo y el botón. Tabla + estilos inline a propósito
- * (nada de flexbox/grid ni CSS externo): es lo único que los clientes de
- * correo (Gmail, Outlook, Apple Mail) renderizan de forma confiable. Colores
- * tomados directo de globals.css (--color-move-green / --color-move-coral)
- * para que se vea igual que el resto de la marca. */
+ * comprador y a quien lo recibe) — mismo formato de "tarjeta de regalo
+ * festiva", solo cambian el saludo y el botón. Tabla + estilos inline a
+ * propósito (nada de flexbox/grid ni CSS externo): es lo único que los
+ * clientes de correo (Gmail, Outlook, Apple Mail) renderizan de forma
+ * confiable. El botón se monta sobre la caja abierta con un margen negativo
+ * — funciona en Gmail/Apple Mail; en clientes que lo ignoran (Outlook de
+ * escritorio) simplemente cae justo debajo de la caja, no se rompe. */
 function giftEmailHtml(params: {
   saludo: string;
   codigo: string;
@@ -501,31 +511,33 @@ function giftEmailHtml(params: {
   nota: string;
 }): string {
   return `
-    <div style="background:#f4f1ea;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+    <div style="background:#063009;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
       <table role="presentation" width="100%" style="max-width:520px;margin:0 auto;border-collapse:collapse;">
         <tr>
-          <td style="background:#063009;border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
-            <p style="margin:0;font-size:13px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#ffffff;">UNIQUE</p>
-            <p style="margin:14px 0 0;font-size:17px;line-height:1.5;color:#ffffff;">${escapeHtml(params.saludo)} 🎁</p>
+          <td style="padding:8px 24px 0;text-align:center;">
+            <p style="margin:0;font-size:12px;font-weight:800;letter-spacing:5px;text-transform:uppercase;color:#ffffff;opacity:0.55;">Un regalo para ti</p>
+            <img src="${EMAIL_ASSETS_BASE}/gift-box-closed.png" width="200" alt="" style="display:block;margin:18px auto 4px;width:200px;max-width:60%;height:auto;" />
+            <p style="margin:16px 0 0;font-size:20px;font-weight:800;line-height:1.4;color:#ffffff;">${escapeHtml(params.saludo)} 🎁</p>
           </td>
         </tr>
         <tr>
-          <td style="background:#ffffff;padding:32px 32px 8px;">
-            <table role="presentation" width="100%" style="border-collapse:separate;border:2px dashed #ff4f3f;border-radius:16px;background:#fff6f5;">
-              <tr>
-                <td style="padding:28px 24px;text-align:center;">
-                  <p style="margin:0;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#ff4f3f;">Tu código</p>
-                  <p style="margin:10px 0 0;font-size:30px;font-weight:800;letter-spacing:5px;color:#063009;">${escapeHtml(params.codigo)}</p>
-                  <p style="margin:14px 0 0;font-size:14px;color:#063009;opacity:0.7;">Plan ${escapeHtml(params.planLabel)}</p>
-                </td>
-              </tr>
-            </table>
-
-            <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#063009;text-align:center;">
-              Válido hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> — después de esa fecha el código ya no se puede canjear.
+          <td style="padding:20px 24px 0;text-align:center;">
+            <p style="margin:0;font-size:11px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#ff4f3f;">Tu código</p>
+            <p style="margin:10px 0 0;font-size:36px;font-weight:800;letter-spacing:6px;color:#ffffff;">${escapeHtml(params.codigo)}</p>
+            <p style="margin:10px 0 0;font-size:14px;color:#ffffff;opacity:0.6;">Plan ${escapeHtml(params.planLabel)}</p>
+            <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#ffffff;opacity:0.85;">
+              Válido hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong>
             </p>
-
-            <table role="presentation" style="margin:24px auto 8px;">
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:12px 0 0;text-align:center;">
+            <img src="${EMAIL_ASSETS_BASE}/gift-box-open.png" width="440" alt="" style="display:block;margin:0 auto;width:440px;max-width:90%;height:auto;" />
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 24px;text-align:center;">
+            <table role="presentation" style="margin:-56px auto 0;">
               <tr>
                 <td style="border-radius:999px;background:#ff4f3f;">
                   <a href="${params.ctaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">
@@ -534,15 +546,18 @@ function giftEmailHtml(params: {
                 </td>
               </tr>
             </table>
-
-            <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#063009;opacity:0.6;text-align:center;">
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:28px 32px 4px;text-align:center;">
+            <p style="margin:0;font-size:13px;line-height:1.6;color:#ffffff;opacity:0.6;">
               ${escapeHtml(params.nota)}
             </p>
           </td>
         </tr>
         <tr>
-          <td style="background:#ffffff;border-radius:0 0 20px 20px;padding:8px 32px 28px;text-align:center;">
-            <p style="margin:0;font-size:12px;color:#063009;opacity:0.4;">UNIQUE — Bogotá</p>
+          <td style="padding:20px 32px 8px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#ffffff;opacity:0.35;">UNIQUE — Bogotá</p>
           </td>
         </tr>
       </table>

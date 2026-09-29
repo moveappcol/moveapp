@@ -21,41 +21,59 @@ export default function VoucherCard({
   );
 
   return (
-    <div className="text-center print:text-move-green">
-      <p className="font-heading text-xs font-bold uppercase tracking-[0.3em] text-white/55 print:hidden">
-        Un regalo para ti
-      </p>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/email/gift-box-closed.png"
-        alt=""
-        className="mx-auto mt-5 w-40 print:hidden"
-      />
-
-      <p className="mt-6 font-heading text-xs font-bold uppercase tracking-[0.25em] text-move-coral">
-        Tu código
-      </p>
-      <p className="mt-2 font-heading text-4xl font-extrabold tracking-widest text-white print:text-move-green">
-        {codigo}
-      </p>
-      <p className="mt-2 font-body text-sm text-white/60 print:text-move-green/70">{planLabel}</p>
-
-      {yaCanjeado ? (
-        <p className="mt-3 font-heading text-sm font-semibold text-white">
-          Este código ya fue canjeado.
+    <div className="text-center">
+      {/* Versión de pantalla — la tarjeta festiva verde + fotos de la caja.
+       * Se oculta al imprimir (print:hidden): las fotos y el fondo oscuro no
+       * tienen sentido en papel, ahí se usa la tarjeta de abajo en su lugar. */}
+      <div className="print:hidden">
+        <p className="font-heading text-xs font-bold uppercase tracking-[0.3em] text-white/55">
+          Un regalo para ti
         </p>
-      ) : (
-        <p className="mt-3 font-body text-sm text-white/85 print:text-move-green/70">
-          Válido hasta el {fechaLimiteLabel}
-        </p>
-      )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/email/gift-box-closed.png" alt="" className="mx-auto mt-5 w-40" />
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/email/gift-box-open.png"
-        alt=""
-        className="mx-auto mt-6 w-full max-w-md print:hidden"
-      />
+        <p className="mt-6 font-heading text-xs font-bold uppercase tracking-[0.25em] text-move-coral">
+          Tu código
+        </p>
+        <p className="mt-2 font-heading text-4xl font-extrabold tracking-widest text-white">
+          {codigo}
+        </p>
+        <p className="mt-2 font-body text-sm text-white/60">{planLabel}</p>
+
+        {yaCanjeado ? (
+          <p className="mt-3 font-heading text-sm font-semibold text-white">
+            Este código ya fue canjeado.
+          </p>
+        ) : (
+          <p className="mt-3 font-body text-sm text-white/85">Válido hasta el {fechaLimiteLabel}</p>
+        )}
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/email/gift-box-open.png" alt="" className="mx-auto mt-6 w-full max-w-md" />
+      </div>
+
+      {/* Versión de impresión — tarjeta con borde, como una tarjeta de
+       * regalo física: nada de fotos ni fondo oscuro (desperdicia tinta),
+       * pero tampoco texto suelto sin forma. Oculta en pantalla (hidden),
+       * visible solo al imprimir (print:block). */}
+      <div className="hidden print:block print:rounded-3xl print:border-2 print:border-dashed print:border-move-coral print:bg-white print:p-10">
+        <p className="font-heading text-xs font-bold uppercase tracking-[0.3em] text-move-green/50">
+          Regalo UNIQUE
+        </p>
+        <p className="mt-4 font-heading text-4xl font-extrabold tracking-widest text-move-coral">
+          {codigo}
+        </p>
+        <p className="mt-3 font-body text-sm text-move-green/70">{planLabel}</p>
+        {yaCanjeado ? (
+          <p className="mt-2 font-heading text-sm font-semibold text-move-green">
+            Este código ya fue canjeado.
+          </p>
+        ) : (
+          <p className="mt-2 font-body text-xs text-move-green/50">
+            Válido hasta el {fechaLimiteLabel}
+          </p>
+        )}
+      </div>
 
       <div className="mt-6 flex gap-3 print:hidden">
         <button

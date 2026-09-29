@@ -13,6 +13,7 @@ import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
 import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl } from "./dataico";
 import { isTipoDocumento } from "./documento";
 import { sendOpsAlertEmail, sendInvoiceEmail } from "./email";
+import { procesarReferido } from "./referidos";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -170,6 +171,10 @@ export async function chargeSubscriptionPlan(params: {
    * renovación mensual del cron no tiene de dónde sacarlas. */
   fbp?: string | null;
   fbc?: string | null;
+  /** Código de referido escrito en el checkout, si había (ver referidos.ts)
+   * — nunca confiar en que sea válido, se revisa todo de nuevo en
+   * procesarReferido antes de dar ningún crédito. */
+  codigoReferido?: string | null;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("plan", params.planId);
   if (!item) return { ok: false, error: "Plan desconocido." };
@@ -187,6 +192,7 @@ export async function chargeSubscriptionPlan(params: {
     fbc: params.fbc,
     valor: precio,
     paymentSourceId: params.paymentSourceId,
+    codigoReferido: params.codigoReferido,
   });
 
   let tx;
@@ -227,6 +233,9 @@ export async function chargeSubscriptionPlan(params: {
       totalConIva: precio,
       pagoId,
     });
+    if (params.codigoReferido) {
+      await procesarReferido({ correoReferido: params.correo, codigo: params.codigoReferido, pagoId });
+    }
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }

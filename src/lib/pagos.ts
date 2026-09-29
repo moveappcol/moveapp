@@ -59,6 +59,9 @@ export type Pago = {
   correo: string;
   /** Solo se guarda en compras de regalo — null en cualquier otra. */
   nombre: string | null;
+  /** Código de referido escrito al pagar (ver referidos.ts) — null si no
+   * escribió ninguno, o en pagos de antes de este campo. */
+  codigoReferido: string | null;
   tipo: PurchaseKind;
   item: string;
   creditos: number;
@@ -92,6 +95,7 @@ function mapRecordToPago(
     referencia: (record.get("Referencia") as string) ?? "",
     correo: (record.get("Correo") as string) ?? "",
     nombre: (record.get("Nombre") as string) || null,
+    codigoReferido: (record.get("CodigoReferido") as string) || null,
     tipo:
       (record.get("Tipo") as string) === "Plan"
         ? "plan"
@@ -130,6 +134,9 @@ export async function createPendingPago(params: {
   /** Nombre de quien compra — solo lo mandan las compras de regalo (no hay
    * sesión de Clerk de donde sacarlo). */
   nombre?: string | null;
+  /** Código de referido escrito al pagar (ver referidos.ts) — solo en
+   * compras de plan. */
+  codigoReferido?: string | null;
 }): Promise<string> {
   const base = getAirtableBase();
   const baseFields = {
@@ -146,6 +153,7 @@ export async function createPendingPago(params: {
     ...(params.fbp ? { Fbp: params.fbp } : {}),
     ...(params.fbc ? { Fbc: params.fbc } : {}),
     ...(params.nombre ? { Nombre: params.nombre } : {}),
+    ...(params.codigoReferido ? { CodigoReferido: params.codigoReferido } : {}),
   };
 
   try {
@@ -155,7 +163,7 @@ export async function createPendingPago(params: {
     );
     return created[0].id;
   } catch (err) {
-    // Si "Fbp"/"Fbc"/"Nombre" todavía no existen como columnas en Airtable,
+    // Si "Fbp"/"Fbc"/"Nombre"/"CodigoReferido" todavía no existen como columnas en Airtable,
     // Airtable rechaza el create completo por "Unknown field name" — un
     // pago real no se puede perder por esto, así que se reintenta sin esos
     // campos opcionales (el resto del flujo sigue igual, solo sin ese dato

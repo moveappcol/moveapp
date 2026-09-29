@@ -81,6 +81,7 @@ export default function SubscribeForm({
   const [couponInput, setCouponInput] = useState(initialCouponCode ?? "");
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
+  const [codigoReferidoInput, setCodigoReferidoInput] = useState("");
 
   async function tryApplyCoupon(code: string): Promise<CouponPreview> {
     setCoupon({ status: "loading" });
@@ -185,7 +186,8 @@ export default function SubscribeForm({
         const result = await subscribeToPlan(
           planId,
           json.data.id,
-          coupon.status === "valid-descuento" && couponCode ? couponCode : undefined
+          coupon.status === "valid-descuento" && couponCode ? couponCode : undefined,
+          codigoReferidoInput.trim() || undefined
         );
         if (!result.ok) {
           if (result.pending) {
@@ -322,6 +324,19 @@ export default function SubscribeForm({
             permalinkPersonalAuth={permalinkPersonalAuth}
             t={t.cardFields}
           />
+
+          <label className="block">
+            <span className="font-heading text-sm font-medium text-move-green">
+              ¿Alguien te refirió? (opcional)
+            </span>
+            <input
+              type="text"
+              value={codigoReferidoInput}
+              onChange={(e) => setCodigoReferidoInput(e.target.value)}
+              placeholder="Código de referido"
+              className="mt-1 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
+            />
+          </label>
 
           {error && <p className="font-body text-sm text-move-coral">{error}</p>}
 

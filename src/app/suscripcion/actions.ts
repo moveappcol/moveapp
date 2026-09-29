@@ -47,7 +47,8 @@ export async function applyCoupon(code: string): Promise<CouponPreview> {
 export async function subscribeToPlan(
   planId: string,
   cardToken: string,
-  couponCode?: string
+  couponCode?: string,
+  codigoReferido?: string
 ): Promise<SubscribeResult> {
   const { userId } = await auth();
   if (!userId) return { ok: false, error: "Debes iniciar sesión." };
@@ -117,6 +118,7 @@ export async function subscribeToPlan(
     fechaInicio,
     fbp,
     fbc,
+    codigoReferido,
   });
 
   if (!result.ok) return result;

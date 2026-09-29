@@ -19,6 +19,7 @@ import {
 import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
 import { sendOpsAlertEmail, sendGiftPurchaseEmail } from "@/lib/email";
 import { crearRegalo } from "@/lib/regalos";
+import { procesarReferido } from "@/lib/referidos";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -185,6 +186,9 @@ export async function POST(req: NextRequest) {
         plan: pago.item,
         paymentSourceId: pago.paymentSourceId ?? existing?.paymentSourceId ?? 0,
       });
+    }
+    if (pago.codigoReferido) {
+      await procesarReferido({ correoReferido: pago.correo, codigo: pago.codigoReferido, pagoId: pago.id });
     }
   }
   // App Tracking Transparency (iOS): si la persona denegó el permiso en la

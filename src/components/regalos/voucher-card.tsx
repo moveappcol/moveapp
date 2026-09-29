@@ -52,24 +52,26 @@ export default function VoucherCard({
         <img src="/email/gift-box-open.png" alt="" className="mx-auto mt-6 w-full max-w-md" />
       </div>
 
-      {/* Versión de impresión — tarjeta con borde, como una tarjeta de
-       * regalo física: nada de fotos ni fondo oscuro (desperdicia tinta),
-       * pero tampoco texto suelto sin forma. Oculta en pantalla (hidden),
-       * visible solo al imprimir (print:block). */}
-      <div className="hidden print:block print:rounded-3xl print:border-2 print:border-dashed print:border-move-coral print:bg-white print:p-10">
-        <p className="font-heading text-xs font-bold uppercase tracking-[0.3em] text-move-green/50">
+      {/* Versión de impresión — tarjeta de regalo de verdad: verde de marca,
+       * grande, con la caja de regalo adentro (no un rectángulo con borde
+       * suelto). Oculta en pantalla (hidden), visible solo al imprimir
+       * (print:block). */}
+      <div className="hidden print:block print:rounded-[2.5rem] print:bg-move-green print:p-16">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/email/gift-box-closed.png" alt="" className="mx-auto w-64" />
+        <p className="mt-8 font-heading text-sm font-bold uppercase tracking-[0.3em] text-white/55">
           Regalo UNIQUE
         </p>
-        <p className="mt-4 font-heading text-4xl font-extrabold tracking-widest text-move-coral">
+        <p className="mt-5 font-heading text-7xl font-extrabold tracking-widest text-white">
           {codigo}
         </p>
-        <p className="mt-3 font-body text-sm text-move-green/70">{planLabel}</p>
+        <p className="mt-4 font-body text-xl text-white/70">{planLabel}</p>
         {yaCanjeado ? (
-          <p className="mt-2 font-heading text-sm font-semibold text-move-green">
+          <p className="mt-3 font-heading text-lg font-semibold text-white">
             Este código ya fue canjeado.
           </p>
         ) : (
-          <p className="mt-2 font-body text-xs text-move-green/50">
+          <p className="mt-3 font-body text-base text-white/60">
             Válido hasta el {fechaLimiteLabel}
           </p>
         )}

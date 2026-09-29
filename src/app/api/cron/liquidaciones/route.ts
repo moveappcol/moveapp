@@ -3,7 +3,8 @@ import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
 import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import {
-  liquidacionExists,
+  fetchAllLiquidaciones,
+  findLiquidacionEnLista,
   createLiquidacion,
   buildCountsFromReservas,
   computeFechaDePago,
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
 
   const clases = await getAllClasesConFecha();
   const todasLasReservas = await fetchAllReservasDetalle();
+  const todasLasLiquidaciones = await fetchAllLiquidaciones();
   const now = Date.now();
 
   let generated = 0;
@@ -61,7 +63,7 @@ export async function GET(req: NextRequest) {
     const fecha = toBogotaDateString(clase.fecha);
     const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
-    if (await liquidacionExists(gym.name, claseKey, fecha)) {
+    if (findLiquidacionEnLista(todasLasLiquidaciones, gym.name, claseKey, fecha)) {
       skipped += 1;
       continue;
     }

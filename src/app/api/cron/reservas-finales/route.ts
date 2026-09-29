@@ -3,7 +3,8 @@ import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
 import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import {
-  findLiquidacion,
+  fetchAllLiquidaciones,
+  findLiquidacionEnLista,
   createLiquidacion,
   updateLiquidacionCounts,
   buildCountsFromReservas,
@@ -49,6 +50,7 @@ export async function GET(req: NextRequest) {
 
   const clases = await getAllClasesConFecha();
   const todasLasReservas = await fetchAllReservasDetalle();
+  const todasLasLiquidaciones = await fetchAllLiquidaciones();
   const now = Date.now();
 
   let sent = 0;
@@ -72,7 +74,7 @@ export async function GET(req: NextRequest) {
     const fecha = toBogotaDateString(clase.fecha);
     const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
-    let liquidacion = await findLiquidacion(gym.name, claseKey, fecha);
+    let liquidacion = findLiquidacionEnLista(todasLasLiquidaciones, gym.name, claseKey, fecha);
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const precio = clase.precio ?? gym.pricePerReservation;
     const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
         fechaDePago: computeFechaDePago(clase.fecha),
         counts,
       });
-      liquidacion = { id, reservasFinalesEnviadas: false };
+      liquidacion = { id, gimnasio: gym.name, clase: claseKey, fecha, reservasFinalesEnviadas: false };
     } else {
       // Puede haber reservas nuevas hechas después del corte de 24h — se
       // actualizan los conteos y totales antes de mandar la lista final.

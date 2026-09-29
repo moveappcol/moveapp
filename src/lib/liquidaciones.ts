@@ -58,31 +58,60 @@ const PORCENTAJE_TIPO_B = 0.3;
 
 export type LiquidacionRecord = {
   id: string;
+  gimnasio: string;
+  clase: string;
+  fecha: string;
   reservasFinalesEnviadas: boolean;
 };
+
+function mapLiquidacionRecord(r: any): LiquidacionRecord {
+  return {
+    id: r.id,
+    gimnasio: (r.get("Gimnasio") as string) ?? "",
+    clase: (r.get("Clase") as string) ?? "",
+    fecha: (r.get("Fecha") as string) ?? "",
+    reservasFinalesEnviadas: Boolean(r.get("Reservas finales enviadas")),
+  };
+}
+
+/** Trae toda la tabla Liquidacion una sola vez — los crons que recorren
+ * TODAS las clases deben llamar esto UNA vez por corrida y filtrar en
+ * memoria con findLiquidacionEnLista (ver el mismo problema que tuvo
+ * fetchAllReservasDetalle en reservations.ts: llamar find* dentro del loop
+ * hacía un select().all() de esta tabla POR CLASE, y esta tabla crece todos
+ * los días — eso seguía tumbando el cron por memoria aun después de
+ * arreglar el fetch de Reservas). */
+export async function fetchAllLiquidaciones(): Promise<LiquidacionRecord[]> {
+  const base = getAirtableBase();
+  const records = await base(LIQUIDACION_TABLE).select().all();
+  return records.map(mapLiquidacionRecord);
+}
+
+export function findLiquidacionEnLista(
+  todas: LiquidacionRecord[],
+  gimnasio: string,
+  clase: string,
+  fecha: string
+): LiquidacionRecord | null {
+  return (
+    todas.find((r) => r.gimnasio === gimnasio && r.clase === clase && r.fecha === fecha) ?? null
+  );
+}
 
 /** Se trae todo y se filtra en JS — comparar fechas dentro de una fórmula
  * de Airtable no es confiable (ver ARRAYJOIN/filtro por fecha en otros
  * lugares del código), así que es más seguro comparar los valores ya
- * traídos. */
+ * traídos. OJO: hace un select().all() de la tabla completa — para un cron
+ * que recorre todas las clases, usar fetchAllLiquidaciones() una vez y
+ * findLiquidacionEnLista() en el loop; esta función es solo para el webhook
+ * que procesa una clase por invocación. */
 export async function findLiquidacion(
   gimnasio: string,
   clase: string,
   fecha: string
 ): Promise<LiquidacionRecord | null> {
-  const base = getAirtableBase();
-  const records = await base(LIQUIDACION_TABLE).select().all();
-  const match = records.find(
-    (r) =>
-      (r.get("Gimnasio") as string) === gimnasio &&
-      (r.get("Clase") as string) === clase &&
-      (r.get("Fecha") as string) === fecha
-  );
-  if (!match) return null;
-  return {
-    id: match.id,
-    reservasFinalesEnviadas: Boolean(match.get("Reservas finales enviadas")),
-  };
+  const todas = await fetchAllLiquidaciones();
+  return findLiquidacionEnLista(todas, gimnasio, clase, fecha);
 }
 
 export async function liquidacionExists(gimnasio: string, clase: string, fecha: string): Promise<boolean> {

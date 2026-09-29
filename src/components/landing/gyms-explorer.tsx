@@ -8,6 +8,16 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type GeoStatus = "idle" | "loading" | "denied" | "unsupported" | "success";
 
+/** El gimnasio especial que UNIQUE usa para publicar sus propias
+ * Experiencias (eventos propios, no clases de un aliado) se identifica por
+ * nombre en vez de por id — así no depende de que quede creado con un id
+ * fijo en Airtable, solo de que el nombre incluya "experiencia". Se destaca
+ * con el color coral de la marca para que no se pierda entre los demás
+ * gimnasios en la grilla. */
+function esGimnasioDeExperiencias(nombre: string): boolean {
+  return nombre.toLowerCase().includes("experiencia");
+}
+
 export default function GymsExplorer({
   gyms,
   t,
@@ -126,53 +136,66 @@ export default function GymsExplorer({
       )}
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {results.map((gym) => (
-          <Link
-            href={`/gimnasios/${gym.id}`}
-            key={gym.id}
-            className="block overflow-hidden rounded-2xl border border-move-green/10 transition-shadow hover:shadow-md"
-          >
-            <div className="flex aspect-[16/9] items-center justify-center bg-move-green/5">
-              {gym.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={gym.photoUrl}
-                  alt={gym.name}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <span className="font-heading text-xs font-medium uppercase tracking-wide text-move-green/40">
-                  {t.photoSoon}
-                </span>
-              )}
-            </div>
-            <div className="p-5">
-              <div className="flex items-start justify-between gap-2">
-                <p className="font-heading text-base font-semibold text-move-green">
-                  {gym.name}
-                </p>
-                {gym.distance !== null && (
-                  <span className="whitespace-nowrap font-heading text-xs font-semibold text-move-coral">
-                    {gym.distance < 1
-                      ? `${Math.round(gym.distance * 1000)} m`
-                      : `${gym.distance.toFixed(1)} km`}
+        {results.map((gym) => {
+          const esExperiencia = esGimnasioDeExperiencias(gym.name);
+          return (
+            <Link
+              href={`/gimnasios/${gym.id}`}
+              key={gym.id}
+              className={`block overflow-hidden rounded-2xl border transition-shadow hover:shadow-md ${
+                esExperiencia ? "border-move-coral/40 bg-move-coral/5" : "border-move-green/10"
+              }`}
+            >
+              <div
+                className={`flex aspect-[16/9] items-center justify-center ${
+                  esExperiencia ? "bg-move-coral/10" : "bg-move-green/5"
+                }`}
+              >
+                {gym.photoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={gym.photoUrl}
+                    alt={gym.name}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span
+                    className={`font-heading text-xs font-medium uppercase tracking-wide ${
+                      esExperiencia ? "text-move-coral/60" : "text-move-green/40"
+                    }`}
+                  >
+                    {t.photoSoon}
                   </span>
                 )}
               </div>
-              <p className="mt-1 font-body text-sm text-move-green/60">
-                {gym.activities.join(", ")}
-              </p>
-              <p className="mt-0.5 font-body text-sm text-move-green/50">
-                {gym.address}
-              </p>
-              {gym.genero !== "todos" && (
-                <span className="mt-2 inline-block rounded-full bg-move-coral/10 px-2.5 py-0.5 font-heading text-[11px] font-semibold uppercase tracking-wide text-move-coral">
-                  {gym.genero === "solo_mujeres" ? t.exclusivoMujeres : t.exclusivoHombres}
-                </span>
-              )}
-            </div>
-          </Link>
-        ))}
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-heading text-base font-semibold text-move-green">
+                    {gym.name}
+                  </p>
+                  {gym.distance !== null && (
+                    <span className="whitespace-nowrap font-heading text-xs font-semibold text-move-coral">
+                      {gym.distance < 1
+                        ? `${Math.round(gym.distance * 1000)} m`
+                        : `${gym.distance.toFixed(1)} km`}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 font-body text-sm text-move-green/60">
+                  {gym.activities.join(", ")}
+                </p>
+                <p className="mt-0.5 font-body text-sm text-move-green/50">
+                  {gym.address}
+                </p>
+                {gym.genero !== "todos" && (
+                  <span className="mt-2 inline-block rounded-full bg-move-coral/10 px-2.5 py-0.5 font-heading text-[11px] font-semibold uppercase tracking-wide text-move-coral">
+                    {gym.genero === "solo_mujeres" ? t.exclusivoMujeres : t.exclusivoHombres}
+                  </span>
+                )}
+              </div>
+            </Link>
+          );
+        })}
 
         {results.length === 0 && (
           <p className="col-span-full font-body text-sm text-move-green/60">{t.noResults}</p>

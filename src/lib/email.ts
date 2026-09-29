@@ -484,6 +484,72 @@ export async function sendAgentReportEmail(params: {
   });
 }
 
+/** Plantilla compartida de las dos variantes del correo de regalo (al
+ * comprador y a quien lo recibe) — mismo formato de "tarjeta de regalo",
+ * solo cambian el saludo y el botón. Tabla + estilos inline a propósito
+ * (nada de flexbox/grid ni CSS externo): es lo único que los clientes de
+ * correo (Gmail, Outlook, Apple Mail) renderizan de forma confiable. Colores
+ * tomados directo de globals.css (--color-move-green / --color-move-coral)
+ * para que se vea igual que el resto de la marca. */
+function giftEmailHtml(params: {
+  saludo: string;
+  codigo: string;
+  planLabel: string;
+  fechaLimiteLabel: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  nota: string;
+}): string {
+  return `
+    <div style="background:#f4f1ea;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+      <table role="presentation" width="100%" style="max-width:520px;margin:0 auto;border-collapse:collapse;">
+        <tr>
+          <td style="background:#063009;border-radius:20px 20px 0 0;padding:36px 32px 28px;text-align:center;">
+            <p style="margin:0;font-size:13px;font-weight:800;letter-spacing:4px;text-transform:uppercase;color:#ffffff;">UNIQUE</p>
+            <p style="margin:14px 0 0;font-size:17px;line-height:1.5;color:#ffffff;">${escapeHtml(params.saludo)} 🎁</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;padding:32px 32px 8px;">
+            <table role="presentation" width="100%" style="border-collapse:separate;border:2px dashed #ff4f3f;border-radius:16px;background:#fff6f5;">
+              <tr>
+                <td style="padding:28px 24px;text-align:center;">
+                  <p style="margin:0;font-size:11px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#ff4f3f;">Tu código</p>
+                  <p style="margin:10px 0 0;font-size:30px;font-weight:800;letter-spacing:5px;color:#063009;">${escapeHtml(params.codigo)}</p>
+                  <p style="margin:14px 0 0;font-size:14px;color:#063009;opacity:0.7;">Plan ${escapeHtml(params.planLabel)}</p>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:24px 0 0;font-size:14px;line-height:1.6;color:#063009;text-align:center;">
+              Válido hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> — después de esa fecha el código ya no se puede canjear.
+            </p>
+
+            <table role="presentation" style="margin:24px auto 8px;">
+              <tr>
+                <td style="border-radius:999px;background:#ff4f3f;">
+                  <a href="${params.ctaUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:999px;">
+                    ${escapeHtml(params.ctaLabel)}
+                  </a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#063009;opacity:0.6;text-align:center;">
+              ${escapeHtml(params.nota)}
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#ffffff;border-radius:0 0 20px 20px;padding:8px 32px 28px;text-align:center;">
+            <p style="margin:0;font-size:12px;color:#063009;opacity:0.4;">UNIQUE — Bogotá</p>
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
 /** Va al comprador justo después de pagar un regalo — el código y el link
  * para verlo/imprimirlo o reenviarlo a quien se lo va a regalar (ver
  * /regalar/voucher/[codigo]). No lleva créditos todavía: esos solo se dan
@@ -496,19 +562,15 @@ export async function sendGiftPurchaseEmail(params: {
   fechaLimiteLabel: string;
   voucherUrl: string;
 }): Promise<void> {
-  const html = `
-    <div style="font-family: sans-serif;">
-      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
-      <p>¡Hola ${escapeHtml(params.compradorNombre)}! Gracias por regalar un plan UNIQUE 🎁</p>
-      <p>Este es tu código de regalo:</p>
-      <p style="font-size:22px;font-weight:800;letter-spacing:2px;color:#ff4f3f;margin:16px 0;">${escapeHtml(params.codigo)}</p>
-      <p><strong>Plan:</strong> ${escapeHtml(params.planLabel)}</p>
-      <p>Quien lo reciba tiene hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> para activarlo — después de esa fecha el código ya no sirve.</p>
-      <p>Puedes ver, imprimir o mandarle el código directo a esa persona desde aquí:</p>
-      <p><a href="${params.voucherUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver mi regalo</a></p>
-      <p>Equipo UNIQUE</p>
-    </div>
-  `;
+  const html = giftEmailHtml({
+    saludo: `¡Hola ${params.compradorNombre}! Gracias por regalar un plan UNIQUE`,
+    codigo: params.codigo,
+    planLabel: params.planLabel,
+    fechaLimiteLabel: params.fechaLimiteLabel,
+    ctaLabel: "Ver mi regalo",
+    ctaUrl: params.voucherUrl,
+    nota: "Desde ahí puedes imprimirlo o mandárselo directo por correo a quien se lo vas a regalar.",
+  });
 
   await sendEmail({
     to: [params.compradorEmail],
@@ -528,18 +590,15 @@ export async function sendGiftCodeToRecipientEmail(params: {
   fechaLimiteLabel: string;
   canjearUrl: string;
 }): Promise<void> {
-  const html = `
-    <div style="font-family: sans-serif;">
-      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
-      <p>¡${escapeHtml(params.compradorNombre)} te regaló un plan UNIQUE! 🎁</p>
-      <p>Este es tu código:</p>
-      <p style="font-size:22px;font-weight:800;letter-spacing:2px;color:#ff4f3f;margin:16px 0;">${escapeHtml(params.codigo)}</p>
-      <p><strong>Plan:</strong> ${escapeHtml(params.planLabel)}</p>
-      <p>Actívalo antes del <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> — después de esa fecha ya no se puede canjear.</p>
-      <p><a href="${params.canjearUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Activar mi regalo</a></p>
-      <p>Equipo UNIQUE</p>
-    </div>
-  `;
+  const html = giftEmailHtml({
+    saludo: `¡${params.compradorNombre} te regaló un plan UNIQUE!`,
+    codigo: params.codigo,
+    planLabel: params.planLabel,
+    fechaLimiteLabel: params.fechaLimiteLabel,
+    ctaLabel: "Activar mi regalo",
+    ctaUrl: params.canjearUrl,
+    nota: "Actívalo con el correo donde quieras recibir tus créditos.",
+  });
 
   await sendEmail({
     to: [params.destinatarioEmail],

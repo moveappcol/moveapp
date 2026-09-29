@@ -7,7 +7,11 @@ import type { PurchaseKind } from "./orders";
  *   - Referencia    (texto, única por intento de compra)
  *   - TransaccionId (texto, id de la transacción en Wompi)
  *   - Correo        (texto)
- *   - Tipo          (selección: "Plan" | "Adicional")
+ *   - Nombre        (texto, opcional — solo se usa en compras de regalo, que
+ *      no tienen sesión de Clerk de donde sacar el nombre; si el campo
+ *      todavía no existe en Airtable, se sigue guardando el pago igual, solo
+ *      sin nombre, ver el try/catch de createPendingPago)
+ *   - Tipo          (selección: "Plan" | "Adicional" | "Regalo")
  *   - item          (texto, minúscula — id del catálogo, ej. "plan-starter")
  *   - Creditos      (número)
  *   - Estado        (selección: "Pendiente" | "Aprobado" | "Rechazado")
@@ -53,6 +57,8 @@ export type Pago = {
   id: string;
   referencia: string;
   correo: string;
+  /** Solo se guarda en compras de regalo — null en cualquier otra. */
+  nombre: string | null;
   tipo: PurchaseKind;
   item: string;
   creditos: number;
@@ -85,7 +91,13 @@ function mapRecordToPago(
     id: record.id,
     referencia: (record.get("Referencia") as string) ?? "",
     correo: (record.get("Correo") as string) ?? "",
-    tipo: (record.get("Tipo") as string) === "Plan" ? "plan" : "topup",
+    nombre: (record.get("Nombre") as string) || null,
+    tipo:
+      (record.get("Tipo") as string) === "Plan"
+        ? "plan"
+        : (record.get("Tipo") as string) === "Regalo"
+          ? "regalo"
+          : "topup",
     item: (record.get("item") as string) ?? "",
     creditos: (record.get("Creditos") as number) ?? 0,
     estado: ((record.get("Estado") as string) ?? "Pendiente") as PagoEstado,
@@ -115,35 +127,40 @@ export async function createPendingPago(params: {
    * el pago más tarde. */
   fbp?: string | null;
   fbc?: string | null;
+  /** Nombre de quien compra — solo lo mandan las compras de regalo (no hay
+   * sesión de Clerk de donde sacarlo). */
+  nombre?: string | null;
 }): Promise<string> {
   const base = getAirtableBase();
   const baseFields = {
     Referencia: params.referencia,
     Correo: params.correo,
-    Tipo: params.tipo === "plan" ? "Plan" : "Adicional",
+    Tipo: params.tipo === "plan" ? "Plan" : params.tipo === "regalo" ? "Regalo" : "Adicional",
     item: params.item,
     Creditos: params.creditos,
     Valor: params.valor,
     Estado: "Pendiente",
     ...(params.paymentSourceId !== undefined ? { PaymentSourceId: params.paymentSourceId } : {}),
   };
-  const fbFields = {
+  const optionalFields = {
     ...(params.fbp ? { Fbp: params.fbp } : {}),
     ...(params.fbc ? { Fbc: params.fbc } : {}),
+    ...(params.nombre ? { Nombre: params.nombre } : {}),
   };
 
   try {
     const created = await base(PAGOS_TABLE).create(
-      [{ fields: { ...baseFields, ...fbFields } }],
+      [{ fields: { ...baseFields, ...optionalFields } }],
       { typecast: true }
     );
     return created[0].id;
   } catch (err) {
-    // Si "Fbp"/"Fbc" todavía no existen como columnas en Airtable, Airtable
-    // rechaza el create completo por "Unknown field name" — un pago real no
-    // se puede perder por esto, así que se reintenta sin esos dos campos
-    // (el resto del flujo sigue igual, solo sin ese dato extra para Meta).
-    if (Object.keys(fbFields).length === 0) throw err;
+    // Si "Fbp"/"Fbc"/"Nombre" todavía no existen como columnas en Airtable,
+    // Airtable rechaza el create completo por "Unknown field name" — un
+    // pago real no se puede perder por esto, así que se reintenta sin esos
+    // campos opcionales (el resto del flujo sigue igual, solo sin ese dato
+    // extra).
+    if (Object.keys(optionalFields).length === 0) throw err;
     const created = await base(PAGOS_TABLE).create([{ fields: baseFields }], { typecast: true });
     return created[0].id;
   }

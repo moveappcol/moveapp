@@ -17,7 +17,8 @@ import {
   cancelSubscription,
 } from "@/lib/subscriptions";
 import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
-import { sendOpsAlertEmail } from "@/lib/email";
+import { sendOpsAlertEmail, sendGiftPurchaseEmail } from "@/lib/email";
+import { crearRegalo } from "@/lib/regalos";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -105,6 +106,59 @@ export async function POST(req: NextRequest) {
   // perdemos la carrera, el otro camino ya se encargó de todo esto.
   const credited = await claimPagoAprobado(pago.referencia, tx.id);
   if (!credited) return NextResponse.json({ ok: true });
+
+  if (pago.tipo === "regalo") {
+    // Un regalo NO se acredita a quien compró — se genera un código
+    // canjeable (crearRegalo) y solo cuando alguien lo active (ver
+    // regalos.ts) se le dan los créditos a esa persona. Tampoco se activa
+    // ninguna suscripción acá: es un crédito único, a propósito (ver
+    // canjearRegalo, que llama a addCreditsByEmail sin tocar Suscripciones).
+    const regalo = await crearRegalo({
+      planId: item.id,
+      compradoPorCorreo: pago.correo,
+      compradoPorNombre: pago.nombre ?? pago.correo,
+      pagoId: pago.id,
+    });
+    await facturarCompra({
+      correo: pago.correo,
+      sku: item.id,
+      concepto: `Regalo UNIQUE — Plan ${item.name ?? item.label}`,
+      totalConIva: montoEsperado,
+      pagoId: pago.id,
+    });
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    try {
+      await sendGiftPurchaseEmail({
+        compradorEmail: pago.correo,
+        compradorNombre: pago.nombre ?? "",
+        planLabel: item.name ?? item.label,
+        codigo: regalo.codigo,
+        fechaLimiteLabel: new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
+          timeZone: "America/Bogota",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+        voucherUrl: `${siteUrl}/regalar/voucher/${regalo.codigo}`,
+      });
+    } catch (err) {
+      const motivo = err instanceof Error ? err.message : "error desconocido";
+      await sendOpsAlertEmail({
+        ownerEmail: OWNER_EMAIL,
+        asunto: "No se pudo enviar el correo de un regalo comprado",
+        detalle: `Código: ${regalo.codigo}\nComprador: ${pago.correo}\nMotivo: ${motivo}\n\nEl regalo sí quedó creado — toca reenviarle el código manual mientras se revisa qué pasó.`,
+      });
+    }
+    const compradorPersona = await getUserCreditsByEmail(pago.correo);
+    await sendMetaPurchaseEvent({
+      eventId: tx.id,
+      value: montoEsperado,
+      email: compradorPersona?.trackingConsent === false ? undefined : pago.correo,
+      fbp: pago.fbp,
+      fbc: pago.fbc,
+    });
+    return NextResponse.json({ ok: true });
+  }
 
   await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
   await facturarCompra({

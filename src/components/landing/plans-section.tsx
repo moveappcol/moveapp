@@ -107,6 +107,12 @@ export default async function PlansSection() {
                   {t.elegirPlan}
                 </Link>
               )}
+              <Link
+                href={`/regalar/${plan.id}`}
+                className="mt-2 text-center font-body text-xs font-medium text-move-green/50 underline-offset-2 hover:text-move-coral hover:underline"
+              >
+                Regalar este plan 🎁
+              </Link>
             </div>
           ))}
         </div>

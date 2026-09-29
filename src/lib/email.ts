@@ -484,6 +484,70 @@ export async function sendAgentReportEmail(params: {
   });
 }
 
+/** Va al comprador justo después de pagar un regalo — el código y el link
+ * para verlo/imprimirlo o reenviarlo a quien se lo va a regalar (ver
+ * /regalar/voucher/[codigo]). No lleva créditos todavía: esos solo se dan
+ * cuando alguien canjea el código en /canjear. */
+export async function sendGiftPurchaseEmail(params: {
+  compradorEmail: string;
+  compradorNombre: string;
+  planLabel: string;
+  codigo: string;
+  fechaLimiteLabel: string;
+  voucherUrl: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>¡Hola ${escapeHtml(params.compradorNombre)}! Gracias por regalar un plan UNIQUE 🎁</p>
+      <p>Este es tu código de regalo:</p>
+      <p style="font-size:22px;font-weight:800;letter-spacing:2px;color:#ff4f3f;margin:16px 0;">${escapeHtml(params.codigo)}</p>
+      <p><strong>Plan:</strong> ${escapeHtml(params.planLabel)}</p>
+      <p>Quien lo reciba tiene hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> para activarlo — después de esa fecha el código ya no sirve.</p>
+      <p>Puedes ver, imprimir o mandarle el código directo a esa persona desde aquí:</p>
+      <p><a href="${params.voucherUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver mi regalo</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.compradorEmail],
+    subject: "Tu regalo UNIQUE está listo 🎁",
+    html,
+  });
+}
+
+/** Va directo a la persona que recibe el regalo (cuando el comprador usa el
+ * formulario "Enviar a un amigo" en /regalar/voucher/[codigo]) — mismo
+ * código, pero con el mensaje enfocado en cómo activarlo, no en la compra. */
+export async function sendGiftCodeToRecipientEmail(params: {
+  destinatarioEmail: string;
+  compradorNombre: string;
+  planLabel: string;
+  codigo: string;
+  fechaLimiteLabel: string;
+  canjearUrl: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>¡${escapeHtml(params.compradorNombre)} te regaló un plan UNIQUE! 🎁</p>
+      <p>Este es tu código:</p>
+      <p style="font-size:22px;font-weight:800;letter-spacing:2px;color:#ff4f3f;margin:16px 0;">${escapeHtml(params.codigo)}</p>
+      <p><strong>Plan:</strong> ${escapeHtml(params.planLabel)}</p>
+      <p>Actívalo antes del <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> — después de esa fecha ya no se puede canjear.</p>
+      <p><a href="${params.canjearUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Activar mi regalo</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+
+  await sendEmail({
+    to: [params.destinatarioEmail],
+    subject: `${params.compradorNombre} te regaló un plan UNIQUE 🎁`,
+    html,
+  });
+}
+
 /** Mensaje del formulario de contacto del sitio. */
 export async function sendContactEmail(params: {
   ownerEmail: string;

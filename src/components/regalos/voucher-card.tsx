@@ -56,7 +56,10 @@ export default function VoucherCard({
        * grande, con la caja de regalo adentro (no un rectángulo con borde
        * suelto). Oculta en pantalla (hidden), visible solo al imprimir
        * (print:block). */}
-      <div className="hidden print:block print:rounded-[2.5rem] print:bg-move-green print:p-16">
+      <div
+        className="hidden print:block print:rounded-[2.5rem] print:bg-move-green print:p-16"
+        style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/email/gift-box-closed.png" alt="" className="mx-auto w-64" />
         <p className="mt-8 font-heading text-sm font-bold uppercase tracking-[0.3em] text-white/55">

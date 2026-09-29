@@ -15,8 +15,9 @@ export default async function VoucherPage({
   const plan = findCatalogItem("regalo", regalo.planId);
 
   return (
-    <section className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <VoucherCard
+    <section className="bg-move-green px-4 py-16 sm:px-6 print:bg-white">
+      <div className="mx-auto max-w-md">
+        <VoucherCard
         codigo={regalo.codigo}
         planLabel={plan?.name ?? plan?.label ?? regalo.planId}
         fechaLimiteLabel={new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
@@ -26,7 +27,8 @@ export default async function VoucherPage({
           year: "numeric",
         })}
         yaCanjeado={regalo.estado === "Activado"}
-      />
+        />
+      </div>
     </section>
   );
 }

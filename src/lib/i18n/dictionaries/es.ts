@@ -7,6 +7,7 @@ export const es = {
   },
   header: {
     navGimnasios: "Gimnasios",
+    navExperiencias: "Experiencias",
     navPlanes: "Planes",
     navComoFunciona: "Cómo funciona",
     navSobreNosotros: "Sobre nosotros",

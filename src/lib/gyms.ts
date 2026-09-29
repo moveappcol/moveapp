@@ -369,6 +369,16 @@ export function filterGymsByGenero(gyms: Gym[], userGenero: string | null): Gym[
   return gyms.filter((g) => canAccessGymByGenero(g.genero, userGenero));
 }
 
+/** Las Experiencias de UNIQUE (eventos propios, no clases de un aliado) se
+ * publican como un gimnasio más en Airtable, en vez de necesitar tablas o
+ * campos nuevos — se identifica por nombre en vez de por id, para no
+ * depender de que quede creado con un id fijo. Se usa tanto para
+ * destacarlo con otro color en la grilla como para el link "Experiencias"
+ * del menú, que redirige derecho a su página. */
+export function esGimnasioDeExperiencias(nombre: string): boolean {
+  return nombre.toLowerCase().includes("experiencia");
+}
+
 export async function getGyms(): Promise<{ gyms: Gym[]; usingMockData: boolean }> {
   if (!isAirtableConfigured()) {
     return { gyms: sortGymsByOrder(MOCK_GYMS), usingMockData: true };

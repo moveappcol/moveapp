@@ -2,21 +2,11 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { Gym } from "@/lib/gyms";
+import { type Gym, esGimnasioDeExperiencias } from "@/lib/gyms";
 import { distanceKm } from "@/lib/geo";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 
 type GeoStatus = "idle" | "loading" | "denied" | "unsupported" | "success";
-
-/** El gimnasio especial que UNIQUE usa para publicar sus propias
- * Experiencias (eventos propios, no clases de un aliado) se identifica por
- * nombre en vez de por id — así no depende de que quede creado con un id
- * fijo en Airtable, solo de que el nombre incluya "experiencia". Se destaca
- * con el color coral de la marca para que no se pierda entre los demás
- * gimnasios en la grilla. */
-function esGimnasioDeExperiencias(nombre: string): boolean {
-  return nombre.toLowerCase().includes("experiencia");
-}
 
 export default function GymsExplorer({
   gyms,

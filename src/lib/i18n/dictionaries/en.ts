@@ -9,6 +9,7 @@ export const en: Dictionary = {
   },
   header: {
     navGimnasios: "Gyms",
+    navExperiencias: "Experiences",
     navPlanes: "Plans",
     navComoFunciona: "How it works",
     navSobreNosotros: "About us",

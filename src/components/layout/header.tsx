@@ -15,6 +15,7 @@ export default async function Header() {
 
   const NAV_LINKS = [
     { href: "/#gimnasios", label: dict.header.navGimnasios },
+    { href: "/experiencias", label: dict.header.navExperiencias },
     { href: "/#planes", label: dict.header.navPlanes },
     { href: "/como-funciona", label: dict.header.navComoFunciona },
     { href: "/sobre-nosotros", label: dict.header.navSobreNosotros },

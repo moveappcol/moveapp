@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
-import { getReservationsDetailForClase } from "@/lib/reservations";
+import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import {
   findLiquidacion,
   createLiquidacion,
@@ -48,6 +48,7 @@ export async function GET(req: NextRequest) {
   }
 
   const clases = await getAllClasesConFecha();
+  const todasLasReservas = await fetchAllReservasDetalle();
   const now = Date.now();
 
   let sent = 0;
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
     const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
     let liquidacion = await findLiquidacion(gym.name, claseKey, fecha);
-    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
+    const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const precio = clase.precio ?? gym.pricePerReservation;
     const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
       tipoA: gym.porcentajeTipoA,

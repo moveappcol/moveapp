@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
-import { getReservationsDetailForClase, markRecordatorioEnviado } from "@/lib/reservations";
+import {
+  fetchAllReservasDetalle,
+  filterReservationsDetailForClase,
+  markRecordatorioEnviado,
+} from "@/lib/reservations";
 import { sendClassReminderEmail, sendOpsAlertEmail } from "@/lib/email";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { sendPushNotification } from "@/lib/push";
@@ -52,6 +56,7 @@ export async function GET(req: NextRequest) {
   }
 
   const clases = await getAllClasesConFecha();
+  const todasLasReservas = await fetchAllReservasDetalle();
   const now = Date.now();
 
   let sent = 0;
@@ -68,7 +73,7 @@ export async function GET(req: NextRequest) {
     const gym = await getGymById(clase.gimnasioId);
     const mapsUrl = gym ? buildMapsUrl(gym) : null;
 
-    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
+    const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const pendientes = reservas.filter(
       (r) => r.estado !== "Cancelado on time" && !r.recordatorioEnviado
     );

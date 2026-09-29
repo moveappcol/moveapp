@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymById } from "@/lib/gyms";
-import { getReservationsDetailForClase } from "@/lib/reservations";
+import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
 import {
   sendWeeklyAnalysisEmail,
@@ -51,13 +51,14 @@ export async function GET(req: NextRequest) {
   });
 
   const filas: AnalisisClaseRow[] = [];
+  const todasLasReservas = await fetchAllReservasDetalle();
 
   for (const clase of enRango) {
     if (!clase.gimnasioId || !clase.fecha) continue;
     const gym = await getGymById(clase.gimnasioId);
     if (!gym) continue;
 
-    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
+    const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time").length;
     const cupos = clase.cuposTotales;
 

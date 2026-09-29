@@ -58,10 +58,40 @@ export type ReservaDetalle = {
   correoDespuesClaseEnviado: boolean;
 };
 
-/** Todas las reservas de una clase (cualquier estado), para armar el
- * reporte de liquidación. Se filtra en JS porque ARRAYJOIN sobre un campo
- * de link junta el nombre del link, no su id — filtrar por id en una
- * fórmula no funciona.
+type ReservaConClaseYFecha = ReservaDetalle & { claseId: string; fecha: string | null };
+
+function mapReservaRecord(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  r: any
+): ReservaConClaseYFecha {
+  return {
+    id: r.id,
+    claseId: (r.get("Clase") as string[] | undefined)?.[0] ?? "",
+    fecha: (r.get("Fecha") as string) ?? null,
+    userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
+    estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
+    cedula: ((r.get("Cedula") as string) ?? "").trim(),
+    correo: ((r.get("Correo") as string) ?? "").trim(),
+    molestias: ((r.get("Molestias") as string) ?? "").trim(),
+    recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
+    correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
+  };
+}
+
+/** Trae TODAS las reservas una sola vez. Los crons que recorren muchas
+ * clases en un mismo run deben llamar esto UNA vez y filtrar en memoria con
+ * `filterReservationsDetailForClase` — hacer una llamada nueva a Airtable
+ * (trayendo la tabla completa) por cada clase fue lo que tumbó el cron de
+ * liquidaciones por quedarse sin memoria (confirmado en producción:
+ * contenedor reiniciándose por OOM cada pocas corridas). */
+export async function fetchAllReservasDetalle(): Promise<ReservaConClaseYFecha[]> {
+  const base = getAirtableBase();
+  const records = await base("Reservas").select().all();
+  return records.map(mapReservaRecord);
+}
+
+/** Filtra en memoria (sin llamar a Airtable) las reservas de una clase
+ * específica, a partir de lo que trajo fetchAllReservasDetalle.
  *
  * `fechaEsperada` (el `fecha` real de la clase, ISO) es un segundo filtro
  * obligatorio, no cosmético: hay reservas viejas (de antes de que existiera
@@ -73,28 +103,26 @@ export type ReservaDetalle = {
  * queda confiable — se guarda igual a `clase.fecha` al momento de reservar
  * (ver createReservation) — así que cruzarlo descarta esas reservas mal
  * enlazadas sin tener que arreglar cada fila vieja a mano. */
+export function filterReservationsDetailForClase(
+  todas: ReservaConClaseYFecha[],
+  claseId: string,
+  fechaEsperada: string
+): ReservaDetalle[] {
+  return todas.filter((r) => r.claseId === claseId && r.fecha === fechaEsperada);
+}
+
+/** Todas las reservas de una clase (cualquier estado), para armar el
+ * reporte de liquidación. Trae la tabla completa cada vez que se llama —
+ * bien para un uso puntual (ej. el webhook de corrección, que solo procesa
+ * una clase por invocación), pero un cron que recorre muchas clases en el
+ * mismo run debe usar fetchAllReservasDetalle + filterReservationsDetailForClase
+ * en su lugar (ver el comentario ahí). */
 export async function getReservationsDetailForClase(
   claseId: string,
   fechaEsperada: string
 ): Promise<ReservaDetalle[]> {
-  const base = getAirtableBase();
-  const records = await base("Reservas").select().all();
-  return records
-    .filter(
-      (r) =>
-        (r.get("Clase") as string[] | undefined)?.[0] === claseId &&
-        r.get("Fecha") === fechaEsperada
-    )
-    .map((r) => ({
-      id: r.id,
-      userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
-      estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
-      cedula: ((r.get("Cedula") as string) ?? "").trim(),
-      correo: ((r.get("Correo") as string) ?? "").trim(),
-      molestias: ((r.get("Molestias") as string) ?? "").trim(),
-      recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
-      correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
-    }));
+  const todas = await fetchAllReservasDetalle();
+  return filterReservationsDetailForClase(todas, claseId, fechaEsperada);
 }
 
 /** Marca que ya se le mandó el recordatorio de 3h antes a esta reserva —

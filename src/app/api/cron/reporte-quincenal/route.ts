@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
-import { getReservationsDetailForClase } from "@/lib/reservations";
+import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
 import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail, sendOpsAlertEmail } from "@/lib/email";
 import { reporteQuincenalYaEnviado, marcarReporteQuincenalEnviado } from "@/lib/reportes-quincenales";
@@ -78,6 +78,7 @@ type PeriodoResultado = {
 async function procesarPeriodo(desde: string, hasta: string, periodo: string): Promise<PeriodoResultado> {
   const clases = await getAllClasesConFecha();
   const porGimnasio = new Map<string, GymAcumulado>();
+  const todasLasReservas = await fetchAllReservasDetalle();
 
   for (const clase of clases) {
     if (!clase.fecha || !clase.gimnasioId) continue;
@@ -88,7 +89,7 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
     const gym = await getGymBillingInfo(clase.gimnasioId);
     if (!gym) continue;
 
-    const reservas = await getReservationsDetailForClase(clase.id, clase.fecha);
+    const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     if (confirmadas.length === 0) continue;
 

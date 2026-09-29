@@ -6,6 +6,7 @@ import {
   GYMS_COMING_SOON,
   reservationsAreOpen,
   reservationsOpenLabel,
+  esGimnasioDeExperiencias,
 } from "@/lib/gyms";
 import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
@@ -133,6 +134,7 @@ export default async function GymPage({
           reservasAbiertas={reservasAbiertas}
           reservasAbrenLabel={reservasAbrenLabel}
           targetClaseId={targetClaseId}
+          modoPlano={esGimnasioDeExperiencias(gym.name)}
         />
       </div>
 

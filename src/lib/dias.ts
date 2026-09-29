@@ -74,6 +74,19 @@ export function formatHora(fecha: string, locale: Locale = "es"): string {
   });
 }
 
+/** Fecha completa con día de la semana (ej. "sábado 18 de octubre") — para
+ * listas que no viven dentro de una ventana de 7 días (ver DIAS_VISIBLES),
+ * donde no alcanza con mostrar solo la hora porque no hay un día de
+ * referencia implícito. */
+export function formatFechaLarga(fecha: string, locale: Locale = "es"): string {
+  return new Date(fecha).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
+    timeZone: "America/Bogota",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 const BOGOTA_HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Bogota",
   hour: "numeric",

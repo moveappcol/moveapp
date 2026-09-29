@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Show } from "@clerk/nextjs";
 import { bookClass } from "@/app/gimnasios/[id]/actions";
 import { precioEfectivo, type Clase } from "@/lib/classes";
-import { DAY_KEY_FORMATTER, semanaActual, formatHora } from "@/lib/dias";
+import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga } from "@/lib/dias";
 import type { BookingResult } from "@/lib/reservations";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -80,6 +80,7 @@ function ClaseCard({
   reservasAbiertas,
   reservasAbrenLabel,
   highlighted,
+  fechaCompleta,
 }: {
   clase: Clase;
   gimnasioId: string;
@@ -94,6 +95,10 @@ function ClaseCard({
    * el explorador "por día" del home) — le pone un aro de color para que
    * sea obvio cuál es, sin tener que volver a buscarla en la lista. */
   highlighted?: boolean;
+  /** true en modoPlano (ver ClassList) — ahí no hay un día de referencia
+   * implícito (no vive dentro de la ventana de 7 días), así que hay que
+   * mostrar el día completo en vez de asumir que ya se sabe cuál es. */
+  fechaCompleta?: boolean;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -121,7 +126,11 @@ function ClaseCard({
         <div>
           <p className="font-heading text-base font-semibold text-move-green">{clase.name}</p>
           <p className="mt-1 font-body text-sm text-move-green/60 capitalize">
-            {clase.fecha ? formatHora(clase.fecha, locale) : t.horaPorConfirmar}
+            {clase.fecha
+              ? fechaCompleta
+                ? `${formatFechaLarga(clase.fecha, locale)} · ${formatHora(clase.fecha, locale)}`
+                : formatHora(clase.fecha, locale)
+              : t.horaPorConfirmar}
           </p>
           {clase.descripcion && (
             <p className="mt-1 font-body text-sm text-move-green/70">{clase.descripcion}</p>
@@ -231,6 +240,7 @@ export default function ClassList({
   reservasAbiertas,
   reservasAbrenLabel,
   targetClaseId,
+  modoPlano,
 }: {
   gimnasioId: string;
   classes: Clase[];
@@ -245,6 +255,13 @@ export default function ClassList({
    * correcto y se resalta, en vez de que la persona tenga que volver a
    * buscarla entre todos los días. */
   targetClaseId?: string;
+  /** Para gimnasios con sesiones puntuales y espaciadas (ej. el gimnasio de
+   * Experiencias: talleres cada tantos sábados, no clases diarias) — en vez
+   * del selector de "esta semana" (7 días, ver DIAS_VISIBLES en dias.ts),
+   * que dejaría fuera cualquier sesión más lejana, muestra TODAS las
+   * próximas sesiones como cajitas en una grilla, para que se puedan
+   * reservar con semanas de anticipación. */
+  modoPlano?: boolean;
 }) {
   // No se recibe `t` como prop porque este componente es la primera
   // frontera cliente — algunas claves de dict.gimnasio son funciones
@@ -277,6 +294,37 @@ export default function ClassList({
 
   if (classes.length === 0) {
     return <p className="font-body text-sm text-move-green/60">{t.sinClasesProgramadas}</p>;
+  }
+
+  if (modoPlano) {
+    const proximas = classes
+      .filter((c) => c.fecha && new Date(c.fecha).getTime() > Date.now())
+      .sort((a, b) => (a.fecha as string).localeCompare(b.fecha as string));
+
+    if (proximas.length === 0) {
+      return <p className="font-body text-sm text-move-green/60">{t.sinClasesProgramadas}</p>;
+    }
+
+    return (
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {proximas.map((clase) => (
+          <ClaseCard
+            key={clase.id}
+            clase={clase}
+            gimnasioId={gimnasioId}
+            waitlistStatus={waitlistStatus?.[clase.id]}
+            yaReservada={reservedSet.has(clase.id)}
+            bookingCutoffMinutes={bookingCutoffMinutes}
+            locale={locale}
+            t={t}
+            reservasAbiertas={reservasAbiertas}
+            reservasAbrenLabel={reservasAbrenLabel}
+            highlighted={clase.id === targetClaseId}
+            fechaCompleta
+          />
+        ))}
+      </ul>
+    );
   }
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];

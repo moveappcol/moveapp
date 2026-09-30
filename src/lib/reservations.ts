@@ -8,7 +8,7 @@ import {
   reservationsAreOpen,
   reservationsOpenLabel,
 } from "./gyms";
-import { sendLowRatingAlertEmail } from "./email";
+import { sendLowRatingAlertEmail, sendNewReservationEmail } from "./email";
 import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
 import { sendPushNotification } from "./push";
 
@@ -311,6 +311,16 @@ export async function createReservation(params: ReservationParams): Promise<Book
   ]);
 
   const remainingCredits = await deductCredits(account.recordId, claseCredits);
+
+  await sendNewReservationEmail({
+    ownerEmail: OWNER_EMAIL,
+    userName,
+    userEmail,
+    gimnasio: gym?.name ?? gimnasioId,
+    fechaISO,
+    creditos: claseCredits,
+    creditosRestantes: remainingCredits,
+  }).catch(() => {});
 
   return { ok: true, reservationId: created[0].id, remainingCredits };
 }

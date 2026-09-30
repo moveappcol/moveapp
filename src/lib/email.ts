@@ -296,6 +296,49 @@ export async function sendLowRatingAlertEmail(params: {
   });
 }
 
+/** Aviso al dueño de la plataforma cada vez que alguien reserva una clase
+ * (reserva directa o promoción automática desde lista de espera) — ver
+ * createReservation en reservations.ts. No usa ninguna llamada a Airtable
+ * propia: todos los datos ya estaban en memoria en ese punto (el gimnasio ya
+ * se había consultado para validar el cupo/cutoff de la reserva). */
+export async function sendNewReservationEmail(params: {
+  ownerEmail: string;
+  userName: string;
+  userEmail: string;
+  gimnasio: string;
+  fechaISO: string;
+  creditos: number;
+  creditosRestantes: number;
+}): Promise<void> {
+  const fecha = new Date(params.fechaISO).toLocaleString("es-CO", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  });
+
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">📅 Nueva reserva</p>
+      <p><strong>Usuario:</strong> ${escapeHtml(params.userName)}</p>
+      <p><strong>Correo:</strong> ${escapeHtml(params.userEmail)}</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+      <p><strong>Créditos cobrados:</strong> ${params.creditos} (le quedan ${params.creditosRestantes})</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: [params.ownerEmail],
+      subject: `Nueva reserva — ${params.userName} en ${params.gimnasio}`,
+      html,
+    });
+  } catch {
+    // Nunca debe tumbar la reserva que ya se hizo — si este aviso falla,
+    // simplemente no llega, sin reintentos (ver createReservation).
+  }
+}
+
 /** Factura electrónica de una compra (plan o créditos) — se manda apenas
  * Dataico confirma la generación (ver facturarCompra en billing.ts). Enlaza
  * al PDF de Dataico en vez de adjuntarlo — ese link ya queda vigente de

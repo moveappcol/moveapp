@@ -166,25 +166,39 @@ function toBogotaMonthKey(iso: string): string {
  * le "cuentan" un cupo). Se filtra en JS por el mismo motivo que en otros
  * lugares del código: no es confiable filtrar por fecha/link en una fórmula
  * de Airtable. */
+/** Antes traía TODA la tabla Reservas (select().all() sin filtro) cada vez
+ * que CUALQUIER persona intentaba reservar CUALQUIER clase — con la tabla
+ * creciendo eso se volvió una de las causas principales de que la cuenta
+ * de Airtable se pasara del límite mensual de llamadas (aparte del límite
+ * aparte de 5 llamadas/segundo por base, que también se dispara más fácil
+ * mientras más llamadas caras como esta hace la app). Ahora Airtable filtra
+ * por Usuario+Estado del lado del servidor — el resto (gimnasio, mes) se
+ * sigue filtrando en JS porque ARRAYJOIN sobre el campo de link concatena
+ * el NOMBRE del gimnasio vinculado, no su id, así que no se puede filtrar
+ * por gimnasioId directo en la fórmula. */
 async function countMonthlyReservationsAtGym(
   userName: string,
   gimnasioId: string,
   monthKey: string
 ): Promise<number> {
   const base = getAirtableBase();
-  const records = await base("Reservas").select().all();
+  const records = await base("Reservas")
+    .select({
+      // TRIM() porque el valor real en Airtable trae un espacio al final
+      // ("Cancelado on time "), como en otros campos de selección de esta
+      // base — el código original lo manejaba con .trim() en JS después de
+      // traer todo; acá hay que pedírselo a la fórmula, si no compara mal.
+      filterByFormula: `AND({Usuario} = "${escapeFormulaValue(userName)}", TRIM({Estado}) != "Cancelado on time")`,
+    })
+    .all();
   return records.filter((r) => {
-    const usuario = ((r.get("Usuario") as string) ?? "").trim();
-    if (usuario !== userName) return false;
-
     const gimnasios = r.get("Gimnasios") as string[] | undefined;
     if (!gimnasios?.includes(gimnasioId)) return false;
 
     const fecha = r.get("Fecha") as string | undefined;
     if (!fecha || toBogotaMonthKey(fecha) !== monthKey) return false;
 
-    const estado = ((r.get("Estado") as string) ?? "").trim();
-    return estado !== "Cancelado on time";
+    return true;
   }).length;
 }
 

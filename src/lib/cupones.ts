@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 
 /** Mientras dure el lanzamiento, cualquier plan pagado ANTES de esta fecha
  * empieza a correr ese día (no desde hoy) — nadie paga ahora y le vuelven a
@@ -85,12 +85,25 @@ export type CuponValidationResult =
   | { ok: false; error: string };
 
 /** Valida que el cupón exista, esté activo, no haya expirado y no haya
- * agotado sus usos. No lo marca como usado — eso pasa solo al redimirlo. */
+ * agotado sus usos. No lo marca como usado — eso pasa solo al redimirlo.
+ *
+ * Antes traía la tabla "Cupones" COMPLETA en cada llamada — y esto se
+ * dispara solo, sin que nadie escriba nada, cada vez que alguien ABRE la
+ * página de pago de un plan (el cupón por defecto se intenta aplicar al
+ * cargar). Una de las páginas más visitadas del sitio haciendo un
+ * select().all() en cada carga fue una causa fuerte de pasarse el límite
+ * mensual de llamadas a Airtable. Ahora se filtra por código del lado del
+ * servidor — UPPER(TRIM(...)) porque normalizeCode hace lo mismo en JS. */
 export async function validateCoupon(code: string): Promise<CuponValidationResult> {
   const base = getAirtableBase();
-  const records = await base(CUPONES_TABLE).select().all();
   const target = normalizeCode(code);
-  const record = records.find((r) => normalizeCode((r.get("Codigo") as string) ?? "") === target);
+  const records = await base(CUPONES_TABLE)
+    .select({
+      filterByFormula: `UPPER(TRIM({Codigo})) = "${escapeFormulaValue(target)}"`,
+      maxRecords: 1,
+    })
+    .all();
+  const record = records[0];
 
   if (!record) return { ok: false, error: "Ese cupón no existe." };
 

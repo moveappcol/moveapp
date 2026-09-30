@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 
 const LISTA_ESPERA_TABLE = "Lista de espera";
 
@@ -34,13 +34,18 @@ function mapRecord(r: any): WaitlistEntry {
   };
 }
 
+/** Antes traía la tabla "Lista de espera" COMPLETA — y se llama una vez POR
+ * CADA clase llena cuando alguien logueado entra a la página de un
+ * gimnasio (ver getWaitlistStatus más abajo), así que una sola visita con
+ * varias clases llenas repetía el mismo select().all() varias veces. "Clase"
+ * es texto plano (no un link), así que sí se puede filtrar directo por
+ * igualdad en la fórmula, sin el problema de ARRAYJOIN de otros campos. */
 async function getEntriesForClase(claseId: string): Promise<WaitlistEntry[]> {
   const base = getAirtableBase();
-  const records = await base(LISTA_ESPERA_TABLE).select().all();
-  return records
-    .map(mapRecord)
-    .filter((e) => e.claseId === claseId)
-    .sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+  const records = await base(LISTA_ESPERA_TABLE)
+    .select({ filterByFormula: `{Clase} = "${escapeFormulaValue(claseId)}"` })
+    .all();
+  return records.map(mapRecord).sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
 }
 
 export async function getWaitlistStatus(

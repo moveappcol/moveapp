@@ -14,6 +14,7 @@ import {
 import { findCatalogItem } from "@/lib/orders";
 import { validateCoupon, markCouponRedeemed, fechaInicioVigente, LANZAMIENTO_INICIO_DIFERIDO } from "@/lib/cupones";
 import { addCreditsByEmail } from "@/lib/users";
+import { validarCodigoReferido, type ValidacionCodigoReferido } from "@/lib/referidos";
 
 export type SubscribeResult =
   | { ok: true; credits: number }
@@ -42,6 +43,20 @@ export async function applyCoupon(code: string): Promise<CouponPreview> {
     descuentoPorcentaje: result.cupon.descuentoPorcentaje ?? 0,
     fechaInicio: fechaInicioVigente(result.cupon.inicioDiferido),
   };
+}
+
+/** Valida un código de referido para mostrarlo en la UI antes de cobrar —
+ * no otorga nada todavía, eso solo pasa después del pago (ver
+ * procesarReferido en billing.ts). */
+export async function checkCodigoReferido(codigo: string): Promise<ValidacionCodigoReferido> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión." };
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
+
+  return validarCodigoReferido(codigo, email);
 }
 
 export async function subscribeToPlan(

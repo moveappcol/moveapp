@@ -127,6 +127,43 @@ async function pareceCuentaDuplicada(
   return records.length > 0;
 }
 
+export type ValidacionCodigoReferido = { ok: true } | { ok: false; error: string };
+
+/** Valida un código de referido ANTES de cobrar, para mostrarle a quien
+ * paga si lo escribió bien — mismos chequeos de fondo que `procesarReferido`
+ * (código existe, no es autorreferencia, quien refiere tiene plan activo, no
+ * fue referido antes), menos "es tu primer plan" y "cuenta duplicada", que
+ * dependen del pago ya hecho/de datos que en este punto pueden no estar
+ * completos todavía. Esos dos se siguen revisando en `procesarReferido` como
+ * respaldo silencioso — que esto valide en verde no garantiza el crédito si
+ * de todas formas no cumple esos dos al momento de pagar. */
+export async function validarCodigoReferido(
+  codigo: string,
+  correoQuePaga: string
+): Promise<ValidacionCodigoReferido> {
+  const codigoLimpio = codigo.trim();
+  if (!codigoLimpio) return { ok: false, error: "Escribe un código." };
+
+  const referente = await findReferenteByCodigo(codigoLimpio);
+  if (!referente || !referente.correo) {
+    return { ok: false, error: "Ese código no existe. Revisa que esté bien escrito." };
+  }
+  if (referente.correo.toLowerCase() === correoQuePaga.toLowerCase()) {
+    return { ok: false, error: "No puedes usar tu propio código." };
+  }
+
+  if (await yaFueReferidoAntes(correoQuePaga)) {
+    return { ok: false, error: "Ya usaste un código de referido antes — solo se puede una vez." };
+  }
+
+  const subReferente = await getSubscriptionByEmail(referente.correo);
+  if (!subReferente || subReferente.estado !== "Activa") {
+    return { ok: false, error: "Ese código ya no está activo." };
+  }
+
+  return { ok: true };
+}
+
 /** Procesa un código de referido tras un pago de plan ya aprobado —
  * nunca lanza para no tumbar el flujo de cobro/crédito real; si algo no
  * cumple (código inválido, autorreferencia, no es el primer pago, ya fue

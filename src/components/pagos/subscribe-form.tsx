@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { subscribeToPlan, applyCoupon, redeemFreeCoupon, type CouponPreview } from "@/app/suscripcion/actions";
+import {
+  subscribeToPlan,
+  applyCoupon,
+  redeemFreeCoupon,
+  checkCodigoReferido,
+  type CouponPreview,
+} from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
@@ -22,6 +28,12 @@ type CouponState =
   | { status: "invalid"; error: string }
   | { status: "valid-descuento"; descuentoPorcentaje: number; fechaInicio?: string }
   | { status: "valid-gratis"; creditos: number };
+
+type ReferidoState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "invalid"; error: string }
+  | { status: "valid" };
 
 function formatFechaLarga(fechaISO: string, locale: Locale): string {
   return new Date(`${fechaISO}T00:00:00`).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
@@ -82,6 +94,7 @@ export default function SubscribeForm({
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [coupon, setCoupon] = useState<CouponState>({ status: "idle" });
   const [codigoReferidoInput, setCodigoReferidoInput] = useState("");
+  const [referido, setReferido] = useState<ReferidoState>({ status: "idle" });
 
   async function tryApplyCoupon(code: string): Promise<CouponPreview> {
     setCoupon({ status: "loading" });
@@ -136,6 +149,17 @@ export default function SubscribeForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  async function handleValidarReferido() {
+    if (!codigoReferidoInput.trim()) return;
+    setReferido({ status: "loading" });
+    const result = await checkCodigoReferido(codigoReferidoInput.trim());
+    if (!result.ok) {
+      setReferido({ status: "invalid", error: result.error });
+      return;
+    }
+    setReferido({ status: "valid" });
+  }
+
   function handleRedeemFreeCoupon() {
     if (!couponCode) return;
     setError(null);
@@ -159,6 +183,15 @@ export default function SubscribeForm({
     try {
       if (!accepted) {
         setError(t.debeAceptarTerminos);
+        return;
+      }
+
+      // Si escribió un código pero nunca lo validó (o quedó marcado
+      // inválido), se frena acá — antes de tokenizar la tarjeta — para que
+      // no pague y descubra después, en silencio, que el código tenía un
+      // error de digitación (ver validarCodigoReferido).
+      if (codigoReferidoInput.trim() && referido.status !== "valid") {
+        setError("Valida el código de referido antes de pagar, o bórralo si no tienes uno.");
         return;
       }
 
@@ -329,13 +362,32 @@ export default function SubscribeForm({
             <span className="font-heading text-sm font-medium text-move-green">
               ¿Alguien te refirió? (opcional)
             </span>
-            <input
-              type="text"
-              value={codigoReferidoInput}
-              onChange={(e) => setCodigoReferidoInput(e.target.value)}
-              placeholder="Código de referido"
-              className="mt-1 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                type="text"
+                value={codigoReferidoInput}
+                onChange={(e) => {
+                  setCodigoReferidoInput(e.target.value);
+                  setReferido({ status: "idle" });
+                }}
+                placeholder="Código de referido"
+                className="w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
+              />
+              <button
+                type="button"
+                onClick={handleValidarReferido}
+                disabled={referido.status === "loading" || !codigoReferidoInput.trim()}
+                className="whitespace-nowrap rounded-xl border border-move-green/20 px-4 py-3 font-heading text-sm font-semibold text-move-green transition-colors hover:border-move-green disabled:opacity-50"
+              >
+                {referido.status === "loading" ? "Validando..." : "Validar"}
+              </button>
+            </div>
+            {referido.status === "invalid" && (
+              <p className="mt-2 font-body text-sm text-move-coral">{referido.error}</p>
+            )}
+            {referido.status === "valid" && (
+              <p className="mt-2 font-body text-sm font-medium text-move-green">Código válido ✓</p>
+            )}
           </label>
 
           {error && <p className="font-body text-sm text-move-coral">{error}</p>}

@@ -15,9 +15,13 @@ import { getSubscriptionByEmail } from "./subscriptions";
  *       - PagoId            (texto — id del Pago que lo disparó)
  *       - FechaOtorgado     (fecha)
  *       - FechaExpira       (fecha — FechaOtorgado + 30 días)
- *       - CreditosOtorgados (número)
- *       - Reclamado         (casilla — true cuando el cron de vencidos ya le
- *          quitó los créditos a quien refirió por no haberlos usado a tiempo)
+ *       - CreditosOtorgados (número — créditos que recibió ReferenteCorreo)
+ *       - CreditosOtorgadosReferido (número — créditos que recibió TAMBIÉN
+ *          ReferidoCorreo; 0 en un código normal, CREDITOS_POR_REFERIDO en uno
+ *          de influencer, ver EsInfluencer más abajo)
+ *       - Reclamado         (casilla — true cuando el cron de vencidos ya
+ *          quitó estos créditos, a ReferenteCorreo y a ReferidoCorreo si
+ *          también le tocaron, por no haberlos usado a tiempo)
  *   - Tabla "usuarios", campo nuevo "EsInfluencer" (casilla — marcada a mano
  *     por el dueño para cuentas de influencers; cambia dos reglas de su
  *     CodigoReferido frente al de un usuario normal: no necesita tener plan
@@ -25,7 +29,8 @@ import { getSubscriptionByEmail } from "./subscriptions";
  *     recibe CREDITOS_POR_REFERIDO créditos (en un código normal, el que
  *     paga no recibe nada — solo gana quien tiene el código). Antes esto daba
  *     10% de descuento en vez de créditos; se cambió a créditos para los dos
- *     lados.
+ *     lados. Los dos créditos — influencer y referido — duran los mismos 30
+ *     días y se vencen juntos (ver expirarCreditosReferidoVencidos).
  */
 const USUARIOS_TABLE = "usuarios";
 const PAGOS_TABLE = "Pagos";
@@ -225,24 +230,31 @@ export async function procesarReferido(params: {
     const hoy = new Date();
     const expira = new Date(hoy);
     expira.setDate(expira.getDate() + DIAS_VALIDEZ_CREDITO_REFERIDO);
+    const creditosOtorgadosReferido = referente.esInfluencer ? CREDITOS_POR_REFERIDO : 0;
 
-    await base(REFERIDOS_TABLE).create(
-      [
-        {
-          fields: {
-            ReferidoCorreo: params.correoReferido,
-            ReferenteCorreo: referente.correo,
-            CodigoUsado: codigo,
-            PagoId: params.pagoId,
-            FechaOtorgado: hoy.toISOString().slice(0, 10),
-            FechaExpira: expira.toISOString().slice(0, 10),
-            CreditosOtorgados: CREDITOS_POR_REFERIDO,
-            Reclamado: false,
-          },
-        },
-      ],
-      { typecast: true }
-    );
+    const baseRowFields = {
+      ReferidoCorreo: params.correoReferido,
+      ReferenteCorreo: referente.correo,
+      CodigoUsado: codigo,
+      PagoId: params.pagoId,
+      FechaOtorgado: hoy.toISOString().slice(0, 10),
+      FechaExpira: expira.toISOString().slice(0, 10),
+      CreditosOtorgados: CREDITOS_POR_REFERIDO,
+      Reclamado: false,
+    };
+    try {
+      await base(REFERIDOS_TABLE).create(
+        [{ fields: { ...baseRowFields, CreditosOtorgadosReferido: creditosOtorgadosReferido } }],
+        { typecast: true }
+      );
+    } catch {
+      // "CreditosOtorgadosReferido" todavía no existe como columna en
+      // Airtable — se reintenta sin él en vez de perderse todo el crédito
+      // real (el del influencer incluido). Mientras falte, el cron de
+      // vencidos no tiene de dónde leer cuánto quitarle a ReferidoCorreo,
+      // así que esos créditos no se le vencerían hasta que se agregue.
+      await base(REFERIDOS_TABLE).create([{ fields: baseRowFields }], { typecast: true });
+    }
 
     // extendVencimiento: false — el crédito de referido no toca el
     // vencimiento del plan de quien refiere, vive aparte (dura 30 días
@@ -250,10 +262,9 @@ export async function procesarReferido(params: {
     await addCreditsByEmail(referente.correo, CREDITOS_POR_REFERIDO, false);
 
     // Solo en códigos de influencer: quien paga TAMBIÉN gana créditos (antes
-    // era un descuento del 10%, se cambió a créditos para los dos lados). A
-    // diferencia del crédito de arriba, este no se vence a los 30 días ni lo
-    // toca el cron de vencidos — ya es un cliente real que acaba de pagar,
-    // se le suma como cualquier otro crédito normal.
+    // era un descuento del 10%, se cambió a créditos para los dos lados).
+    // Duran los mismos 30 días que los del influencer — el cron de vencidos
+    // se los quita a los dos juntos si no se llegan a usar a tiempo.
     if (referente.esInfluencer) {
       await addCreditsByEmail(params.correoReferido, CREDITOS_POR_REFERIDO, false);
     }
@@ -281,9 +292,16 @@ export async function expirarCreditosReferidoVencidos(): Promise<{ procesados: n
 
   for (const r of vencidos) {
     const referenteCorreo = (r.get("ReferenteCorreo") as string) ?? "";
+    const referidoCorreo = (r.get("ReferidoCorreo") as string) ?? "";
     const creditos = (r.get("CreditosOtorgados") as number) || CREDITOS_POR_REFERIDO;
+    // 0 si la fila es de antes de este campo, o si fue un código normal
+    // (solo los de influencer le dan créditos también a quien pagó).
+    const creditosReferido = (r.get("CreditosOtorgadosReferido") as number) || 0;
     try {
       await deductCreditsByEmail(referenteCorreo, creditos);
+      if (creditosReferido > 0 && referidoCorreo) {
+        await deductCreditsByEmail(referidoCorreo, creditosReferido);
+      }
       await base(REFERIDOS_TABLE).update([{ id: r.id, fields: { Reclamado: true } }], { typecast: true });
       procesados += 1;
     } catch (err) {

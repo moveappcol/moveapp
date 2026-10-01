@@ -4,7 +4,14 @@ const LISTA_ESPERA_TABLE = "Lista de espera";
 
 /**
  * Esquema en Airtable — tabla "Lista de espera":
- *   - Clase   (texto — el id del record de Clases, NO un link)
+ *   - Clase          (texto — el id del record de Clases, NO un link; así se
+ *      puede filtrar directo por igualdad en una fórmula, ver getEntriesForClase)
+ *   - ClaseVinculada  (link a Clases, opcional — mismo dato que "Clase" pero
+ *      como vínculo de verdad, SOLO para que se pueda ver el nombre/horario
+ *      de la clase desde la vista de Airtable con un par de Lookup; la app
+ *      nunca lee ni filtra por este campo, solo lo escribe. Si todavía no
+ *      existe como columna en Airtable, se guarda igual sin él — ver el
+ *      try/catch en joinWaitlist)
  *   - Correo  (texto)
  *   - Nombre  (texto)
  *   - Estado  (selección: "Esperando" | "Promovido" | "Cancelado")
@@ -72,19 +79,23 @@ export async function joinWaitlist(params: {
   }
 
   const base = getAirtableBase();
-  await base(LISTA_ESPERA_TABLE).create(
-    [
-      {
-        fields: {
-          Clase: params.claseId,
-          Correo: params.correo,
-          Nombre: params.nombre,
-          Estado: "Esperando",
-        },
-      },
-    ],
-    { typecast: true }
-  );
+  const baseFields = {
+    Clase: params.claseId,
+    Correo: params.correo,
+    Nombre: params.nombre,
+    Estado: "Esperando",
+  };
+  try {
+    await base(LISTA_ESPERA_TABLE).create(
+      [{ fields: { ...baseFields, ClaseVinculada: [params.claseId] } }],
+      { typecast: true }
+    );
+  } catch {
+    // "ClaseVinculada" todavía no existe como columna en Airtable — no hay
+    // por qué perder la entrada real a la lista de espera por un campo que
+    // es solo para verse bonito, se reintenta sin él.
+    await base(LISTA_ESPERA_TABLE).create([{ fields: baseFields }], { typecast: true });
+  }
 
   return { posicion: esperando.length + 1 };
 }

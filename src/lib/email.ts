@@ -377,6 +377,44 @@ export async function sendWaitlistPromotedEmail(params: {
   }
 }
 
+/** Aviso a gerencia cada vez que alguien ENTRA a una lista de espera (no
+ * cuando solo consulta su posición) — ver joinWaitlist en waitlist.ts. */
+export async function sendNewWaitlistEmail(params: {
+  ownerEmail: string;
+  userName: string;
+  userEmail: string;
+  gimnasio: string;
+  fechaISO: string | null;
+}): Promise<void> {
+  const fecha = params.fechaISO
+    ? new Date(params.fechaISO).toLocaleString("es-CO", {
+        dateStyle: "full",
+        timeStyle: "short",
+        timeZone: "America/Bogota",
+      })
+    : "(sin fecha registrada)";
+
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">⏳ Nueva persona en lista de espera</p>
+      <p><strong>Usuario:</strong> ${escapeHtml(params.userName)}</p>
+      <p><strong>Correo:</strong> ${escapeHtml(params.userEmail)}</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: [params.ownerEmail],
+      subject: `Lista de espera — ${params.userName} en ${params.gimnasio}`,
+      html,
+    });
+  } catch {
+    // No bloquea la entrada a la lista ya hecha — si falla, simplemente no llega.
+  }
+}
+
 /** Factura electrónica de una compra (plan o créditos) — se manda apenas
  * Dataico confirma la generación (ver facturarCompra en billing.ts). Enlaza
  * al PDF de Dataico en vez de adjuntarlo — ese link ya queda vigente de

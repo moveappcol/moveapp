@@ -1,6 +1,10 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { getClaseByIdBasic } from "./classes";
+import { getGymById } from "./gyms";
+import { sendNewWaitlistEmail } from "./email";
 
 const LISTA_ESPERA_TABLE = "Lista de espera";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /**
  * Esquema en Airtable — tabla "Lista de espera":
@@ -96,6 +100,16 @@ export async function joinWaitlist(params: {
     // es solo para verse bonito, se reintenta sin él.
     await base(LISTA_ESPERA_TABLE).create([{ fields: baseFields }], { typecast: true });
   }
+
+  const clase = await getClaseByIdBasic(params.claseId);
+  const gym = clase?.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+  await sendNewWaitlistEmail({
+    ownerEmail: OWNER_EMAIL,
+    userName: params.nombre,
+    userEmail: params.correo,
+    gimnasio: gym?.name ?? "",
+    fechaISO: clase?.fecha ?? null,
+  });
 
   return { posicion: esperando.length + 1 };
 }

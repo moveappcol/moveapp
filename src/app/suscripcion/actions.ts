@@ -105,16 +105,13 @@ export async function subscribeToPlan(
   }
 
   // Nunca confiar en que el código ya se validó en el navegador — se revisa
-  // de nuevo acá antes de cobrar. Un código de influencer trae su propio
-  // descuento; si el cupón de arriba ya dio uno mejor (ej. la promo UNIQUE1
-  // por defecto), ese se queda — no se suman los dos.
+  // de nuevo acá antes de cobrar, para no dejar pasar un código inválido
+  // (típico: un error de digitación). No afecta el precio — ni los códigos
+  // normales ni los de influencer dan descuento, solo créditos después del
+  // pago (ver procesarReferido, llamado desde chargeSubscriptionPlan).
   if (codigoReferido) {
     const validado = await validarCodigoReferido(codigoReferido, email);
     if (!validado.ok) return { ok: false, error: validado.error };
-    const descuentoReferido = validado.descuentoPorcentaje / 100;
-    if (descuentoReferido > (descuento ?? 0)) {
-      descuento = descuentoReferido;
-    }
   }
 
   // Mientras dure el lanzamiento, el ciclo de cobro arranca el día del

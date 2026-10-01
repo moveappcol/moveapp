@@ -8,7 +8,7 @@ import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import CancelSubscriptionButton from "@/components/pagos/cancel-subscription-button";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
-import { getOrCreateCodigoReferido, CREDITOS_POR_REFERIDO, DESCUENTO_INFLUENCER_PORCENTAJE } from "@/lib/referidos";
+import { getOrCreateCodigoReferido, CREDITOS_POR_REFERIDO } from "@/lib/referidos";
 
 export default async function MiSuscripcionPage({
   searchParams,
@@ -113,7 +113,7 @@ export default async function MiSuscripcionPage({
           <p className="font-heading text-sm font-semibold text-move-green">Refiere y gana créditos 🎁</p>
           <p className="mt-1 font-body text-xs text-move-green/60">
             {codigoReferidoInfo.esInfluencer
-              ? `Comparte tu código — tus referidos tienen ${DESCUENTO_INFLUENCER_PORCENTAJE}% de descuento en su primer pago, y cuando paguen te llegan ${CREDITOS_POR_REFERIDO} créditos.`
+              ? `Comparte tu código — cuando alguien pague su primer plan con él, ambos ganan ${CREDITOS_POR_REFERIDO} créditos.`
               : `Comparte tu código — cuando un amigo pague su primer plan, te llegan ${CREDITOS_POR_REFERIDO} créditos (necesitas tener un plan activo en ese momento).`}
           </p>
           <p className="mt-3 font-heading text-2xl font-extrabold tracking-widest text-move-coral">

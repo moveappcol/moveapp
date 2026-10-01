@@ -21,8 +21,11 @@ import { getSubscriptionByEmail } from "./subscriptions";
  *   - Tabla "usuarios", campo nuevo "EsInfluencer" (casilla — marcada a mano
  *     por el dueño para cuentas de influencers; cambia dos reglas de su
  *     CodigoReferido frente al de un usuario normal: no necesita tener plan
- *     activo para seguir dando el crédito, y quien lo usa recibe un
- *     descuento del 10% en su primer pago — ver DESCUENTO_INFLUENCER_PORCENTAJE).
+ *     activo para seguir dando el crédito, y quien USA su código también
+ *     recibe CREDITOS_POR_REFERIDO créditos (en un código normal, el que
+ *     paga no recibe nada — solo gana quien tiene el código). Antes esto daba
+ *     10% de descuento en vez de créditos; se cambió a créditos para los dos
+ *     lados.
  */
 const USUARIOS_TABLE = "usuarios";
 const PAGOS_TABLE = "Pagos";
@@ -30,7 +33,6 @@ const REFERIDOS_TABLE = "Referidos";
 
 export const CREDITOS_POR_REFERIDO = 5;
 const DIAS_VALIDEZ_CREDITO_REFERIDO = 30;
-export const DESCUENTO_INFLUENCER_PORCENTAJE = 10;
 
 /** Sin 0/O ni 1/I — se escribe a mano en el checkout, así que prima fácil
  * de transcribir sobre densidad. Más corto que el de Regalos (ese se
@@ -142,7 +144,7 @@ async function pareceCuentaDuplicada(
 }
 
 export type ValidacionCodigoReferido =
-  | { ok: true; descuentoPorcentaje: number }
+  | { ok: true; esInfluencer: boolean }
   | { ok: false; error: string };
 
 /** Valida un código de referido ANTES de cobrar, para mostrarle a quien
@@ -153,9 +155,9 @@ export type ValidacionCodigoReferido =
  * este punto pueden no estar completos todavía. Esos dos se siguen
  * revisando en `procesarReferido` como respaldo silencioso — que esto valide
  * en verde no garantiza el crédito si de todas formas no cumple esos dos al
- * momento de pagar. `descuentoPorcentaje` sale en 0 para un código normal, o
- * DESCUENTO_INFLUENCER_PORCENTAJE si es de una cuenta marcada "EsInfluencer"
- * — el llamador lo usa para descontar el precio antes de cobrar. */
+ * momento de pagar. `esInfluencer` solo es para que el llamador pueda avisar
+ * en la UI que, si es de un influencer, quien paga también gana créditos —
+ * no cambia nada del precio, ya no hay descuento. */
 export async function validarCodigoReferido(
   codigo: string,
   correoQuePaga: string
@@ -182,7 +184,7 @@ export async function validarCodigoReferido(
     }
   }
 
-  return { ok: true, descuentoPorcentaje: referente.esInfluencer ? DESCUENTO_INFLUENCER_PORCENTAJE : 0 };
+  return { ok: true, esInfluencer: referente.esInfluencer };
 }
 
 /** Procesa un código de referido tras un pago de plan ya aprobado —
@@ -246,6 +248,15 @@ export async function procesarReferido(params: {
     // vencimiento del plan de quien refiere, vive aparte (dura 30 días
     // desde hoy, controlados por el cron de vencidos, no por Vencimiento).
     await addCreditsByEmail(referente.correo, CREDITOS_POR_REFERIDO, false);
+
+    // Solo en códigos de influencer: quien paga TAMBIÉN gana créditos (antes
+    // era un descuento del 10%, se cambió a créditos para los dos lados). A
+    // diferencia del crédito de arriba, este no se vence a los 30 días ni lo
+    // toca el cron de vencidos — ya es un cliente real que acaba de pagar,
+    // se le suma como cualquier otro crédito normal.
+    if (referente.esInfluencer) {
+      await addCreditsByEmail(params.correoReferido, CREDITOS_POR_REFERIDO, false);
+    }
   } catch {
     // Nunca debe tumbar el cobro/crédito real de la persona que pagó — si
     // algo falla acá, el referido simplemente no se otorga esta vez.

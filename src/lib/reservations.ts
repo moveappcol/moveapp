@@ -1,6 +1,6 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
-import { getClaseById, precioEfectivo } from "./classes";
+import { getClaseById, precioEfectivo, invalidateClasesCupos } from "./classes";
 import {
   getGymById,
   canAccessGymByGenero,
@@ -311,6 +311,7 @@ export async function createReservation(params: ReservationParams): Promise<Book
   ]);
 
   const remainingCredits = await deductCredits(account.recordId, claseCredits);
+  invalidateClasesCupos();
 
   await sendNewReservationEmail({
     ownerEmail: OWNER_EMAIL,
@@ -428,6 +429,7 @@ export async function cancelReservation(params: {
   if (onTime) {
     await addCredits(account.recordId, clase.credits);
   }
+  invalidateClasesCupos();
 
   const gimnasioId = (record.get("Gimnasios") as string[] | undefined)?.[0];
   if (gimnasioId) {

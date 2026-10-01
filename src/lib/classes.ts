@@ -1,7 +1,17 @@
 import { getAirtableBase } from "./airtable";
-import { cached } from "./server-cache";
+import { cached, invalidate } from "./server-cache";
 
 const CACHE_TTL_MS = 5_000;
+const CLASES_CON_CUPOS_CACHE_KEY = "classes:allWithCupos";
+
+/** Llamar después de cualquier escritura que cambie cuántos cupos quedan
+ * ocupados (reservar, cancelar) — si no, la próxima persona que vea la
+ * lista de clases puede seguir viendo el cupo de antes de esa escritura
+ * hasta por CACHE_TTL_MS, que es justo la ventana en la que alguien suele
+ * mirar después de reservar. */
+export function invalidateClasesCupos(): void {
+  invalidate(CLASES_CON_CUPOS_CACHE_KEY);
+}
 
 /** "A" (40%) o "B" (30%) — según cuándo el gimnasio le dio ese cupo a
  * UNIQUE: a tiempo (A) o de último momento/el mismo día (B). Es del
@@ -154,7 +164,7 @@ function mapRecordToClase(
  * segundos) y cada gimnasio filtra sobre el mismo resultado en vez de
  * repetir 2 escaneos completos de Airtable por cada uno que se visite. */
 async function getAllClasesConCupos(): Promise<Clase[]> {
-  return cached("classes:allWithCupos", CACHE_TTL_MS, async () => {
+  return cached(CLASES_CON_CUPOS_CACHE_KEY, CACHE_TTL_MS, async () => {
     const base = getAirtableBase();
     // Se filtra en JS en vez de con filterByFormula: ARRAYJOIN sobre un campo
     // de enlace concatena los nombres de los registros vinculados, no sus IDs,

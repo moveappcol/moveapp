@@ -31,6 +31,16 @@ export function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Pro
   return promise;
 }
 
+/** Borra una entrada antes de que venza su TTL — para cuando una escritura
+ * real (reservar, cancelar) deja ese resultado cacheado obsoleto de una,
+ * en vez de esperar a que expire solo. Nunca lo necesita el camino de
+ * reservar en sí (ese siempre lee fresco, ver la nota de arriba) — es para
+ * que la PRÓXIMA persona que vea la lista de clases ya no reciba el cupo
+ * de antes de esa escritura. */
+export function invalidate(key: string): void {
+  store.delete(key);
+}
+
 const locks = new Map<string, Promise<unknown>>();
 
 /** Mutex en memoria del proceso, por llave — mismo fundamento que `cached`

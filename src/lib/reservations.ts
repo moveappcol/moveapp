@@ -1,15 +1,16 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
-import { getClaseById, precioEfectivo, invalidateClasesCupos } from "./classes";
+import { getClaseById, precioEfectivo, invalidateClasesCupos, getAllClasesDeTodosLosGimnasios } from "./classes";
 import {
   getGymById,
+  getGyms,
   canAccessGymByGenero,
   DEFAULT_BOOKING_CUTOFF_MINUTES,
   reservationsAreOpen,
   reservationsOpenLabel,
 } from "./gyms";
-import { sendLowRatingAlertEmail, sendNewReservationEmail } from "./email";
-import { getWaitingInOrder, markWaitlistPromoted } from "./waitlist";
+import { sendLowRatingAlertEmail, sendNewReservationEmail, sendWaitlistPromotedEmail } from "./email";
+import { getWaitingInOrder, markWaitlistPromoted, getAllWaitingEntries } from "./waitlist";
 import { sendPushNotification } from "./push";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
@@ -433,31 +434,45 @@ export async function cancelReservation(params: {
 
   const gimnasioId = (record.get("Gimnasios") as string[] | undefined)?.[0];
   if (gimnasioId) {
-    await tryPromoteFromWaitlist({
+    const gym = await getGymById(gimnasioId);
+    await promoverDeListaDeEspera({
       claseId: clase.id,
       gimnasioId,
+      gimnasioNombre: gym?.name ?? "",
       claseCredits: precioEfectivo(clase),
       fechaISO: fecha,
+      cuposLibres: 1,
     });
   }
 
   return { ok: true, refunded: onTime };
 }
 
-/** Al cancelarse una reserva se libera un cupo — si hay alguien en la lista
- * de espera, se le reserva automáticamente (cobrando créditos como una
- * reserva normal) y se le avisa por push. Si a esa persona le falla la
- * reserva (sin créditos, perfil incompleto, etc.) se prueba con la
- * siguiente en la fila, sin bloquearse en una sola persona. */
-async function tryPromoteFromWaitlist(params: {
+/** Promueve hasta `cuposLibres` personas de la fila de esa clase — cada una
+ * reserva de verdad (cobra créditos) y recibe correo + push. Si a alguien le
+ * falla la reserva (sin créditos, perfil incompleto, etc.) se sigue con la
+ * siguiente en la fila sin gastar ahí un cupo libre. La llama tanto
+ * cancelReservation (siempre con cuposLibres=1, porque cancelar libera
+ * exactamente uno) como promoverListasDeEsperaConCupo (el cron que revisa
+ * cupos subidos a mano en Airtable, donde puede haber más de uno libre). No
+ * valida cupo por su cuenta — confía en que quien llama ya lo calculó bien,
+ * así que nunca hay que llamarla con más `cuposLibres` del que de verdad
+ * hay disponible. */
+async function promoverDeListaDeEspera(params: {
   claseId: string;
   gimnasioId: string;
+  gimnasioNombre: string;
   claseCredits: number;
   fechaISO: string;
-}): Promise<void> {
+  cuposLibres: number;
+}): Promise<number> {
+  if (params.cuposLibres <= 0) return 0;
   const waiting = await getWaitingInOrder(params.claseId);
 
+  let promovidos = 0;
   for (const entry of waiting) {
+    if (promovidos >= params.cuposLibres) break;
+
     const result = await createReservation({
       userEmail: entry.correo,
       userName: entry.nombre,
@@ -469,6 +484,7 @@ async function tryPromoteFromWaitlist(params: {
 
     if (result.ok) {
       await markWaitlistPromoted(entry.id);
+      promovidos += 1;
       const persona = await getUserCreditsByEmail(entry.correo);
       await sendPushNotification({
         to: persona?.pushToken ?? null,
@@ -476,9 +492,59 @@ async function tryPromoteFromWaitlist(params: {
         body: "Te inscribimos automáticamente en la clase de tu lista de espera.",
         data: { type: "lista-espera-promovido", claseId: params.claseId },
       });
-      return;
+      await sendWaitlistPromotedEmail({
+        correo: entry.correo,
+        userName: entry.nombre,
+        gimnasio: params.gimnasioNombre,
+        fechaISO: params.fechaISO,
+      });
     }
   }
+  return promovidos;
+}
+
+/** Revisa TODAS las clases futuras con lista de espera y promueve a quien
+ * corresponda si ya tienen cupo disponible — para cuando el cupo se libera
+ * por fuera de la app (ej. el dueño sube "Cupos totales" a mano en
+ * Airtable, que no dispara nada por sí solo; una cancelación desde la app sí
+ * promueve sola, ver cancelReservation). Pensada para correr desde un cron,
+ * no desde el camino de reservar. Cuesta como mucho un puñado de llamadas a
+ * Airtable por corrida sin importar cuántas clases haya (una para todas las
+ * clases con sus cupos, una para todos los gimnasios, una para toda la
+ * lista de espera) — el costo real de por sí solo lo paga cada persona que
+ * de verdad se termina promoviendo. */
+export async function promoverListasDeEsperaConCupo(): Promise<{ promovidos: number }> {
+  const [clases, { gyms }, esperandoTodos] = await Promise.all([
+    getAllClasesDeTodosLosGimnasios(),
+    getGyms(),
+    getAllWaitingEntries(),
+  ]);
+
+  const gymNameById = new Map(gyms.map((g) => [g.id, g.name]));
+  const esperandoPorClase = new Map<string, number>();
+  for (const entry of esperandoTodos) {
+    esperandoPorClase.set(entry.claseId, (esperandoPorClase.get(entry.claseId) ?? 0) + 1);
+  }
+
+  const ahora = Date.now();
+  let promovidos = 0;
+  for (const clase of clases) {
+    if (clase.cuposDisponibles <= 0) continue;
+    if (!clase.gimnasioId) continue;
+    if (!clase.fecha || new Date(clase.fecha).getTime() <= ahora) continue;
+    if (!esperandoPorClase.has(clase.id)) continue;
+
+    promovidos += await promoverDeListaDeEspera({
+      claseId: clase.id,
+      gimnasioId: clase.gimnasioId,
+      gimnasioNombre: gymNameById.get(clase.gimnasioId) ?? "",
+      claseCredits: precioEfectivo(clase),
+      fechaISO: clase.fecha,
+      cuposLibres: clase.cuposDisponibles,
+    });
+  }
+
+  return { promovidos };
 }
 
 export type RatingResult = { ok: true } | { ok: false; error: string };

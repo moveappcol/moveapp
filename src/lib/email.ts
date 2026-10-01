@@ -339,6 +339,44 @@ export async function sendNewReservationEmail(params: {
   }
 }
 
+/** Avisa a la persona que acaba de salir de una lista de espera porque se
+ * liberó un cupo y ya quedó reservada automático (créditos ya descontados,
+ * visible en "Mis reservas") — ver promoverDeListaDeEspera en
+ * reservations.ts. Al correo con el que tiene la cuenta, igual que
+ * cualquier otro correo transaccional de la plataforma. */
+export async function sendWaitlistPromotedEmail(params: {
+  correo: string;
+  userName: string;
+  gimnasio: string;
+  fechaISO: string;
+}): Promise<void> {
+  const fecha = new Date(params.fechaISO).toLocaleString("es-CO", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  });
+
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">🎉 ¡Saliste de la lista de espera!</p>
+      <p>Hola ${escapeHtml(params.userName)}, se liberó un cupo y te inscribimos automáticamente — ya te descontamos los créditos.</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+      <p>Ya puedes verla en "Mis reservas".</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      to: [params.correo],
+      subject: `Saliste de la lista de espera — ${params.gimnasio}`,
+      html,
+    });
+  } catch {
+    // No bloquea la reserva ya hecha — si falla, simplemente no llega.
+  }
+}
+
 /** Factura electrónica de una compra (plan o créditos) — se manda apenas
  * Dataico confirma la generación (ver facturarCompra en billing.ts). Enlaza
  * al PDF de Dataico en vez de adjuntarlo — ese link ya queda vigente de

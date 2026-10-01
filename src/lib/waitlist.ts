@@ -124,3 +124,15 @@ export async function markWaitlistPromoted(entryId: string): Promise<void> {
     typecast: true,
   });
 }
+
+/** Todas las entradas "Esperando" de CUALQUIER clase, en una sola llamada —
+ * para el cron que revisa cupos liberados a mano en Airtable (ver
+ * promoverListasDeEsperaConCupo en reservations.ts), que si no tocaría
+ * consultar clase por clase. */
+export async function getAllWaitingEntries(): Promise<WaitlistEntry[]> {
+  const base = getAirtableBase();
+  const records = await base(LISTA_ESPERA_TABLE)
+    .select({ filterByFormula: `{Estado} = "Esperando"` })
+    .all();
+  return records.map(mapRecord).sort((a, b) => a.creadoEn.localeCompare(b.creadoEn));
+}

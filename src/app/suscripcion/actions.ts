@@ -104,6 +104,19 @@ export async function subscribeToPlan(
     cuponUsosActuales = validated.cupon.usosActuales;
   }
 
+  // Nunca confiar en que el código ya se validó en el navegador — se revisa
+  // de nuevo acá antes de cobrar. Un código de influencer trae su propio
+  // descuento; si el cupón de arriba ya dio uno mejor (ej. la promo UNIQUE1
+  // por defecto), ese se queda — no se suman los dos.
+  if (codigoReferido) {
+    const validado = await validarCodigoReferido(codigoReferido, email);
+    if (!validado.ok) return { ok: false, error: validado.error };
+    const descuentoReferido = validado.descuentoPorcentaje / 100;
+    if (descuentoReferido > (descuento ?? 0)) {
+      descuento = descuentoReferido;
+    }
+  }
+
   // Mientras dure el lanzamiento, el ciclo de cobro arranca el día del
   // lanzamiento para cualquiera que pague antes, use o no un cupón — el
   // cupón (si trae su propia fecha) manda sobre este default general.

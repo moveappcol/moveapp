@@ -18,6 +18,11 @@ import { getSubscriptionByEmail } from "./subscriptions";
  *       - CreditosOtorgados (número)
  *       - Reclamado         (casilla — true cuando el cron de vencidos ya le
  *          quitó los créditos a quien refirió por no haberlos usado a tiempo)
+ *   - Tabla "usuarios", campo nuevo "EsInfluencer" (casilla — marcada a mano
+ *     por el dueño para cuentas de influencers; cambia dos reglas de su
+ *     CodigoReferido frente al de un usuario normal: no necesita tener plan
+ *     activo para seguir dando el crédito, y quien lo usa recibe un
+ *     descuento del 10% en su primer pago — ver DESCUENTO_INFLUENCER_PORCENTAJE).
  */
 const USUARIOS_TABLE = "usuarios";
 const PAGOS_TABLE = "Pagos";
@@ -25,6 +30,7 @@ const REFERIDOS_TABLE = "Referidos";
 
 export const CREDITOS_POR_REFERIDO = 5;
 const DIAS_VALIDEZ_CREDITO_REFERIDO = 30;
+export const DESCUENTO_INFLUENCER_PORCENTAJE = 10;
 
 /** Sin 0/O ni 1/I — se escribe a mano en el checkout, así que prima fácil
  * de transcribir sobre densidad. Más corto que el de Regalos (ese se
@@ -39,9 +45,12 @@ function generarCodigo(): string {
   return codigo;
 }
 
-/** Devuelve el código de referido de esa cuenta, generándolo la primera vez
- * que se pide. null si la cuenta no existe todavía en "usuarios". */
-export async function getOrCreateCodigoReferido(email: string): Promise<string | null> {
+export type CodigoReferidoInfo = { codigo: string; esInfluencer: boolean };
+
+/** Devuelve el código de referido de esa cuenta (y si es de influencer),
+ * generándolo la primera vez que se pide. null si la cuenta no existe
+ * todavía en "usuarios". */
+export async function getOrCreateCodigoReferido(email: string): Promise<CodigoReferidoInfo | null> {
   const base = getAirtableBase();
   const records = await base(USUARIOS_TABLE)
     .select({ filterByFormula: `LOWER({Correo}) = LOWER("${escapeFormulaValue(email)}")`, maxRecords: 1 })
@@ -49,8 +58,10 @@ export async function getOrCreateCodigoReferido(email: string): Promise<string |
   const record = records[0];
   if (!record) return null;
 
+  const esInfluencer = (record.get("EsInfluencer") as boolean) ?? false;
+
   const existente = (record.get("CodigoReferido") as string) || null;
-  if (existente) return existente;
+  if (existente) return { codigo: existente, esInfluencer };
 
   for (let intento = 0; intento < 5; intento++) {
     const codigo = generarCodigo();
@@ -62,13 +73,13 @@ export async function getOrCreateCodigoReferido(email: string): Promise<string |
     await base(USUARIOS_TABLE).update([{ id: record.id, fields: { CodigoReferido: codigo } }], {
       typecast: true,
     });
-    return codigo;
+    return { codigo, esInfluencer };
   }
 
   throw new Error("No se pudo generar un código de referido único después de varios intentos.");
 }
 
-async function findReferenteByCodigo(codigo: string): Promise<{ correo: string } | null> {
+async function findReferenteByCodigo(codigo: string): Promise<{ correo: string; esInfluencer: boolean } | null> {
   const base = getAirtableBase();
   const records = await base(USUARIOS_TABLE)
     .select({
@@ -78,7 +89,10 @@ async function findReferenteByCodigo(codigo: string): Promise<{ correo: string }
     .all();
   const record = records[0];
   if (!record) return null;
-  return { correo: (record.get("Correo") as string) ?? "" };
+  return {
+    correo: (record.get("Correo") as string) ?? "",
+    esInfluencer: (record.get("EsInfluencer") as boolean) ?? false,
+  };
 }
 
 /** true si `pagoIdActual` es el ÚNICO pago de tipo "Plan" en estado
@@ -127,16 +141,21 @@ async function pareceCuentaDuplicada(
   return records.length > 0;
 }
 
-export type ValidacionCodigoReferido = { ok: true } | { ok: false; error: string };
+export type ValidacionCodigoReferido =
+  | { ok: true; descuentoPorcentaje: number }
+  | { ok: false; error: string };
 
 /** Valida un código de referido ANTES de cobrar, para mostrarle a quien
  * paga si lo escribió bien — mismos chequeos de fondo que `procesarReferido`
- * (código existe, no es autorreferencia, quien refiere tiene plan activo, no
- * fue referido antes), menos "es tu primer plan" y "cuenta duplicada", que
- * dependen del pago ya hecho/de datos que en este punto pueden no estar
- * completos todavía. Esos dos se siguen revisando en `procesarReferido` como
- * respaldo silencioso — que esto valide en verde no garantiza el crédito si
- * de todas formas no cumple esos dos al momento de pagar. */
+ * (código existe, no es autorreferencia, quien refiere tiene plan activo
+ * salvo que sea influencer, no fue referido antes), menos "es tu primer
+ * plan" y "cuenta duplicada", que dependen del pago ya hecho/de datos que en
+ * este punto pueden no estar completos todavía. Esos dos se siguen
+ * revisando en `procesarReferido` como respaldo silencioso — que esto valide
+ * en verde no garantiza el crédito si de todas formas no cumple esos dos al
+ * momento de pagar. `descuentoPorcentaje` sale en 0 para un código normal, o
+ * DESCUENTO_INFLUENCER_PORCENTAJE si es de una cuenta marcada "EsInfluencer"
+ * — el llamador lo usa para descontar el precio antes de cobrar. */
 export async function validarCodigoReferido(
   codigo: string,
   correoQuePaga: string
@@ -156,21 +175,23 @@ export async function validarCodigoReferido(
     return { ok: false, error: "Ya usaste un código de referido antes — solo se puede una vez." };
   }
 
-  const subReferente = await getSubscriptionByEmail(referente.correo);
-  if (!subReferente || subReferente.estado !== "Activa") {
-    return { ok: false, error: "Ese código ya no está activo." };
+  if (!referente.esInfluencer) {
+    const subReferente = await getSubscriptionByEmail(referente.correo);
+    if (!subReferente || subReferente.estado !== "Activa") {
+      return { ok: false, error: "Ese código ya no está activo." };
+    }
   }
 
-  return { ok: true };
+  return { ok: true, descuentoPorcentaje: referente.esInfluencer ? DESCUENTO_INFLUENCER_PORCENTAJE : 0 };
 }
 
 /** Procesa un código de referido tras un pago de plan ya aprobado —
  * nunca lanza para no tumbar el flujo de cobro/crédito real; si algo no
  * cumple (código inválido, autorreferencia, no es el primer pago, ya fue
- * referido antes, quien refiere no tiene plan activo, o huele a cuenta
- * duplicada) simplemente no se otorga nada, en silencio. Se llama desde
- * los dos lugares que pueden ganar la carrera de "quién acredita este
- * pago" (chargeSubscriptionPlan y el webhook de Wompi), así que solo se
+ * referido antes, quien refiere no tiene plan activo y no es influencer, o
+ * huele a cuenta duplicada) simplemente no se otorga nada, en silencio. Se
+ * llama desde los dos lugares que pueden ganar la carrera de "quién acredita
+ * este pago" (chargeSubscriptionPlan y el webhook de Wompi), así que solo se
  * ejecuta una vez por pago real — ver `credited` en ambos. */
 export async function procesarReferido(params: {
   correoReferido: string;
@@ -188,8 +209,10 @@ export async function procesarReferido(params: {
     if (!(await esPrimerPagoDePlanAprobado(params.correoReferido, params.pagoId))) return;
     if (await yaFueReferidoAntes(params.correoReferido)) return;
 
-    const subReferente = await getSubscriptionByEmail(referente.correo);
-    if (!subReferente || subReferente.estado !== "Activa") return;
+    if (!referente.esInfluencer) {
+      const subReferente = await getSubscriptionByEmail(referente.correo);
+      if (!subReferente || subReferente.estado !== "Activa") return;
+    }
 
     const referido = await getUserCreditsByEmail(params.correoReferido);
     if (await pareceCuentaDuplicada(params.correoReferido, referido?.telefono ?? null, referido?.cedula ?? null)) {

@@ -33,7 +33,7 @@ type ReferidoState =
   | { status: "idle" }
   | { status: "loading" }
   | { status: "invalid"; error: string }
-  | { status: "valid" };
+  | { status: "valid"; descuentoPorcentaje: number };
 
 function formatFechaLarga(fechaISO: string, locale: Locale): string {
   return new Date(`${fechaISO}T00:00:00`).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
@@ -157,7 +157,7 @@ export default function SubscribeForm({
       setReferido({ status: "invalid", error: result.error });
       return;
     }
-    setReferido({ status: "valid" });
+    setReferido({ status: "valid", descuentoPorcentaje: result.descuentoPorcentaje });
   }
 
   function handleRedeemFreeCoupon() {
@@ -241,8 +241,12 @@ export default function SubscribeForm({
     }
   }
 
-  const discountedPrice =
-    coupon.status === "valid-descuento" ? Math.round(planPrice * (1 - coupon.descuentoPorcentaje / 100)) : null;
+  // El mejor descuento gana entre cupón y código de referido (de influencer)
+  // — no se suman, mismo criterio que el servidor en subscribeToPlan.
+  const cuponDescuentoPct = coupon.status === "valid-descuento" ? coupon.descuentoPorcentaje : 0;
+  const referidoDescuentoPct = referido.status === "valid" ? referido.descuentoPorcentaje : 0;
+  const mejorDescuentoPct = Math.max(cuponDescuentoPct, referidoDescuentoPct);
+  const discountedPrice = mejorDescuentoPct > 0 ? Math.round(planPrice * (1 - mejorDescuentoPct / 100)) : null;
 
   if (success !== null) {
     return (
@@ -386,7 +390,11 @@ export default function SubscribeForm({
               <p className="mt-2 font-body text-sm text-move-coral">{referido.error}</p>
             )}
             {referido.status === "valid" && (
-              <p className="mt-2 font-body text-sm font-medium text-move-green">Código válido ✓</p>
+              <p className="mt-2 font-body text-sm font-medium text-move-green">
+                {referido.descuentoPorcentaje > 0
+                  ? `Código válido — tienes ${referido.descuentoPorcentaje}% de descuento ✓`
+                  : "Código válido ✓"}
+              </p>
             )}
           </label>
 

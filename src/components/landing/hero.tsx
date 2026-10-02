@@ -2,11 +2,19 @@ import Image from "next/image";
 import InstallAppButton from "./install-app-button";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
 
 export default async function Hero() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = dict.home.hero;
+
+  // Mismo cupón que se valida en plans-section.tsx y en el checkout — se
+  // repite acá (no se comparte el resultado entre componentes de la misma
+  // página) para que este letrero desaparezca solo apenas el cupón se
+  // desactive o venza en Airtable, sin tocar código ni dejarlo vivo de más.
+  const descuentoResult = await validateCoupon(DEFAULT_COUPON_CODE);
+  const mostrarDescuentoBadge = descuentoResult.ok && descuentoResult.cupon.tipo === "Descuento";
 
   return (
     <section className="relative overflow-hidden bg-background">
@@ -16,9 +24,11 @@ export default async function Hero() {
             <span className="inline-flex items-center rounded-full bg-move-lime/40 px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-move-green">
               {t.badge}
             </span>
-            <span className="inline-flex items-center rounded-full bg-move-coral px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-white">
-              {t.discountBadge}
-            </span>
+            {mostrarDescuentoBadge && (
+              <span className="inline-flex items-center rounded-full bg-move-coral px-4 py-1 font-heading text-xs font-semibold uppercase tracking-wide text-white">
+                {t.discountBadge}
+              </span>
+            )}
           </div>
           <h1 className="mt-6 font-heading text-4xl font-bold leading-tight text-move-green sm:text-5xl">
             {t.titleLine1}

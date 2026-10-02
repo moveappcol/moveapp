@@ -8,6 +8,7 @@ import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 import WhatsappButton from "@/components/layout/whatsapp-button";
 import MetaPixel from "@/components/analytics/meta-pixel";
+import MicrosoftClarity from "@/components/analytics/microsoft-clarity";
 import CouponCapture from "@/components/landing/coupon-capture";
 import { GoogleTagManagerScript, GoogleTagManagerNoscript } from "@/components/analytics/google-tag-manager";
 import { getLocale } from "@/lib/i18n/locale";
@@ -76,6 +77,7 @@ export default async function RootLayout({
           <GoogleTagManagerNoscript />
           <GoogleTagManagerScript />
           <MetaPixel />
+          <MicrosoftClarity />
           <Suspense fallback={null}>
             <CouponCapture />
           </Suspense>

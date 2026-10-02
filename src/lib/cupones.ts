@@ -22,6 +22,19 @@ export function fechaInicioVigente(inicioDiferido: string | null): string | unde
   return inicioDiferido >= hoy ? inicioDiferido : undefined;
 }
 
+/** El campo "Fecha de expiración" en Airtable es solo el día, sin hora —
+ * "expira el 3 de octubre" quiere decir que el cupón sigue válido TODO ese
+ * día en Bogotá, hasta las 11:59:59 pm. `new Date("2026-10-03")` a secas
+ * interpreta eso como medianoche UTC de ese día, que en Bogotá (UTC-5, sin
+ * horario de verano) cae como las 7pm del día ANTERIOR — casi 29 horas antes
+ * de lo que de verdad se quiso decir. Este helper calcula el instante
+ * correcto: la medianoche de Bogotá del día SIGUIENTE (osea, las 05:00 UTC
+ * de ese día siguiente). */
+function finDeDiaBogota(fechaISO: string): number {
+  const [y, m, d] = fechaISO.slice(0, 10).split("-").map(Number);
+  return Date.UTC(y, m - 1, d + 1, 5, 0, 0);
+}
+
 export type TipoCupon = "Créditos gratis" | "Descuento";
 
 export type Cupon = {
@@ -113,7 +126,7 @@ export async function validateCoupon(code: string): Promise<CuponValidationResul
   const cupon = mapRecordToCupon(record);
   if (!cupon) return { ok: false, error: "Ese cupón no está configurado correctamente." };
 
-  if (cupon.fechaExpiracion && new Date(cupon.fechaExpiracion).getTime() < Date.now()) {
+  if (cupon.fechaExpiracion && finDeDiaBogota(cupon.fechaExpiracion) < Date.now()) {
     return { ok: false, error: "Ese cupón ya expiró." };
   }
 

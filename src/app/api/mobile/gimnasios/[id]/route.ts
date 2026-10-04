@@ -10,6 +10,7 @@ import { getClassesForGym } from "@/lib/classes";
 import { requireMobileUser } from "@/lib/mobile-auth";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
+import { getParqueaderosForGym } from "@/lib/parqueaderos";
 
 export async function GET(
   _req: Request,
@@ -26,6 +27,7 @@ export async function GET(
   }
 
   const classes = await getClassesForGym(id);
+  const parqueaderos = await getParqueaderosForGym(id);
 
   // Explorar gimnasios no requiere cuenta — solo se calculan las clases ya
   // reservadas si hay sesión iniciada; sin cuenta, la lista queda vacía.
@@ -46,6 +48,7 @@ export async function GET(
   return NextResponse.json({
     gym,
     classes,
+    parqueaderos,
     reservedClaseIds,
     reservasAbiertas,
     reservasAbrenLabel: reservationsOpenLabel("es"),

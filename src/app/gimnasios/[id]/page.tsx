@@ -12,7 +12,9 @@ import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
 import { getUserCreditsByEmail } from "@/lib/users";
+import { getParqueaderosForGym } from "@/lib/parqueaderos";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
+import GymMap from "@/components/gym/gym-map-loader";
 import ViewTracker from "@/components/analytics/view-tracker";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -51,6 +53,7 @@ export default async function GymPage({
   if (!gym) notFound();
 
   const classes = await getClassesForGym(id);
+  const parqueaderos = await getParqueaderosForGym(id);
 
   const waitlistStatus: WaitlistStatusMap = {};
   let reservedClaseIds: Set<string> = new Set();
@@ -168,22 +171,20 @@ export default async function GymPage({
       <InfoSection title={t.recomendaciones} text={gym.recomendaciones} />
 
       {gym.lat !== null && gym.lng !== null && (
-        <div className="relative mt-8 h-48 overflow-hidden rounded-2xl border border-move-green/10">
-          <iframe
-            src={`https://www.google.com/maps?q=${gym.lat},${gym.lng}&z=15&output=embed`}
-            className="h-full w-full border-0"
-            loading="lazy"
-            title={`Ubicación de ${gym.name}`}
-          />
+        <div className="relative mt-8 h-64 overflow-hidden rounded-2xl border border-move-green/10">
+          <GymMap lat={gym.lat} lng={gym.lng} name={gym.name} parqueaderos={parqueaderos} />
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${gym.lat},${gym.lng}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute bottom-3 right-3 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
+            className="absolute bottom-3 right-3 z-[1000] rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white shadow-md transition-opacity hover:opacity-90"
           >
             {t.ir}
           </a>
         </div>
+      )}
+      {parqueaderos.length > 0 && (
+        <p className="mt-2 font-body text-xs text-move-green/50">{t.leyendaMapa}</p>
       )}
     </section>
   );

@@ -143,6 +143,7 @@ export default async function GymPage({
       <InfoSection title={t.politicaCancelacion} text={gym.politicaCancelacion} />
       <InfoSection title={t.ropaCalzado} text={gym.ropaCalzado} />
       <InfoSection title={t.materiales} text={gym.materiales} />
+      <InfoSection title={t.parqueaderosCercanos} text={gym.parqueaderosCercanos} />
 
       {gym.servicios.length > 0 && (
         <div className="mt-6">

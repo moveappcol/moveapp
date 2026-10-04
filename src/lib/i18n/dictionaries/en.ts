@@ -153,6 +153,7 @@ export const en: Dictionary = {
     politicaMenores: "Minors policy",
     nivelRecomendado: "Recommended level",
     recomendaciones: "Recommendations",
+    parqueaderosCercanos: "Nearby parking",
     clasesDisponibles: "Available classes",
     limiteMensual: "You can book at this gym a maximum of 3 times per month.",
     horaPorConfirmar: "Time to be confirmed",

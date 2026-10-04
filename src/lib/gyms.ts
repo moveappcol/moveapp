@@ -77,6 +77,10 @@ export type Gym = {
   politicaMenores: string | null;
   nivelRecomendado: string | null;
   recomendaciones: string | null;
+  /** Dónde parquear cerca — texto libre a mano (ej. "Parqueadero Calle 90
+   * #15-20, $4.000/hora"), no calculado automático. null si el gimnasio
+   * todavía no lo tiene puesto en Airtable. */
+  parqueaderosCercanos: string | null;
   /** Ver DEFAULT_BOOKING_CUTOFF_MINUTES — ya resuelto al default si el
    * gimnasio no tiene un valor propio configurado en Airtable. */
   bookingCutoffMinutes: number;
@@ -109,6 +113,8 @@ export type Gym = {
  *   - "Política para menores de edad"            (texto largo)
  *   - "Nivel recomendado (principiante/avanzado)" (texto largo)
  *   - "Recomendaciones adicionales"              (texto largo)
+ *   - "Parqueaderos cercanos"                    (texto largo, opcional — escrito a mano, no calculado;
+ *      vacío = esa sección no se muestra)
  *   - "Minutos de corte reserva"                 (número, opcional — hasta cuántos minutos antes de
  *      la clase se puede reservar; vacío = usa DEFAULT_BOOKING_CUTOFF_MINUTES)
  *   - Activo                                     (casilla — solo se traen los marcados)
@@ -144,6 +150,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: "Trae toalla y una botella de agua.",
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
   {
     id: "mock-2",
@@ -168,6 +175,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
   {
     id: "mock-3",
@@ -192,6 +200,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
   {
     id: "mock-4",
@@ -216,6 +225,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
   {
     id: "mock-5",
@@ -240,6 +250,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
   {
     id: "mock-6",
@@ -264,6 +275,7 @@ const MOCK_GYMS: Gym[] = [
     recomendaciones: null,
     bookingCutoffMinutes: DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: null,
+    parqueaderosCercanos: null,
   },
 ];
 
@@ -340,6 +352,7 @@ function mapRecordToGym(record: any): Gym {
     politicaMenores: textField(record, "Política para menores de edad"),
     nivelRecomendado: textField(record, "Nivel recomendado (principiante/avanzado)"),
     recomendaciones: textField(record, "Recomendaciones adicionales"),
+    parqueaderosCercanos: textField(record, "Parqueaderos cercanos"),
     bookingCutoffMinutes: Number(record.get("Minutos de corte reserva")) || DEFAULT_BOOKING_CUTOFF_MINUTES,
     order: record.get("Orden") !== undefined && record.get("Orden") !== "" ? Number(record.get("Orden")) : null,
   };

@@ -155,6 +155,7 @@ export const es = {
     politicaMenores: "Política para menores de edad",
     nivelRecomendado: "Nivel recomendado",
     recomendaciones: "Recomendaciones",
+    parqueaderosCercanos: "Parqueaderos cercanos",
     clasesDisponibles: "Clases disponibles",
     limiteMensual: "Puedes reservar en este gimnasio un máximo de 3 veces al mes.",
     horaPorConfirmar: "Hora por confirmar",

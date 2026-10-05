@@ -10,6 +10,7 @@ import {
   bogotaHour,
   formatRangoHorario,
   RANGOS_HORARIO,
+  claseYaPaso,
 } from "@/lib/dias";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
@@ -57,6 +58,7 @@ export default function ClassesByDayExplorer({
     .filter((c) => {
       if (!c.fecha) return false;
       if (DAY_KEY_FORMATTER.format(new Date(c.fecha)) !== diaActivo.key) return false;
+      if (claseYaPaso(c.fecha)) return false;
 
       // Las clases sin cupo nunca se muestran en este explorador — salvo
       // que sea una clase que la propia persona ya reservó (su reserva no

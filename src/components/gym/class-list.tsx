@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Show } from "@clerk/nextjs";
 import { bookClass } from "@/app/gimnasios/[id]/actions";
 import { precioEfectivo, type Clase } from "@/lib/classes";
-import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga } from "@/lib/dias";
+import { DAY_KEY_FORMATTER, semanaActual, formatHora, formatFechaLarga, claseYaPaso } from "@/lib/dias";
 import type { BookingResult } from "@/lib/reservations";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -298,7 +298,7 @@ export default function ClassList({
 
   if (modoPlano) {
     const proximas = classes
-      .filter((c) => c.fecha && new Date(c.fecha).getTime() > Date.now())
+      .filter((c) => c.fecha && !claseYaPaso(c.fecha))
       .sort((a, b) => (a.fecha as string).localeCompare(b.fecha as string));
 
     if (proximas.length === 0) {
@@ -329,7 +329,10 @@ export default function ClassList({
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
   const clasesDelDia = classes.filter(
-    (c) => c.fecha && DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key
+    (c) =>
+      c.fecha &&
+      DAY_KEY_FORMATTER.format(new Date(c.fecha)) === diaActivo.key &&
+      !claseYaPaso(c.fecha)
   );
 
   return (

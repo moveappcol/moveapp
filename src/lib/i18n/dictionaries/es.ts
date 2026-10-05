@@ -42,6 +42,11 @@ export const es = {
       ctaPlanes: "Ver planes de créditos",
       ctaGimnasios: "Explorar gimnasios",
     },
+    referral: {
+      title: "Refiere y gana créditos 🎁",
+      body: "¿Ya tienes una suscripción activa? Tu código de referido te espera en Mi Suscripción — compártelo y gana créditos cada vez que alguien pague su primer plan con él.",
+      cta: "Ver mi código",
+    },
     howItWorks: {
       title: "¿Cómo funciona?",
       subtitle: "Un solo plan de créditos para entrenar en los mejores gimnasios y estudios de Bogotá.",

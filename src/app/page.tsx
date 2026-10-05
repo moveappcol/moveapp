@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Hero from "@/components/landing/hero";
+import ReferralBanner from "@/components/landing/referral-banner";
 import HowItWorksSection from "@/components/landing/how-it-works-section";
 import GymsSection from "@/components/landing/gyms-section";
 import PlansSection from "@/components/landing/plans-section";
@@ -19,6 +20,7 @@ export default async function Home() {
         <RegistrationTracker />
       </Suspense>
       <Hero />
+      <ReferralBanner />
       <HowItWorksSection />
       <GymsSection />
       <PlansSection />

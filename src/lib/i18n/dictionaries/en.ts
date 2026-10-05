@@ -40,6 +40,11 @@ export const en: Dictionary = {
       ctaPlanes: "See credit plans",
       ctaGimnasios: "Explore gyms",
     },
+    referral: {
+      title: "Refer a friend, earn credits 🎁",
+      body: "Already have an active subscription? Your referral code is waiting in My Subscription — share it and earn credits every time someone pays for their first plan with it.",
+      cta: "See my code",
+    },
     howItWorks: {
       title: "How it works",
       subtitle: "One credit plan to train at the best gyms and studios in Bogotá.",

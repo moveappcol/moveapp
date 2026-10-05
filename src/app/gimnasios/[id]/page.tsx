@@ -15,6 +15,7 @@ import { getUserCreditsByEmail } from "@/lib/users";
 import { getParqueaderosForGym } from "@/lib/parqueaderos";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
 import GymMap from "@/components/gym/gym-map-loader";
+import PhotoGallery from "@/components/gym/photo-gallery";
 import ViewTracker from "@/components/analytics/view-tracker";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -109,16 +110,8 @@ export default async function GymPage({
       )}
 
       {gym.photoDetailUrls.length > 0 && (
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          {gym.photoDetailUrls.map((url) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              key={url}
-              src={url}
-              alt={gym.name}
-              className="aspect-square w-full rounded-2xl object-cover"
-            />
-          ))}
+        <div className="mt-6">
+          <PhotoGallery photos={gym.photoDetailUrls} alt={gym.name} />
         </div>
       )}
 

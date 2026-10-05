@@ -23,6 +23,16 @@ function ratingWindowState(
   return "puede-calificar";
 }
 
+/** Una vez pasó la hora de la clase ya no tiene sentido ofrecer cancelar —
+ * para entonces el backend tampoco devuelve créditos (ver
+ * CANCELLATION_WINDOW_HOURS en lib/reservations.ts), así que el botón solo
+ * confundiría. */
+function puedeCancelar(r: Reservation & { clase: Clase | null }): boolean {
+  if (r.estado !== "Reservado") return false;
+  if (!r.clase?.fecha) return true;
+  return new Date(r.clase.fecha).getTime() > Date.now();
+}
+
 export default async function MisReservasPage() {
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
@@ -75,7 +85,7 @@ export default async function MisReservasPage() {
                     {t.estados[r.estado ?? "Reservado"] ?? r.estado}
                   </p>
                 </div>
-                {r.estado === "Reservado" && (
+                {puedeCancelar(r) && (
                   <CancelReservationButton reservationId={r.id} locale={locale} />
                 )}
               </div>

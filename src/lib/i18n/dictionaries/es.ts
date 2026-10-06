@@ -29,6 +29,12 @@ export const es = {
     downloadApp: "Descargar app",
   },
   home: {
+    experiencesTeaser: {
+      eyebrow: "Wellness Experiences",
+      title: "Eventos únicos, solo para la comunidad UNIQUE",
+      body: "Picnics, yoga al aire libre, breathwork y más — experiencias que no son clases sueltas, son momentos.",
+      cta: "Ver experiencias",
+    },
     savingsBar: {
       text: (porcentaje: number) =>
         `Ahorra hasta ${porcentaje}% vs. pagar cada clase suelta en el gimnasio`,

@@ -31,6 +31,12 @@ export const en: Dictionary = {
     downloadApp: "Download app",
   },
   home: {
+    experiencesTeaser: {
+      eyebrow: "Wellness Experiences",
+      title: "One-of-a-kind events, just for the UNIQUE community",
+      body: "Picnics, outdoor yoga, breathwork and more — experiences that aren't just another class, they're moments.",
+      cta: "See experiences",
+    },
     savingsBar: {
       text: (porcentaje: number) => `Save up to ${porcentaje}% vs. paying drop-in at the gym`,
     },

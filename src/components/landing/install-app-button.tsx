@@ -14,6 +14,13 @@ declare global {
   }
 }
 
+/** Ya está publicada en el App Store (co.uniqueappcol.app, ascAppId
+ * 6809840851) — en iPhone este botón manda derecho ahí en vez de pasar por
+ * el flujo de instalar como PWA (que seguía teniendo sentido antes de que
+ * existiera la app nativa). Android todavía no tiene la app publicada, así
+ * que ahí se deja el flujo de PWA tal como estaba. */
+const APP_STORE_URL = "https://apps.apple.com/app/id6809840851";
+
 /** En Android/Chrome, este evento nos da el diálogo nativo de instalación
  * -- un solo clic en "Instalar" y listo. En iPhone, Apple no expone ninguna
  * API para disparar "Agregar a pantalla de inicio" desde código: ahí no
@@ -38,6 +45,9 @@ export default function InstallAppButton({ label }: { label: string }) {
     if (/SamsungBrowser/i.test(navigator.userAgent)) return null;
     return window.__uniqueInstallPrompt ?? null;
   });
+  const [isIOS] = useState(
+    () => typeof window !== "undefined" && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+  );
 
   useEffect(() => {
     const isSamsungInternet = /SamsungBrowser/i.test(navigator.userAgent);
@@ -67,6 +77,10 @@ export default function InstallAppButton({ label }: { label: string }) {
   if (installed) return null;
 
   const handleClick = async () => {
+    if (isIOS) {
+      window.location.href = APP_STORE_URL;
+      return;
+    }
     if (deferredPrompt) {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;

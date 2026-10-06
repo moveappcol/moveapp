@@ -29,6 +29,10 @@ export const es = {
     downloadApp: "Descargar app",
   },
   home: {
+    savingsBar: {
+      text: (porcentaje: number) =>
+        `Ahorra hasta ${porcentaje}% vs. pagar cada clase suelta en el gimnasio`,
+    },
     hero: {
       badge: "Un solo plan, todos los gimnasios",
       // OJO: coincide con el cupón "UNIQUE1" (25% de descuento, se aplica
@@ -93,6 +97,7 @@ export const es = {
       title: "Planes de créditos",
       subtitle: "Elige un plan mensual. Los créditos duran 1 mes y cada clase descuenta un número distinto de créditos según el gimnasio.",
       masPopular: "Más popular",
+      ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
       billedMonthly: "Se cobra automáticamente cada mes. Cancela cuando quieras.",
       elegirPlan: "Elegir plan",
       creditosAdicionalesTitle: "Créditos adicionales",

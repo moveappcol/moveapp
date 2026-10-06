@@ -4,6 +4,7 @@ import {
   CREDIT_PLANS,
   CREDIT_TOPUPS,
   formatCOP,
+  ahorroPorcentaje,
 } from "@/lib/credits-pricing";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
@@ -83,6 +84,9 @@ export default async function PlansSection() {
                   {formatCOP(plan.price)}
                 </p>
               )}
+              <p className="mt-1 font-heading text-xs font-bold text-move-coral">
+                {t.ahorras(ahorroPorcentaje(plan))}
+              </p>
               <p className="mt-1 font-body text-sm text-move-green/60">{t.billedMonthly}</p>
               {userId ? (
                 <Link

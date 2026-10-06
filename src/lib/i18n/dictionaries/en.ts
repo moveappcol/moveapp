@@ -31,6 +31,9 @@ export const en: Dictionary = {
     downloadApp: "Download app",
   },
   home: {
+    savingsBar: {
+      text: (porcentaje: number) => `Save up to ${porcentaje}% vs. paying drop-in at the gym`,
+    },
     hero: {
       badge: "One plan, every gym",
       discountBadge: "25% OFF your first plan",
@@ -91,6 +94,7 @@ export const en: Dictionary = {
       title: "Credit plans",
       subtitle: "Choose a monthly plan. Credits last 1 month and each class deducts a different number of credits depending on the gym.",
       masPopular: "Most popular",
+      ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. drop-in classes at the gym`,
       billedMonthly: "Billed automatically every month. Cancel anytime.",
       elegirPlan: "Choose plan",
       creditosAdicionalesTitle: "Extra credits",

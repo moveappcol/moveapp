@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import SavingsBar from "@/components/landing/savings-bar";
 import Hero from "@/components/landing/hero";
 import ReferralBanner from "@/components/landing/referral-banner";
 import HowItWorksSection from "@/components/landing/how-it-works-section";
@@ -19,6 +20,7 @@ export default async function Home() {
       <Suspense fallback={null}>
         <RegistrationTracker />
       </Suspense>
+      <SavingsBar />
       <Hero />
       <ReferralBanner />
       <HowItWorksSection />

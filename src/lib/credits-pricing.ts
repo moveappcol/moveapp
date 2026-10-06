@@ -18,6 +18,22 @@ export const CREDIT_TOPUPS: CreditPackage[] = [
   { id: "topup-15", label: "15 créditos", credits: 15, price: 120_000 },
 ];
 
+/** Lo que cuesta, en promedio, una clase suelta pagada directo en el
+ * gimnasio (sin plan UNIQUE) por cada crédito que esa clase vale — ej. una
+ * clase de 8 créditos ronda los $71.000–$80.000 sueltos, una de 6 créditos
+ * ronda los $51.000–$60.000. Se usa solo para mostrar el % de ahorro de
+ * cada plan frente a pagar suelto; no viene de Airtable porque ningún
+ * gimnasio publica un precio por clase individual que se pueda leer ahí.
+ * Si cambia la referencia de mercado, ajustar acá nomás. */
+export const PRECIO_CLASE_SUELTA_POR_CREDITO = 10_000;
+
+/** % de ahorro de un plan frente a pagar cada clase suelta en el gimnasio,
+ * usando PRECIO_CLASE_SUELTA_POR_CREDITO como referencia de mercado. */
+export function ahorroPorcentaje(plan: CreditPackage): number {
+  const precioPorCreditoPlan = plan.price / plan.credits;
+  return Math.round((1 - precioPorCreditoPlan / PRECIO_CLASE_SUELTA_POR_CREDITO) * 100);
+}
+
 export type PackageBreakdownItem = { pkg: CreditPackage; quantity: number };
 
 export type CreditEstimate = {

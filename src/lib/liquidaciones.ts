@@ -64,6 +64,7 @@ export type LiquidacionRecord = {
   reservasFinalesEnviadas: boolean;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapLiquidacionRecord(r: any): LiquidacionRecord {
   return {
     id: r.id,

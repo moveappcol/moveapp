@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { formatHora } from "@/lib/dias";
+import { useEffect, useMemo, useState } from "react";
+import { formatHora, semanaActual } from "@/lib/dias";
 import { obtenerPanel } from "./actions";
 import type { PanelDia } from "./data";
 import CuposEditor from "./cupos-editor";
@@ -11,6 +11,8 @@ const POLL_MS = 20_000;
 
 export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) {
   const [dias, setDias] = useState(initialDias);
+  const semana = useMemo(() => semanaActual("es"), []);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
 
   useEffect(() => {
     const id = setInterval(async () => {
@@ -20,23 +22,46 @@ export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) 
     return () => clearInterval(id);
   }, []);
 
-  if (dias.length === 0) {
-    return (
-      <p className="mt-10 font-body text-sm text-move-green/60">
-        No tienes clases próximas programadas todavía.
-      </p>
-    );
-  }
+  const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
+  const clasesDelDia = dias.find((d) => d.key === diaActivo.key)?.clases ?? [];
 
   return (
-    <div className="mt-8 space-y-10">
-      {dias.map((dia) => (
-        <div key={dia.key}>
-          <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-move-green">
-            {dia.label}
-          </h2>
-          <div className="mt-3 space-y-4">
-            {dia.clases.map((clase) => (
+    <div className="mt-8 space-y-6">
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {semana.map((dia) => (
+          <button
+            key={dia.key}
+            type="button"
+            onClick={() => setDiaSeleccionado(dia.key)}
+            className={`flex shrink-0 flex-col items-center rounded-2xl px-3 py-2 font-heading transition ${
+              diaSeleccionado === dia.key
+                ? "bg-move-green text-white"
+                : "bg-move-green/5 text-move-green/70 hover:bg-move-green/10"
+            }`}
+          >
+            <span className="text-xs font-semibold uppercase tracking-wide">
+              {dia.label.slice(0, 3)}
+            </span>
+            <span className="mt-0.5 text-[11px] opacity-80">{dia.fechaLabel}</span>
+          </button>
+        ))}
+      </div>
+
+      <div>
+        <p className="font-heading text-lg font-bold text-move-green">
+          {diaActivo.label}
+          <span className="ml-2 font-body text-sm font-normal text-move-green/50">
+            {diaActivo.fechaLabel}
+          </span>
+        </p>
+
+        {clasesDelDia.length === 0 ? (
+          <p className="mt-4 font-body text-sm text-move-green/60">
+            No tienes clases programadas este día.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {clasesDelDia.map((clase) => (
               <div key={clase.id} className="rounded-2xl border border-move-green/10 bg-white p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -101,8 +126,8 @@ export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) 
               </div>
             ))}
           </div>
-        </div>
-      ))}
+        )}
+      </div>
     </div>
   );
 }

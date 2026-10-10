@@ -96,6 +96,11 @@ const GIMNASIO_FIELD = "Gimnasio ";
 const DESCRIPCION_FIELD = "Descripción ";
 const DEFAULT_DURACION_MINUTOS = 60;
 
+/** Clave compuesta claseId+fecha, no solo claseId: las clases recurrentes
+ * reutilizan la misma fila semana a semana (el "Horario" se adelanta 7 días
+ * en vez de crear una fila nueva — ver renovarClasesPasadas), así que una
+ * reserva vieja de la semana pasada (mismo claseId, "Fecha" ya distinta a la
+ * actual) no debe seguir contando contra los cupos de la semana nueva. */
 async function getActiveReservationCounts(): Promise<Map<string, number>> {
   const base = getAirtableBase();
   const records = await base("Reservas")
@@ -105,19 +110,26 @@ async function getActiveReservationCounts(): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
   for (const record of records) {
     const claseId = (record.get("Clase") as string[] | undefined)?.[0];
-    if (!claseId) continue;
-    counts.set(claseId, (counts.get(claseId) ?? 0) + 1);
+    const fecha = record.get("Fecha") as string | undefined;
+    if (!claseId || !fecha) continue;
+    const key = `${claseId}|${fecha}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   return counts;
 }
 
-export async function countActiveReservationsForClase(claseId: string): Promise<number> {
+/** `fecha` es el "Horario" actual de la clase — ver nota en
+ * getActiveReservationCounts sobre por qué hace falta, no solo el id. */
+export async function countActiveReservationsForClase(claseId: string, fecha: string): Promise<number> {
   const base = getAirtableBase();
   const records = await base("Reservas")
     .select({ filterByFormula: '{Estado} = "Reservado"' })
     .all();
-  return records.filter((r) => (r.get("Clase") as string[] | undefined)?.[0] === claseId)
-    .length;
+  return records.filter(
+    (r) =>
+      (r.get("Clase") as string[] | undefined)?.[0] === claseId &&
+      (r.get("Fecha") as string | undefined) === fecha
+  ).length;
 }
 
 /** Lee un campo de selección de Airtable sin asumir si quedó configurado
@@ -177,7 +189,11 @@ async function getAllClasesConCupos(): Promise<Clase[]> {
 
     return records
       .filter((record) => Boolean(record.get("Clase")))
-      .map((record) => mapRecordToClase(record, activeCounts.get(record.id) ?? 0));
+      .map((record) => {
+        const horario = record.get("Horario") as string | undefined;
+        const key = horario ? `${record.id}|${horario}` : "";
+        return mapRecordToClase(record, activeCounts.get(key) ?? 0);
+      });
   });
 }
 
@@ -245,7 +261,8 @@ export async function getClaseById(id: string): Promise<Clase | null> {
   const base = getAirtableBase();
   try {
     const record = await base("Clases").find(id);
-    const reservados = await countActiveReservationsForClase(id);
+    const horario = record.get("Horario") as string | undefined;
+    const reservados = horario ? await countActiveReservationsForClase(id, horario) : 0;
     return mapRecordToClase(record, reservados);
   } catch {
     return null;
@@ -266,30 +283,26 @@ export async function getClaseByIdBasic(id: string): Promise<Clase | null> {
 }
 
 const SIETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
+const LISTA_ESPERA_TABLE = "Lista de espera";
 
 /**
  * Hace rodar el calendario de clases semana a semana sin que nadie tenga
  * que volver a cargarlas — pensada para correr una vez al día (ver
  * /api/cron/renovar-clases). Para cada clase cuyo DÍA (hora de Bogotá) ya
- * terminó por completo, crea la misma clase una semana después (+7 días
- * exactos, misma hora del día) con los mismos cupos que tenía en ese
- * momento — así, si el gimnasio los cambió antes de que pasara el día, esos
- * son los que se replican.
+ * terminó por completo, adelanta su propio "Horario" 7 días exactos (misma
+ * hora del día) — misma fila, no una nueva, para que la pestaña de Clases en
+ * Airtable no crezca sin parar. Los cupos quedan tal cual estaban (si el
+ * gimnasio los cambió antes de que pasara el día, esos son los que
+ * siguen); para que eso sea correcto hace falta que los cupos disponibles
+ * se calculen por clase+fecha y no solo por clase — ver
+ * countActiveReservationsForClase y getActiveReservationClaseIds — porque
+ * la misma fila ahora representa una semana distinta cada vez. Nunca toca
+ * "Reservas".
  *
- * A propósito crea una fila NUEVA en vez de mover la fecha de la fila vieja:
- * los cupos disponibles de una clase se calculan contando cuántas
- * "Reservas" con Estado="Reservado" están linkeadas a su id (ver
- * countActiveReservationsForClase) — si moviéramos la fecha de la fila
- * vieja, las reservas de la semana que ya pasó seguirían contando contra
- * los cupos de la semana nueva. Con una fila nueva, arranca en 0 reservas,
- * como corresponde. Nunca toca "Reservas".
- *
- * Idempotente: antes de crear, revisa si ya existe una clase del mismo
- * gimnasio con el mismo nombre y el horario exacto de la semana siguiente
- * (por si el cron ya corrió, o alguien ya la cargó a mano) — así se puede
- * correr todos los días sin duplicar nada.
+ * Idempotente: una clase ya adelantada queda con fecha futura, así que la
+ * próxima corrida la salta sola (no hay nada que marcar aparte).
  */
-export async function renovarClasesPasadas(): Promise<{ creadas: number }> {
+export async function renovarClasesPasadas(): Promise<{ renovadas: number }> {
   const base = getAirtableBase();
   const records = await base("Clases")
     .select({ filterByFormula: 'AND({Clase} != "", {Horario} != "")' })
@@ -297,58 +310,49 @@ export async function renovarClasesPasadas(): Promise<{ creadas: number }> {
 
   const hoy = toBogotaDateString(new Date().toISOString());
 
-  const existentes = new Set(
-    records.map((r) => {
-      const gimnasioId = (r.get(GIMNASIO_FIELD) as string[] | undefined)?.[0] ?? "";
-      const nombre = ((r.get("Clase") as string) ?? "").trim();
-      const horario = (r.get("Horario") as string) ?? "";
-      return `${gimnasioId}|${nombre}|${horario}`;
-    })
-  );
-
-  type ClaseFieldValue = string | number | boolean | string[] | undefined;
-  const porCrear: { fields: Record<string, ClaseFieldValue> }[] = [];
+  const porActualizar: { id: string; fields: { Horario: string } }[] = [];
+  const idsQueAvanzan = new Set<string>();
 
   for (const record of records) {
     const horario = record.get("Horario") as string;
     if (toBogotaDateString(horario) >= hoy) continue; // ese día todavía no termina
 
-    const gimnasio = (record.get(GIMNASIO_FIELD) as string[] | undefined) ?? [];
-    if (gimnasio.length === 0) continue;
-
-    const nombre = ((record.get("Clase") as string) ?? "").trim();
     const siguienteHorario = new Date(new Date(horario).getTime() + SIETE_DIAS_MS).toISOString();
-    const clave = `${gimnasio[0]}|${nombre}|${siguienteHorario}`;
-    if (existentes.has(clave)) continue;
-
-    const fields: Record<string, ClaseFieldValue> = {
-      Clase: nombre,
-      Creditos: (record.get("Creditos") as number) ?? 0,
-      "Cupos totales": (record.get("Cupos totales") as number) ?? 0,
-      Horario: siguienteHorario,
-      [GIMNASIO_FIELD]: gimnasio,
-    };
-    const descuento = record.get("Descuento creditos") as number | undefined;
-    if (descuento !== undefined && descuento !== null) fields["Descuento creditos"] = descuento;
-    const precio = record.get("Precio") as number | undefined;
-    if (precio !== undefined && precio !== null) fields.Precio = precio;
-    const tipo = record.get("Tipo") as string | undefined;
-    if (tipo) fields.Tipo = tipo;
-    const actividad = record.get("Actividad") as string | undefined;
-    if (actividad) fields.Actividad = actividad;
-    const descripcion = record.get(DESCRIPCION_FIELD) as string | undefined;
-    if (descripcion) fields[DESCRIPCION_FIELD] = descripcion;
-    const duracion = record.get("Duración") as number | undefined;
-    if (duracion !== undefined && duracion !== null) fields["Duración"] = duracion;
-
-    porCrear.push({ fields });
-    existentes.add(clave);
+    porActualizar.push({ id: record.id, fields: { Horario: siguienteHorario } });
+    idsQueAvanzan.add(record.id);
   }
 
-  for (let i = 0; i < porCrear.length; i += 10) {
-    await base("Clases").create(porCrear.slice(i, i + 10), { typecast: true });
+  for (let i = 0; i < porActualizar.length; i += 10) {
+    await base("Clases").update(porActualizar.slice(i, i + 10), { typecast: true });
   }
 
-  if (porCrear.length > 0) invalidateClasesCupos();
-  return { creadas: porCrear.length };
+  if (idsQueAvanzan.size > 0) {
+    await expirarListaDeEsperaDeClasesQueAvanzan(idsQueAvanzan);
+    invalidateClasesCupos();
+  }
+
+  return { renovadas: porActualizar.length };
+}
+
+/** Al adelantar una clase a la semana siguiente, nadie se queda
+ * "Esperando" de la semana que ya pasó: si alguien nunca se promovió ni se
+ * salió de la lista, su entrada se cierra sola, porque "Lista de espera"
+ * guarda a qué clase corresponde pero no a qué fecha exacta (ver
+ * WaitlistEntry en waitlist.ts) — si no se cerrara, se vería como si
+ * estuviera esperando la clase de la semana nueva sin haberse anotado.
+ * Se usa el nombre de tabla directo (no se importa waitlist.ts) para no
+ * crear un ciclo de imports: waitlist.ts ya importa de este archivo. */
+async function expirarListaDeEsperaDeClasesQueAvanzan(claseIds: Set<string>): Promise<void> {
+  const base = getAirtableBase();
+  const records = await base(LISTA_ESPERA_TABLE)
+    .select({ filterByFormula: '{Estado} = "Esperando"' })
+    .all();
+
+  const porExpirar = records
+    .filter((r) => claseIds.has((r.get("Clase") as string) ?? ""))
+    .map((r) => ({ id: r.id, fields: { Estado: "Cancelado" } }));
+
+  for (let i = 0; i < porExpirar.length; i += 10) {
+    await base(LISTA_ESPERA_TABLE).update(porExpirar.slice(i, i + 10), { typecast: true });
+  }
 }

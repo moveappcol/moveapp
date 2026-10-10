@@ -332,7 +332,13 @@ export async function createReservation(params: ReservationParams): Promise<Book
  * en JS porque ARRAYJOIN sobre un campo de link junta el nombre del link,
  * no su id. Sirve tanto para no mostrar "Reservar"/lista de espera en una
  * clase que ya se tiene reservada, como para bloquear que se reserve o se
- * entre a la lista de espera dos veces para la misma clase. */
+ * entre a la lista de espera dos veces para la misma clase.
+ *
+ * Solo cuentan reservas de clases que TODAVÍA no pasaron: las clases
+ * recurrentes reutilizan la misma fila semana a semana (el "Horario" se
+ * adelanta 7 días en vez de crear una fila nueva — ver renovarClasesPasadas
+ * en classes.ts), así que si no se filtrara por fecha, haber ido a esa
+ * clase la semana pasada bloquearía para siempre volver a reservarla. */
 export async function getActiveReservationClaseIds(userEmail: string): Promise<Set<string>> {
   const base = getAirtableBase();
   const records = await base("Reservas")
@@ -341,10 +347,14 @@ export async function getActiveReservationClaseIds(userEmail: string): Promise<S
     })
     .all();
 
+  const ahora = Date.now();
   const ids = new Set<string>();
   for (const record of records) {
     const claseId = (record.get("Clase") as string[] | undefined)?.[0];
-    if (claseId) ids.add(claseId);
+    if (!claseId) continue;
+    const fecha = record.get("Fecha") as string | undefined;
+    if (fecha && new Date(fecha).getTime() <= ahora) continue;
+    ids.add(claseId);
   }
   return ids;
 }

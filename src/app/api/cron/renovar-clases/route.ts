@@ -9,8 +9,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const { creadas } = await renovarClasesPasadas();
-    return NextResponse.json({ ok: true, creadas });
+    const { renovadas } = await renovarClasesPasadas();
+    return NextResponse.json({ ok: true, renovadas });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "Error desconocido" },

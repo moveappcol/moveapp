@@ -1,6 +1,15 @@
 import { getAirtableBase } from "./airtable";
 import { cached, invalidate } from "./server-cache";
-import { toBogotaDateString } from "./liquidaciones";
+import {
+  toBogotaDateString,
+  computeFechaDePago,
+  claseKeyForLiquidacion,
+  fetchAllLiquidaciones,
+  findLiquidacionEnLista,
+  createLiquidacion,
+  buildCountsFromReservas,
+} from "./liquidaciones";
+import { getGymBillingInfo } from "./gyms";
 
 const CACHE_TTL_MS = 5_000;
 const CLASES_CON_CUPOS_CACHE_KEY = "classes:allWithCupos";
@@ -285,6 +294,74 @@ export async function getClaseByIdBasic(id: string): Promise<Clase | null> {
 const SIETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
 const LISTA_ESPERA_TABLE = "Lista de espera";
 
+/** Para una clase puntual (claseId+fecha) que está a punto de adelantarse
+ * de semana, arma las reservas tal como las vería el cron de liquidaciones
+ * de 24h antes — mismo shape que buildCountsFromReservas espera. Se
+ * resuelve en JS contra una lista ya traída de toda la tabla "Reservas"
+ * (no se importa fetchAllReservasDetalle de reservations.ts a propósito:
+ * ese archivo ya importa de este, y crearía un ciclo). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function reservasParaClaseYFecha(todasLasReservas: readonly any[], claseId: string, fechaISO: string) {
+  return todasLasReservas
+    .filter(
+      (r) =>
+        (r.get("Clase") as string[] | undefined)?.[0] === claseId &&
+        (r.get("Fecha") as string | undefined) === fechaISO
+    )
+    .map((r) => ({
+      estado: ((r.get("Estado") as string) ?? "Reservado").trim(),
+      userName: ((r.get("Usuario") as string) ?? "Desconocido").trim(),
+    }));
+}
+
+/** Garantiza que exista la liquidación de esta ocurrencia antes de que su
+ * fila se reutilice para la semana siguiente — ver nota larga en
+ * renovarClasesPasadas sobre por qué hace falta este seguro. Si ya existe
+ * (el cron normal de 24h antes ya la generó, como debería ser lo normal),
+ * no hace nada. Si el gimnasio no tiene info de facturación configurada,
+ * se deja pasar igual que hace el cron de liquidaciones (nunca bloquea la
+ * renovación por eso). */
+async function asegurarLiquidacionAntesDeAvanzar(params: {
+  record: { id: string; get: (field: string) => unknown };
+  liquidacionesExistentes: Awaited<ReturnType<typeof fetchAllLiquidaciones>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  todasLasReservas: readonly any[];
+}): Promise<void> {
+  const { record, liquidacionesExistentes, todasLasReservas } = params;
+  const horario = record.get("Horario") as string;
+  const nombre = ((record.get("Clase") as string) ?? "").trim();
+  const gimnasioId = (record.get(GIMNASIO_FIELD) as string[] | undefined)?.[0];
+  if (!gimnasioId) return;
+
+  const fecha = toBogotaDateString(horario);
+  const claseKey = claseKeyForLiquidacion(nombre, horario);
+
+  const gym = await getGymBillingInfo(gimnasioId);
+  if (!gym) return;
+  if (findLiquidacionEnLista(liquidacionesExistentes, gym.name, claseKey, fecha)) return;
+
+  const claseCredits = (record.get("Creditos") as number) ?? 0;
+  const tipoRaw = firstSelectValue(record.get("Tipo"));
+  const tipo = tipoRaw === "A" || tipoRaw === "B" ? tipoRaw : null;
+  const precioClase = record.get("Precio") as number | undefined;
+  const precio = precioClase !== undefined && precioClase !== null ? precioClase : gym.pricePerReservation;
+
+  const reservas = reservasParaClaseYFecha(todasLasReservas, record.id, horario);
+  const counts = buildCountsFromReservas(reservas, claseCredits, tipo, precio, {
+    tipoA: gym.porcentajeTipoA,
+    tipoB: gym.porcentajeTipoB,
+  });
+
+  const { id } = await createLiquidacion({
+    gimnasio: gym.name,
+    clase: claseKey,
+    fecha,
+    fechaDePago: computeFechaDePago(horario),
+    counts,
+  });
+  liquidacionesExistentes.push({ id, gimnasio: gym.name, clase: claseKey, fecha, reservasFinalesEnviadas: false });
+}
+
 /**
  * Hace rodar el calendario de clases semana a semana sin que nadie tenga
  * que volver a cargarlas — pensada para correr una vez al día (ver
@@ -299,6 +376,15 @@ const LISTA_ESPERA_TABLE = "Lista de espera";
  * la misma fila ahora representa una semana distinta cada vez. Nunca toca
  * "Reservas".
  *
+ * Antes de adelantar cada clase, se asegura de que su liquidación de la
+ * semana que está por terminar ya exista (ver
+ * asegurarLiquidacionAntesDeAvanzar) — si la fila se reutiliza para la
+ * semana nueva sin que esto corra antes, esa semana queda sin ninguna
+ * forma de recuperarse después (el cron de 24h antes ya no la va a ver, su
+ * "Horario" para ese entonces ya es el de la semana siguiente). Esto fue
+ * justo lo que pasó con la semana del 17 de septiembre de 2026, corregido
+ * a mano una vez — este seguro es para que no se repita.
+ *
  * Idempotente: una clase ya adelantada queda con fecha futura, así que la
  * próxima corrida la salta sola (no hay nada que marcar aparte).
  */
@@ -310,13 +396,27 @@ export async function renovarClasesPasadas(): Promise<{ renovadas: number }> {
 
   const hoy = toBogotaDateString(new Date().toISOString());
 
+  const pendientes = records.filter((record) => {
+    const horario = record.get("Horario") as string;
+    return toBogotaDateString(horario) < hoy; // ese día ya terminó
+  });
+
+  if (pendientes.length === 0) return { renovadas: 0 };
+
+  const [liquidacionesExistentes, todasLasReservas] = await Promise.all([
+    fetchAllLiquidaciones(),
+    base("Reservas").select().all(),
+  ]);
+
+  for (const record of pendientes) {
+    await asegurarLiquidacionAntesDeAvanzar({ record, liquidacionesExistentes, todasLasReservas });
+  }
+
   const porActualizar: { id: string; fields: { Horario: string } }[] = [];
   const idsQueAvanzan = new Set<string>();
 
-  for (const record of records) {
+  for (const record of pendientes) {
     const horario = record.get("Horario") as string;
-    if (toBogotaDateString(horario) >= hoy) continue; // ese día todavía no termina
-
     const siguienteHorario = new Date(new Date(horario).getTime() + SIETE_DIAS_MS).toISOString();
     porActualizar.push({ id: record.id, fields: { Horario: siguienteHorario } });
     idsQueAvanzan.add(record.id);
@@ -326,10 +426,8 @@ export async function renovarClasesPasadas(): Promise<{ renovadas: number }> {
     await base("Clases").update(porActualizar.slice(i, i + 10), { typecast: true });
   }
 
-  if (idsQueAvanzan.size > 0) {
-    await expirarListaDeEsperaDeClasesQueAvanzan(idsQueAvanzan);
-    invalidateClasesCupos();
-  }
+  await expirarListaDeEsperaDeClasesQueAvanzan(idsQueAvanzan);
+  invalidateClasesCupos();
 
   return { renovadas: porActualizar.length };
 }

@@ -473,34 +473,65 @@ async function promoverDeListaDeEspera(params: {
   for (const entry of waiting) {
     if (promovidos >= params.cuposLibres) break;
 
-    const result = await createReservation({
-      userEmail: entry.correo,
-      userName: entry.nombre,
+    const result = await promoverEntradaListaEspera({
+      entryId: entry.id,
+      correo: entry.correo,
+      nombre: entry.nombre,
       claseId: params.claseId,
       gimnasioId: params.gimnasioId,
+      gimnasioNombre: params.gimnasioNombre,
       claseCredits: params.claseCredits,
       fechaISO: params.fechaISO,
     });
 
-    if (result.ok) {
-      await markWaitlistPromoted(entry.id);
-      promovidos += 1;
-      const persona = await getUserCreditsByEmail(entry.correo);
-      await sendPushNotification({
-        to: persona?.pushToken ?? null,
-        title: "¡Se liberó un cupo! 🎉",
-        body: "Te inscribimos automáticamente en la clase de tu lista de espera.",
-        data: { type: "lista-espera-promovido", claseId: params.claseId },
-      });
-      await sendWaitlistPromotedEmail({
-        correo: entry.correo,
-        userName: entry.nombre,
-        gimnasio: params.gimnasioNombre,
-        fechaISO: params.fechaISO,
-      });
-    }
+    if (result.ok) promovidos += 1;
   }
   return promovidos;
+}
+
+/** Promueve UNA entrada puntual de lista de espera a reserva confirmada —
+ * cobra créditos, marca la entrada como "Promovido" y avisa a la persona
+ * (push + correo). Factorizada de promoverDeListaDeEspera para que la
+ * reutilice también la aprobación manual que hace el gimnasio desde su
+ * panel (ver aprobarListaEspera en app/gimnasio/panel/actions.ts) — ahí
+ * siempre hay exactamente una entrada de por medio, no una fila. */
+export async function promoverEntradaListaEspera(params: {
+  entryId: string;
+  correo: string;
+  nombre: string;
+  claseId: string;
+  gimnasioId: string;
+  gimnasioNombre: string;
+  claseCredits: number;
+  fechaISO: string;
+}): Promise<BookingResult> {
+  const result = await createReservation({
+    userEmail: params.correo,
+    userName: params.nombre,
+    claseId: params.claseId,
+    gimnasioId: params.gimnasioId,
+    claseCredits: params.claseCredits,
+    fechaISO: params.fechaISO,
+  });
+
+  if (result.ok) {
+    await markWaitlistPromoted(params.entryId);
+    const persona = await getUserCreditsByEmail(params.correo);
+    await sendPushNotification({
+      to: persona?.pushToken ?? null,
+      title: "¡Se liberó un cupo! 🎉",
+      body: "Te inscribimos automáticamente en la clase de tu lista de espera.",
+      data: { type: "lista-espera-promovido", claseId: params.claseId },
+    });
+    await sendWaitlistPromotedEmail({
+      correo: params.correo,
+      userName: params.nombre,
+      gimnasio: params.gimnasioNombre,
+      fechaISO: params.fechaISO,
+    });
+  }
+
+  return result;
 }
 
 /** Revisa TODAS las clases futuras con lista de espera y promueve a quien

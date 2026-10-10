@@ -139,6 +139,16 @@ export async function markWaitlistPromoted(entryId: string): Promise<void> {
   });
 }
 
+/** El gimnasio rechaza manualmente a alguien de su lista de espera desde el
+ * panel (ver negarListaEspera en app/gimnasio/panel/actions.ts) — misma
+ * transición de estado que cuando la propia persona se sale de la lista. */
+export async function markWaitlistDenied(entryId: string): Promise<void> {
+  const base = getAirtableBase();
+  await base(LISTA_ESPERA_TABLE).update([{ id: entryId, fields: { Estado: "Cancelado" } }], {
+    typecast: true,
+  });
+}
+
 /** Todas las entradas "Esperando" de CUALQUIER clase, en una sola llamada —
  * para el cron que revisa cupos liberados a mano en Airtable (ver
  * promoverListasDeEsperaConCupo en reservations.ts), que si no tocaría

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
-import { requireGymManager, loadPanelClases } from "./data";
+import { requireGymManager, loadPanelDias } from "./data";
 import PanelLive from "./panel-live";
 
 export default async function GimnasioPanelPage() {
@@ -10,7 +10,7 @@ export default async function GimnasioPanelPage() {
   const gym = await requireGymManager();
   if (!gym) redirect("/gimnasio");
 
-  const clases = await loadPanelClases(gym.id);
+  const dias = await loadPanelDias(gym.id);
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
@@ -26,7 +26,7 @@ export default async function GimnasioPanelPage() {
         la lista de espera. Esto se actualiza solo — no hace falta recargar.
       </p>
 
-      <PanelLive initialClases={clases} />
+      <PanelLive initialDias={dias} />
     </section>
   );
 }

@@ -1,0 +1,15 @@
+name: Renovar clases de la semana
+
+on:
+  schedule:
+    - cron: "0 10 * * *" # 5am America/Bogota (UTC-5) — antes de que arranque el día
+  workflow_dispatch: {}
+
+jobs:
+  renovar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger renovar-clases cron
+        run: |
+          curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X GET "https://www.uniqueappcol.com/api/cron/renovar-clases" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

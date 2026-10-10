@@ -1,6 +1,6 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getClaseByIdBasic } from "./classes";
-import { getGymById } from "./gyms";
+import { getGymBillingInfo } from "./gyms";
 import { sendNewWaitlistEmail } from "./email";
 
 const LISTA_ESPERA_TABLE = "Lista de espera";
@@ -102,9 +102,10 @@ export async function joinWaitlist(params: {
   }
 
   const clase = await getClaseByIdBasic(params.claseId);
-  const gym = clase?.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+  const gym = clase?.gimnasioId ? await getGymBillingInfo(clase.gimnasioId) : null;
   await sendNewWaitlistEmail({
     ownerEmail: OWNER_EMAIL,
+    gymEmail: gym?.email ?? null,
     userName: params.nombre,
     userEmail: params.correo,
     gimnasio: gym?.name ?? "",

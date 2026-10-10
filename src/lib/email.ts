@@ -381,6 +381,7 @@ export async function sendWaitlistPromotedEmail(params: {
  * cuando solo consulta su posición) — ver joinWaitlist en waitlist.ts. */
 export async function sendNewWaitlistEmail(params: {
   ownerEmail: string;
+  gymEmail: string | null;
   userName: string;
   userEmail: string;
   gimnasio: string;
@@ -401,12 +402,13 @@ export async function sendNewWaitlistEmail(params: {
       <p><strong>Correo:</strong> ${escapeHtml(params.userEmail)}</p>
       <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
       <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+      <p style="color:#666;">Apruébala o recházala desde tu panel en UNIQUE.</p>
     </div>
   `;
 
   try {
     await sendEmail({
-      to: [params.ownerEmail],
+      ...recipients(params.gymEmail, params.ownerEmail),
       subject: `Lista de espera — ${params.userName} en ${params.gimnasio}`,
       html,
     });

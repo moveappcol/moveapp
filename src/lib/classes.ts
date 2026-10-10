@@ -1,5 +1,6 @@
 import { getAirtableBase } from "./airtable";
 import { cached, invalidate } from "./server-cache";
+import { toBogotaDateString } from "./liquidaciones";
 
 const CACHE_TTL_MS = 5_000;
 const CLASES_CON_CUPOS_CACHE_KEY = "classes:allWithCupos";
@@ -262,4 +263,92 @@ export async function getClaseByIdBasic(id: string): Promise<Clase | null> {
   } catch {
     return null;
   }
+}
+
+const SIETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Hace rodar el calendario de clases semana a semana sin que nadie tenga
+ * que volver a cargarlas — pensada para correr una vez al día (ver
+ * /api/cron/renovar-clases). Para cada clase cuyo DÍA (hora de Bogotá) ya
+ * terminó por completo, crea la misma clase una semana después (+7 días
+ * exactos, misma hora del día) con los mismos cupos que tenía en ese
+ * momento — así, si el gimnasio los cambió antes de que pasara el día, esos
+ * son los que se replican.
+ *
+ * A propósito crea una fila NUEVA en vez de mover la fecha de la fila vieja:
+ * los cupos disponibles de una clase se calculan contando cuántas
+ * "Reservas" con Estado="Reservado" están linkeadas a su id (ver
+ * countActiveReservationsForClase) — si moviéramos la fecha de la fila
+ * vieja, las reservas de la semana que ya pasó seguirían contando contra
+ * los cupos de la semana nueva. Con una fila nueva, arranca en 0 reservas,
+ * como corresponde. Nunca toca "Reservas".
+ *
+ * Idempotente: antes de crear, revisa si ya existe una clase del mismo
+ * gimnasio con el mismo nombre y el horario exacto de la semana siguiente
+ * (por si el cron ya corrió, o alguien ya la cargó a mano) — así se puede
+ * correr todos los días sin duplicar nada.
+ */
+export async function renovarClasesPasadas(): Promise<{ creadas: number }> {
+  const base = getAirtableBase();
+  const records = await base("Clases")
+    .select({ filterByFormula: 'AND({Clase} != "", {Horario} != "")' })
+    .all();
+
+  const hoy = toBogotaDateString(new Date().toISOString());
+
+  const existentes = new Set(
+    records.map((r) => {
+      const gimnasioId = (r.get(GIMNASIO_FIELD) as string[] | undefined)?.[0] ?? "";
+      const nombre = ((r.get("Clase") as string) ?? "").trim();
+      const horario = (r.get("Horario") as string) ?? "";
+      return `${gimnasioId}|${nombre}|${horario}`;
+    })
+  );
+
+  type ClaseFieldValue = string | number | boolean | string[] | undefined;
+  const porCrear: { fields: Record<string, ClaseFieldValue> }[] = [];
+
+  for (const record of records) {
+    const horario = record.get("Horario") as string;
+    if (toBogotaDateString(horario) >= hoy) continue; // ese día todavía no termina
+
+    const gimnasio = (record.get(GIMNASIO_FIELD) as string[] | undefined) ?? [];
+    if (gimnasio.length === 0) continue;
+
+    const nombre = ((record.get("Clase") as string) ?? "").trim();
+    const siguienteHorario = new Date(new Date(horario).getTime() + SIETE_DIAS_MS).toISOString();
+    const clave = `${gimnasio[0]}|${nombre}|${siguienteHorario}`;
+    if (existentes.has(clave)) continue;
+
+    const fields: Record<string, ClaseFieldValue> = {
+      Clase: nombre,
+      Creditos: (record.get("Creditos") as number) ?? 0,
+      "Cupos totales": (record.get("Cupos totales") as number) ?? 0,
+      Horario: siguienteHorario,
+      [GIMNASIO_FIELD]: gimnasio,
+    };
+    const descuento = record.get("Descuento creditos") as number | undefined;
+    if (descuento !== undefined && descuento !== null) fields["Descuento creditos"] = descuento;
+    const precio = record.get("Precio") as number | undefined;
+    if (precio !== undefined && precio !== null) fields.Precio = precio;
+    const tipo = record.get("Tipo") as string | undefined;
+    if (tipo) fields.Tipo = tipo;
+    const actividad = record.get("Actividad") as string | undefined;
+    if (actividad) fields.Actividad = actividad;
+    const descripcion = record.get(DESCRIPCION_FIELD) as string | undefined;
+    if (descripcion) fields[DESCRIPCION_FIELD] = descripcion;
+    const duracion = record.get("Duración") as number | undefined;
+    if (duracion !== undefined && duracion !== null) fields["Duración"] = duracion;
+
+    porCrear.push({ fields });
+    existentes.add(clave);
+  }
+
+  for (let i = 0; i < porCrear.length; i += 10) {
+    await base("Clases").create(porCrear.slice(i, i + 10), { typecast: true });
+  }
+
+  if (porCrear.length > 0) invalidateClasesCupos();
+  return { creadas: porCrear.length };
 }

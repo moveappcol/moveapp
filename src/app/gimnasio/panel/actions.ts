@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { updateCuposTotales, getClaseById, precioEfectivo, type UpdateCuposResult } from "@/lib/classes";
 import { promoverEntradaListaEspera } from "@/lib/reservations";
 import { markWaitlistDenied } from "@/lib/waitlist";
-import { requireGymManager, loadPanelClases, type PanelClase } from "./data";
+import { requireGymManager, loadPanelDias, type PanelDia } from "./data";
 
 export async function actualizarCupos(
   claseId: string,
@@ -23,10 +23,10 @@ export async function actualizarCupos(
 /** Releída por el panel en vivo cada pocos segundos (ver panel-live.tsx) —
  * así el gimnasio ve nuevas reservas, cancelaciones y gente en lista de
  * espera sin tener que recargar la página. */
-export async function obtenerPanel(): Promise<PanelClase[] | null> {
+export async function obtenerPanel(): Promise<PanelDia[] | null> {
   const gym = await requireGymManager();
   if (!gym) return null;
-  return loadPanelClases(gym.id);
+  return loadPanelDias(gym.id);
 }
 
 export async function aprobarListaEspera(

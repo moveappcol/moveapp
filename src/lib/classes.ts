@@ -259,6 +259,15 @@ export async function updateCuposTotales(
     return { ok: false, error: "Esa clase no es de tu gimnasio." };
   }
 
+  const horario = record.get("Horario") as string | undefined;
+  const reservasActivas = horario ? await countActiveReservationsForClase(claseId, horario) : 0;
+  if (nuevoCupos < reservasActivas) {
+    return {
+      ok: false,
+      error: `No puedes bajar los cupos a menos de ${reservasActivas} — ya hay ${reservasActivas} reserva${reservasActivas === 1 ? "" : "s"} confirmada${reservasActivas === 1 ? "" : "s"} para esta clase.`,
+    };
+  }
+
   await base("Clases").update([{ id: claseId, fields: { "Cupos totales": nuevoCupos } }], {
     typecast: true,
   });

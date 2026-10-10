@@ -261,14 +261,20 @@ export function toBogotaDateString(iso: string): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** Fecha de pago quincenal: clases del 1–15 se pagan el 16 del mismo mes;
- * del 16 a fin de mes se pagan el 1 del mes siguiente. */
+/** Fecha de pago quincenal: clases del 1–13 se pagan el 13 del mismo mes;
+ * del 14 al 27 se pagan el 27 del mismo mes; del 28 en adelante (sin
+ * importar si el mes tiene 28, 29, 30 o 31 días) se pagan el 13 del mes
+ * siguiente — así esos últimos días de cada mes siempre quedan incluidos
+ * en el corte del 13, nunca se quedan sin un corte que los cubra. */
 export function computeFechaDePago(claseISO: string): string {
   const { year, month, day } = bogotaDateParts(claseISO);
-  if (day <= 15) {
-    return `${year}-${String(month).padStart(2, "0")}-16`;
+  if (day <= 13) {
+    return `${year}-${String(month).padStart(2, "0")}-13`;
+  }
+  if (day <= 27) {
+    return `${year}-${String(month).padStart(2, "0")}-27`;
   }
   const nextMonth = month === 12 ? 1 : month + 1;
   const nextYear = month === 12 ? year + 1 : year;
-  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-13`;
 }

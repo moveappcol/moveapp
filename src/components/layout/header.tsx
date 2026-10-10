@@ -106,6 +106,13 @@ export default async function Header() {
           ) : (
             <div className="hidden items-center gap-3 md:flex">
               <Link
+                href="/gimnasio"
+                className="font-heading text-xs font-semibold text-move-green/50 transition-colors hover:text-move-green"
+              >
+                Soy un gimnasio
+              </Link>
+              <span className="h-4 w-px bg-move-green/10" aria-hidden="true" />
+              <Link
                 href="/iniciar-sesion"
                 className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
               >

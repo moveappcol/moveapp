@@ -67,6 +67,13 @@ export default function MobileNav({
           {showAuthLinks && (
             <div className="flex flex-col gap-2 border-t border-move-green/10 py-3">
               <Link
+                href="/gimnasio"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2 text-center font-heading text-xs font-semibold text-move-green/50 hover:bg-move-green/5"
+              >
+                Soy un gimnasio
+              </Link>
+              <Link
                 href="/iniciar-sesion"
                 onClick={() => setOpen(false)}
                 className="rounded-lg px-3 py-3 font-heading text-sm font-medium text-move-green hover:bg-move-green/5"

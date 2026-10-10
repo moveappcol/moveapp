@@ -50,8 +50,8 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-move-green/10 bg-background/95 backdrop-blur relative">
       {/* relative: ancla el panel del menú móvil (ver mobile-nav.tsx) */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-        <Link href="/" className="block">
+      <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-4 sm:px-6">
+        <Link href="/" className="block shrink-0">
           <Image
             src="/brand/unique-wordmark.png"
             alt="UNIQUE"
@@ -62,13 +62,13 @@ export default async function Header() {
           />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-6 md:flex lg:gap-8">
           {navLinks.map((link) =>
             link.href.startsWith("/#") ? (
               <a
                 key={link.href}
                 href={link.href}
-                className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
+                className="whitespace-nowrap font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
               >
                 {link.label}
               </a>
@@ -76,7 +76,7 @@ export default async function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
+                className="whitespace-nowrap font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
               >
                 {link.label}
               </Link>
@@ -84,7 +84,7 @@ export default async function Header() {
           )}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           <LanguageToggle locale={locale} />
           {userId ? (
             <>
@@ -107,20 +107,20 @@ export default async function Header() {
             <div className="hidden items-center gap-3 md:flex">
               <Link
                 href="/gimnasio"
-                className="font-heading text-xs font-semibold text-move-green/50 transition-colors hover:text-move-green"
+                className="whitespace-nowrap font-heading text-xs font-semibold text-move-green/50 transition-colors hover:text-move-green"
               >
                 Soy un gimnasio
               </Link>
-              <span className="h-4 w-px bg-move-green/10" aria-hidden="true" />
+              <span className="h-4 w-px shrink-0 bg-move-green/10" aria-hidden="true" />
               <Link
                 href="/iniciar-sesion"
-                className="font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
+                className="whitespace-nowrap font-heading text-sm font-medium text-move-green transition-colors hover:text-move-coral"
               >
                 {dict.common.signIn}
               </Link>
               <Link
                 href="/crear-cuenta"
-                className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                className="whitespace-nowrap rounded-full bg-move-coral px-5 py-2 text-center font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 {dict.common.createAccount}
               </Link>

@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { cached } from "./server-cache";
 
 const CACHE_TTL_MS = 10_000;
@@ -454,6 +454,33 @@ function toPorcentaje(value: number | string | undefined): number | null {
  * (no se muestran en el storefront), solo se usan para liquidaciones. */
 export async function getGymBillingInfo(id: string): Promise<GymBillingInfo | null> {
   return cached(`gyms:billingInfo:${id}`, CACHE_TTL_MS, () => fetchGymBillingInfo(id));
+}
+
+export type GymManagerInfo = { id: string; name: string };
+
+/** Busca el gimnasio cuyo campo "Correo" incluye este correo — es la llave
+ * de acceso al panel de gimnasios (ver /gimnasio): cualquier cuenta de
+ * UNIQUE creada con un correo que ya esté registrado como contacto de un
+ * gimnasio en Airtable entra automáticamente a su panel, sin un rol nuevo
+ * que mantener. El campo puede traer varios correos separados por coma —
+ * FIND() sobre el texto completo (en minúsculas) alcanza para ese caso,
+ * igual que el resto del código hace con este mismo campo (ver
+ * parseGymEmails en email.ts). */
+export async function getGymByManagerEmail(email: string): Promise<GymManagerInfo | null> {
+  const base = getAirtableBase();
+  const target = email.trim().toLowerCase();
+  if (!target) return null;
+
+  const records = await base("Gimnasios")
+    .select({
+      filterByFormula: `FIND("${escapeFormulaValue(target)}", LOWER({Correo}))`,
+      maxRecords: 1,
+    })
+    .all();
+
+  const record = records[0];
+  if (!record) return null;
+  return { id: record.id, name: ((record.get("Nombre") as string) ?? "").trim() };
 }
 
 async function fetchGymBillingInfo(id: string): Promise<GymBillingInfo | null> {

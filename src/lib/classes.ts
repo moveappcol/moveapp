@@ -209,6 +209,37 @@ export async function getAllClasesConFecha(): Promise<Clase[]> {
     .map((record) => mapRecordToClase(record, 0));
 }
 
+export type UpdateCuposResult = { ok: true } | { ok: false; error: string };
+
+/** Actualiza "Cupos totales" de una clase — para el panel de gimnasios
+ * (ver /gimnasio/panel). Siempre revisa que la clase sea de verdad de ese
+ * gimnasio antes de escribir: sin este chequeo, un gimnasio podría
+ * editarle los cupos a otro con solo adivinar/probar un id de clase. */
+export async function updateCuposTotales(
+  claseId: string,
+  gimnasioId: string,
+  nuevoCupos: number
+): Promise<UpdateCuposResult> {
+  if (!Number.isInteger(nuevoCupos) || nuevoCupos < 0) {
+    return { ok: false, error: "Los cupos deben ser un número entero mayor o igual a 0." };
+  }
+
+  const base = getAirtableBase();
+  const record = await base("Clases").find(claseId).catch(() => null);
+  if (!record) return { ok: false, error: "Esa clase no existe." };
+
+  const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
+  if (gimnasio?.[0] !== gimnasioId) {
+    return { ok: false, error: "Esa clase no es de tu gimnasio." };
+  }
+
+  await base("Clases").update([{ id: claseId, fields: { "Cupos totales": nuevoCupos } }], {
+    typecast: true,
+  });
+  invalidateClasesCupos();
+  return { ok: true };
+}
+
 export async function getClaseById(id: string): Promise<Clase | null> {
   const base = getAirtableBase();
   try {

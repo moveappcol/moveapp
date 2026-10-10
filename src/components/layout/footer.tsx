@@ -63,6 +63,9 @@ export default async function Footer() {
             <Link href="/sobre-nosotros" className="hover:text-white">
               {dict.header.navSobreNosotros}
             </Link>
+            <Link href="/gimnasio" className="hover:text-white">
+              Soy un gimnasio
+            </Link>
             {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/#contacto" className="hover:text-white">
               {dict.header.navContacto}

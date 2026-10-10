@@ -1,0 +1,13 @@
+import { SignIn } from "@clerk/nextjs";
+
+export default function GimnasioIniciarSesionPage() {
+  return (
+    <div className="flex min-h-[70vh] items-center justify-center px-4 py-16">
+      <SignIn
+        path="/gimnasio/iniciar-sesion"
+        signUpUrl="/gimnasio/crear-cuenta"
+        fallbackRedirectUrl="/gimnasio/panel"
+      />
+    </div>
+  );
+}

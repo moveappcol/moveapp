@@ -11,8 +11,6 @@ export default function NuevaClase({ templates }: { templates: ClaseTemplate[] }
     null
   );
 
-  if (templates.length === 0) return null;
-
   if (!abierto) {
     return (
       <button
@@ -22,6 +20,29 @@ export default function NuevaClase({ templates }: { templates: ClaseTemplate[] }
       >
         + Agregar clase
       </button>
+    );
+  }
+
+  if (templates.length === 0) {
+    return (
+      <div className="rounded-2xl border border-move-green/10 bg-white p-5">
+        <p className="font-heading text-sm font-semibold text-move-green">Agregar clase</p>
+        <p className="mt-2 font-body text-sm text-move-green/60">
+          Todavía no tienes ninguna clase cargada para elegir — escríbenos a{" "}
+          <a href="mailto:gerencia@uniqueappcol.com" className="text-move-coral underline">
+            gerencia@uniqueappcol.com
+          </a>{" "}
+          para que te ayudemos a crear la primera. Después de eso, podrás usar sus horarios y
+          cupos como base para armar las siguientes clases tú mismo.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAbierto(false)}
+          className="mt-3 font-heading text-xs font-semibold text-move-green/60 hover:text-move-green"
+        >
+          Cerrar
+        </button>
+      </div>
     );
   }
 

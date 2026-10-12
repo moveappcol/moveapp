@@ -4,12 +4,21 @@ import { useEffect, useMemo, useState } from "react";
 import { formatHora, semanaActual } from "@/lib/dias";
 import { obtenerPanel } from "./actions";
 import type { PanelDia } from "./data";
+import type { ClaseTemplate } from "@/lib/classes";
 import CuposEditor from "./cupos-editor";
 import WaitlistRow from "./waitlist-row";
+import NuevaClase from "./nueva-clase";
+import EliminarClase from "./eliminar-clase";
 
 const POLL_MS = 20_000;
 
-export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) {
+export default function PanelLive({
+  initialDias,
+  templates,
+}: {
+  initialDias: PanelDia[];
+  templates: ClaseTemplate[];
+}) {
   const [dias, setDias] = useState(initialDias);
   const semana = useMemo(() => semanaActual("es"), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
@@ -27,6 +36,8 @@ export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) 
 
   return (
     <div className="mt-8 space-y-6">
+      <NuevaClase templates={templates} />
+
       <div className="flex gap-2 overflow-x-auto pb-1">
         {semana.map((dia) => (
           <button
@@ -75,7 +86,10 @@ export default function PanelLive({ initialDias }: { initialDias: PanelDia[] }) 
                       {clase.credits} créditos
                     </p>
                   </div>
-                  <CuposEditor claseId={clase.id} cuposActuales={clase.cuposTotales} />
+                  <div className="flex flex-col items-end gap-2">
+                    <CuposEditor claseId={clase.id} cuposActuales={clase.cuposTotales} />
+                    <EliminarClase claseId={clase.id} />
+                  </div>
                 </div>
 
                 <div className="mt-4 border-t border-move-green/10 pt-4">

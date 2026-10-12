@@ -1,7 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { updateCuposTotales, getClaseById, precioEfectivo, type UpdateCuposResult } from "@/lib/classes";
+import {
+  updateCuposTotales,
+  getClaseById,
+  precioEfectivo,
+  getClaseTemplatesForGym,
+  crearClaseDesdeTemplate,
+  eliminarClase,
+  type UpdateCuposResult,
+  type ClaseTemplate,
+  type CrearClaseResult,
+  type EliminarClaseResult,
+} from "@/lib/classes";
 import { promoverEntradaListaEspera } from "@/lib/reservations";
 import { markWaitlistDenied } from "@/lib/waitlist";
 import { requireGymManager, loadPanelDias, type PanelDia } from "./data";
@@ -78,4 +89,52 @@ export async function negarListaEspera(claseId: string, entryId: string): Promis
   await markWaitlistDenied(entryId);
   revalidatePath("/gimnasio/panel");
   return { ok: true };
+}
+
+/** Las clases "conocidas" de ESTE gimnasio (nunca de otro) para armar el
+ * dropdown de "agregar clase" — ver getClaseTemplatesForGym. */
+export async function obtenerClaseTemplates(): Promise<ClaseTemplate[]> {
+  const gym = await requireGymManager();
+  if (!gym) return [];
+  return getClaseTemplatesForGym(gym.id);
+}
+
+export async function agregarClase(
+  _prevState: CrearClaseResult | null,
+  formData: FormData
+): Promise<CrearClaseResult> {
+  const gym = await requireGymManager();
+  if (!gym) return { ok: false, error: "No tienes acceso a ningún gimnasio." };
+
+  const templateId = String(formData.get("templateId") ?? "");
+  const fecha = String(formData.get("fecha") ?? "");
+  const hora = String(formData.get("hora") ?? "");
+  const cupos = Number(formData.get("cupos"));
+
+  if (!templateId) return { ok: false, error: "Elige una clase de la lista." };
+  if (!fecha || !hora) return { ok: false, error: "Elige fecha y hora." };
+
+  // fecha+hora se escriben en el input como hora local de Bogotá — se arma
+  // el ISO sumando el offset fijo (-5, Bogotá no tiene horario de verano)
+  // en vez de confiar en la zona horaria del navegador o del servidor.
+  const horarioISO = new Date(`${fecha}T${hora}:00-05:00`).toISOString();
+
+  const result = await crearClaseDesdeTemplate({
+    gimnasioId: gym.id,
+    templateId,
+    horarioISO,
+    cuposTotales: cupos,
+  });
+
+  if (result.ok) revalidatePath("/gimnasio/panel");
+  return result;
+}
+
+export async function eliminarClasePanel(claseId: string): Promise<EliminarClaseResult> {
+  const gym = await requireGymManager();
+  if (!gym) return { ok: false, error: "No tienes acceso a ningún gimnasio." };
+
+  const result = await eliminarClase(claseId, gym.id);
+  if (result.ok) revalidatePath("/gimnasio/panel");
+  return result;
 }

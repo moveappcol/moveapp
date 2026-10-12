@@ -275,6 +275,130 @@ export async function updateCuposTotales(
   return { ok: true };
 }
 
+export type ClaseTemplate = {
+  /** Id de una fila existente de esta clase — se usa para copiar sus campos
+   * al crear una nueva ocurrencia, nunca se muestra ni se edita. */
+  templateId: string;
+  name: string;
+  credits: number;
+  descripcion: string | null;
+};
+
+/** Las clases "conocidas" de un gimnasio, una por nombre — para que el
+ * panel (ver /gimnasio/panel) solo deje armar un horario nuevo a partir de
+ * una clase que ya existe, en vez de dejar que el gimnasio escriba nombre,
+ * créditos, tipo, etc. a mano: esos campos a mano son justo donde se
+ * cometen errores (un nombre mal escrito que no hace match en reportes, un
+ * Tipo A/B mal puesto que paga de más o de menos). Se queda con la
+ * ocurrencia más reciente de cada nombre como "plantilla" a copiar. */
+export async function getClaseTemplatesForGym(gimnasioId: string): Promise<ClaseTemplate[]> {
+  const clases = await getClassesForGym(gimnasioId);
+
+  const porNombre = new Map<string, Clase>();
+  for (const clase of clases) {
+    const existente = porNombre.get(clase.name);
+    if (!existente || (clase.fecha ?? "") > (existente.fecha ?? "")) {
+      porNombre.set(clase.name, clase);
+    }
+  }
+
+  return [...porNombre.values()]
+    .map((clase) => ({
+      templateId: clase.id,
+      name: clase.name,
+      credits: precioEfectivo(clase),
+      descripcion: clase.descripcion,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export type CrearClaseResult = { ok: true; id: string } | { ok: false; error: string };
+
+/** Crea una nueva ocurrencia de una clase ya existente del gimnasio, en un
+ * horario nuevo — copia TODOS los campos de la plantilla (nombre, créditos,
+ * descuento, precio, Tipo, actividad, descripción, duración) salvo Horario
+ * y Cupos totales, que son los dos únicos que el gimnasio elige. A
+ * propósito no deja mandar ningún otro campo por fuera de la plantilla —
+ * ver getClaseTemplatesForGym sobre por qué. */
+export async function crearClaseDesdeTemplate(params: {
+  gimnasioId: string;
+  templateId: string;
+  horarioISO: string;
+  cuposTotales: number;
+}): Promise<CrearClaseResult> {
+  if (!Number.isInteger(params.cuposTotales) || params.cuposTotales < 0) {
+    return { ok: false, error: "Los cupos deben ser un número entero mayor o igual a 0." };
+  }
+  if (Number.isNaN(new Date(params.horarioISO).getTime())) {
+    return { ok: false, error: "Esa fecha y hora no son válidas." };
+  }
+
+  const base = getAirtableBase();
+  const template = await base("Clases").find(params.templateId).catch(() => null);
+  if (!template) return { ok: false, error: "Esa clase no existe." };
+
+  const gimnasio = template.get(GIMNASIO_FIELD) as string[] | undefined;
+  if (gimnasio?.[0] !== params.gimnasioId) {
+    return { ok: false, error: "Esa clase no es de tu gimnasio." };
+  }
+
+  type ClaseFieldValue = string | number | boolean | string[] | undefined;
+  const fields: Record<string, ClaseFieldValue> = {
+    Clase: (template.get("Clase") as string) ?? "",
+    Creditos: (template.get("Creditos") as number) ?? 0,
+    "Cupos totales": params.cuposTotales,
+    Horario: new Date(params.horarioISO).toISOString(),
+    [GIMNASIO_FIELD]: gimnasio,
+  };
+  const descuento = template.get("Descuento creditos") as number | undefined;
+  if (descuento !== undefined && descuento !== null) fields["Descuento creditos"] = descuento;
+  const precio = template.get("Precio") as number | undefined;
+  if (precio !== undefined && precio !== null) fields.Precio = precio;
+  const tipo = template.get("Tipo") as string | undefined;
+  if (tipo) fields.Tipo = tipo;
+  const actividad = template.get("Actividad") as string | undefined;
+  if (actividad) fields.Actividad = actividad;
+  const descripcion = template.get(DESCRIPCION_FIELD) as string | undefined;
+  if (descripcion) fields[DESCRIPCION_FIELD] = descripcion;
+  const duracion = template.get("Duración") as number | undefined;
+  if (duracion !== undefined && duracion !== null) fields["Duración"] = duracion;
+
+  const created = await base("Clases").create([{ fields }], { typecast: true });
+  invalidateClasesCupos();
+  return { ok: true, id: created[0].id };
+}
+
+export type EliminarClaseResult = { ok: true } | { ok: false; error: string };
+
+/** Elimina una ocurrencia de clase — solo si no tiene ninguna reserva
+ * activa. Si tiene, el gimnasio primero tendría que cancelarlas desde
+ * Airtable (o esperar a que la persona misma las cancele) para no borrarle
+ * la clase a alguien que ya pagó créditos por ella sin devolvérselos ni
+ * avisarle. */
+export async function eliminarClase(claseId: string, gimnasioId: string): Promise<EliminarClaseResult> {
+  const base = getAirtableBase();
+  const record = await base("Clases").find(claseId).catch(() => null);
+  if (!record) return { ok: false, error: "Esa clase no existe." };
+
+  const gimnasio = record.get(GIMNASIO_FIELD) as string[] | undefined;
+  if (gimnasio?.[0] !== gimnasioId) {
+    return { ok: false, error: "Esa clase no es de tu gimnasio." };
+  }
+
+  const horario = record.get("Horario") as string | undefined;
+  const reservasActivas = horario ? await countActiveReservationsForClase(claseId, horario) : 0;
+  if (reservasActivas > 0) {
+    return {
+      ok: false,
+      error: `No puedes eliminar esta clase — tiene ${reservasActivas} reserva${reservasActivas === 1 ? "" : "s"} activa${reservasActivas === 1 ? "" : "s"}. Primero debe cancelarse cada una.`,
+    };
+  }
+
+  await base("Clases").destroy([claseId]);
+  invalidateClasesCupos();
+  return { ok: true };
+}
+
 export async function getClaseById(id: string): Promise<Clase | null> {
   const base = getAirtableBase();
   try {

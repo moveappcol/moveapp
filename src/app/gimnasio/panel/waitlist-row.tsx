@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { aprobarListaEspera, negarListaEspera } from "./actions";
 import type { UpdateCuposResult } from "@/lib/classes";
 
@@ -9,11 +9,13 @@ export default function WaitlistRow({
   entryId,
   nombre,
   correo,
+  onResuelta,
 }: {
   claseId: string;
   entryId: string;
   nombre: string;
   correo: string;
+  onResuelta: () => void;
 }) {
   const [state, formAction, isPending] = useActionState<UpdateCuposResult | null, FormData>(
     async (_prevState, formData) => {
@@ -24,6 +26,14 @@ export default function WaitlistRow({
     },
     null
   );
+
+  // Igual que en EliminarClase: sin esto, la persona aprobada o negada
+  // seguía viéndose en la lista de espera hasta el próximo refresco
+  // automático (cada 20s), como si el botón no hubiera hecho nada.
+  useEffect(() => {
+    if (state?.ok === true) onResuelta();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2">

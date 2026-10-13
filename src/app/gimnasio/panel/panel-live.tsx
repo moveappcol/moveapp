@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatHora, semanaActual } from "@/lib/dias";
 import { obtenerPanel } from "./actions";
 import type { PanelDia } from "./data";
@@ -23,20 +23,22 @@ export default function PanelLive({
   const semana = useMemo(() => semanaActual("es"), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
 
-  useEffect(() => {
-    const id = setInterval(async () => {
-      const fresh = await obtenerPanel();
-      if (fresh) setDias(fresh);
-    }, POLL_MS);
-    return () => clearInterval(id);
+  const refrescar = useCallback(async () => {
+    const fresh = await obtenerPanel();
+    if (fresh) setDias(fresh);
   }, []);
+
+  useEffect(() => {
+    const id = setInterval(refrescar, POLL_MS);
+    return () => clearInterval(id);
+  }, [refrescar]);
 
   const diaActivo = semana.find((d) => d.key === diaSeleccionado) ?? semana[0];
   const clasesDelDia = dias.find((d) => d.key === diaActivo.key)?.clases ?? [];
 
   return (
     <div className="mt-8 space-y-6">
-      <NuevaClase templates={templates} />
+      <NuevaClase templates={templates} onCreada={refrescar} />
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {semana.map((dia) => (
@@ -88,7 +90,7 @@ export default function PanelLive({
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <CuposEditor claseId={clase.id} cuposActuales={clase.cuposTotales} />
-                    <EliminarClase claseId={clase.id} />
+                    <EliminarClase claseId={clase.id} onEliminada={refrescar} />
                   </div>
                 </div>
 
@@ -132,6 +134,7 @@ export default function PanelLive({
                           entryId={e.id}
                           nombre={e.nombre}
                           correo={e.correo}
+                          onResuelta={refrescar}
                         />
                       ))}
                     </ul>

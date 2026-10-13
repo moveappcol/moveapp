@@ -1,15 +1,28 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { agregarClase } from "./actions";
 import type { ClaseTemplate, CrearClaseResult } from "@/lib/classes";
 
-export default function NuevaClase({ templates }: { templates: ClaseTemplate[] }) {
+export default function NuevaClase({
+  templates,
+  onCreada,
+}: {
+  templates: ClaseTemplate[];
+  onCreada: () => void;
+}) {
   const [abierto, setAbierto] = useState(false);
   const [state, formAction, isPending] = useActionState<CrearClaseResult | null, FormData>(
     agregarClase,
     null
   );
+
+  // Igual que en EliminarClase: sin esto, la clase recién creada no
+  // aparecía en la lista hasta el próximo refresco automático (cada 20s).
+  useEffect(() => {
+    if (state?.ok === true) onCreada();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   if (!abierto) {
     return (

@@ -1,4 +1,4 @@
-import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { getAirtableBase } from "./airtable";
 
 /**
  * Esquema en Airtable — tabla "Liquidacion" (una fila por GIMNASIO por
@@ -273,27 +273,31 @@ function serializarBloque(claseKey: string, claseFechaISO: string, counts: Ocurr
   return `${marcador}\n${JSON.stringify(numeros)}\n${resumen}\n${detalleIndentado}`;
 }
 
-/** Busca EN AIRTABLE, en el momento exacto en que se llama (no en un
- * snapshot traído minutos antes), si ya existe la fila de quincena de este
- * gimnasio+corte. Hace falta este round-trip extra justo antes de escribir
- * porque dos procesos pueden estar facturando al mismo tiempo (el cron
- * normal de 24h antes, que corre cada 5 min en Railway, y el de respaldo,
- * o una corrección manual) — si ambos se guiaran solo por un snapshot
- * tomado al principio de su propia corrida, el que escribe de último
- * pisaría por completo lo que el otro acababa de sumar (ninguno hace un
- * incremento atómico, cada uno reescribe la fila entera). Esto fue
+/** Vuelve a leer, por id directo (no por búsqueda), el estado real AHORA
+ * MISMO de una fila de quincena que YA SABÍAMOS que existe — nunca para
+ * decidir si crear o no. Hace falta este round-trip extra justo antes de
+ * sumarle algo porque dos procesos pueden estar facturando al mismo tiempo
+ * (el cron normal de 24h antes, que corre cada 5 min en Railway, y el de
+ * respaldo, o una corrección manual) — si ambos se guiaran solo por un
+ * snapshot tomado al principio de su propia corrida, el que escribe de
+ * último pisaría por completo lo que el otro acababa de sumar (ninguno
+ * hace un incremento atómico, cada uno reescribe la fila entera). Esto fue
  * justo lo que pasó la primera vez: una corrida de respaldo intentando
  * sumar ocurrencias viejas de LUCKY GIRL PILATES perdió toda esa plata
  * porque el cron normal, corriendo en paralelo, sobreescribió la fila con
- * solo las clases del día. No elimina la ventana de carrera por completo
- * (sigue habiendo un hueco entre este read y el write de abajo), pero la
- * reduce de "toda la corrida del cron" a "una sola llamada a Airtable". */
-async function buscarPeriodoFresco(gimnasio: string, fechaDePago: string): Promise<LiquidacionRecord | null> {
+ * solo las clases del día. Se usa find-por-id (no filterByFormula) a
+ * propósito: buscar por fórmula justo después de crear una fila resultó
+ * nada confiable (Airtable tardaba en indexarla y el código terminaba
+ * creando una fila nueva por cada ocurrencia en vez de sumarlas todas a
+ * una sola); leer un id que ya se conoce no tiene ese problema. */
+async function leerPeriodoFresco(id: string): Promise<LiquidacionRecord | null> {
   const base = getAirtableBase();
-  const formula = `AND({Gimnasio} = "${escapeFormulaValue(gimnasio)}", {Fecha de pago} = "${escapeFormulaValue(fechaDePago)}")`;
-  const records = await base(LIQUIDACION_TABLE).select({ filterByFormula: formula }).all();
-  const candidatos = records.map(mapLiquidacionRecord).filter((r) => esFilaDelModeloNuevo(r.detalle));
-  return candidatos[0] ?? null;
+  try {
+    const record = await base(LIQUIDACION_TABLE).find(id);
+    return mapLiquidacionRecord(record);
+  } catch {
+    return null;
+  }
 }
 
 async function upsertOcurrencia(params: {
@@ -311,9 +315,15 @@ async function upsertOcurrencia(params: {
   const marcador = marcadorOcurrencia(claseKey, claseFechaISO);
   const nuevoBloque = serializarBloque(claseKey, claseFechaISO, counts);
 
-  const existente = await buscarPeriodoFresco(gimnasio, fechaDePago);
+  // La decisión de crear vs. sumar se toma con el snapshot en memoria (fiable
+  // dentro de esta misma corrida, porque cada llamada anterior ya lo dejó
+  // actualizado) — no con una búsqueda fresca a Airtable, que tarda en
+  // indexar una fila recién creada y haría que la segunda ocurrencia del
+  // mismo gimnasio+quincena, milisegundos después, no la encontrara y
+  // creara una fila duplicada (ver nota en leerPeriodoFresco).
+  const existenteEnMemoria = findLiquidacionPeriodo(liquidacionesExistentes, gimnasio, fechaDePago);
 
-  if (!existente) {
+  if (!existenteEnMemoria) {
     if (!crearSiNoExiste) return { id: "", creado: false, omitido: true };
 
     const created = await base(LIQUIDACION_TABLE).create(
@@ -352,6 +362,11 @@ async function upsertOcurrencia(params: {
     liquidacionesExistentes.push(nueva);
     return { id: nueva.id, creado: true, omitido: false };
   }
+
+  // Ya sabemos (por memoria) que esta fila existe -- se vuelve a leer por
+  // id para no pisar lo que otro proceso le haya sumado desde que se tomó
+  // el snapshot inicial de esta corrida (ver leerPeriodoFresco).
+  const existente = (await leerPeriodoFresco(existenteEnMemoria.id)) ?? existenteEnMemoria;
 
   const bloques = parseBloques(existente.detalle);
   const idx = bloques.findIndex((b) => b.marcador === marcador);

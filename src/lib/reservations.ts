@@ -57,6 +57,7 @@ export type ReservaDetalle = {
   molestias: string;
   recordatorioEnviado: boolean;
   correoDespuesClaseEnviado: boolean;
+  listaFinalEnviada: boolean;
 };
 
 type ReservaConClaseYFecha = ReservaDetalle & { claseId: string; fecha: string | null };
@@ -76,6 +77,7 @@ function mapReservaRecord(
     molestias: ((r.get("Molestias") as string) ?? "").trim(),
     recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
     correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
+    listaFinalEnviada: Boolean(r.get("Lista final enviada")),
   };
 }
 
@@ -143,6 +145,24 @@ export async function markCorreoDespuesClaseEnviado(reservationId: string): Prom
     [{ id: reservationId, fields: { "Correo despues clase enviado": true } }],
     { typecast: true }
   );
+}
+
+/** Marca que ya se incluyó esta reserva en la "lista final de asistentes"
+ * que se le manda al gimnasio (ver cron reservas-finales) — vive en la
+ * reserva, no en Liquidacion, porque Liquidacion pasó a ser una fila por
+ * gimnasio por quincena (ver liquidaciones.ts) y este aviso es por clase
+ * puntual, no por periodo. Se marcan solo las confirmadas, que son las que
+ * de verdad salen en el PDF. */
+export async function marcarListaFinalEnviada(reservationIds: string[]): Promise<void> {
+  if (reservationIds.length === 0) return;
+  const base = getAirtableBase();
+  for (let i = 0; i < reservationIds.length; i += 10) {
+    const lote = reservationIds.slice(i, i + 10).map((id) => ({
+      id,
+      fields: { "Lista final enviada": true },
+    }));
+    await base("Reservas").update(lote, { typecast: true });
+  }
 }
 
 const CANCELLATION_WINDOW_HOURS = 24;

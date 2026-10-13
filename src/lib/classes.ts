@@ -5,9 +5,8 @@ import {
   computeFechaDePago,
   claseKeyForLiquidacion,
   fetchAllLiquidaciones,
-  findLiquidacionEnLista,
-  createLiquidacion,
-  buildCountsFromReservas,
+  agregarOcurrenciaALiquidacion,
+  buildOcurrenciaCounts,
 } from "./liquidaciones";
 import { getGymBillingInfo, getGyms, esGimnasioDeExperiencias } from "./gyms";
 
@@ -429,7 +428,7 @@ const LISTA_ESPERA_TABLE = "Lista de espera";
 
 /** Para una clase puntual (claseId+fecha) que está a punto de adelantarse
  * de semana, arma las reservas tal como las vería el cron de liquidaciones
- * de 24h antes — mismo shape que buildCountsFromReservas espera. Se
+ * de 24h antes — mismo shape que buildOcurrenciaCounts espera. Se
  * resuelve en JS contra una lista ya traída de toda la tabla "Reservas"
  * (no se importa fetchAllReservasDetalle de reservations.ts a propósito:
  * ese archivo ya importa de este, y crearía un ciclo). */
@@ -447,31 +446,34 @@ function reservasParaClaseYFecha(todasLasReservas: readonly any[], claseId: stri
     }));
 }
 
-/** Garantiza que exista la liquidación de esta ocurrencia antes de que su
- * fila se reutilice para la semana siguiente — ver nota larga en
- * renovarClasesPasadas sobre por qué hace falta este seguro. Si ya existe
- * (el cron normal de 24h antes ya la generó, como debería ser lo normal),
- * no hace nada. Si el gimnasio no tiene info de facturación configurada,
- * se deja pasar igual que hace el cron de liquidaciones (nunca bloquea la
- * renovación por eso). */
-async function asegurarLiquidacionAntesDeAvanzar(params: {
+export type LiquidacionCreada = { gimnasio: string; clase: string; fecha: string; total: number };
+
+/** Garantiza que esta ocurrencia esté sumada en la liquidación de su
+ * quincena — usada tanto antes de que su fila de Clase se reutilice para
+ * la semana siguiente (ver nota larga en renovarClasesPasadas) como por el
+ * cron de respaldo diario (ver generarLiquidacionesFaltantes) que revisa
+ * TODO lo que ya debería estar facturado, sin importar la razón por la que
+ * no lo esté. Si esa ocurrencia puntual ya estaba incluida (el cron normal
+ * de 24h antes ya la sumó, como debería ser lo normal), no hace nada y
+ * devuelve null. Si el gimnasio no tiene info de facturación configurada,
+ * se deja pasar igual que hace el cron de liquidaciones (nunca bloquea por
+ * eso). */
+async function asegurarLiquidacion(params: {
   record: { id: string; get: (field: string) => unknown };
   liquidacionesExistentes: Awaited<ReturnType<typeof fetchAllLiquidaciones>>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   todasLasReservas: readonly any[];
-}): Promise<void> {
+}): Promise<LiquidacionCreada | null> {
   const { record, liquidacionesExistentes, todasLasReservas } = params;
   const horario = record.get("Horario") as string;
   const nombre = ((record.get("Clase") as string) ?? "").trim();
   const gimnasioId = (record.get(GIMNASIO_FIELD) as string[] | undefined)?.[0];
-  if (!gimnasioId) return;
+  if (!gimnasioId) return null;
 
-  const fecha = toBogotaDateString(horario);
   const claseKey = claseKeyForLiquidacion(nombre, horario);
 
   const gym = await getGymBillingInfo(gimnasioId);
-  if (!gym) return;
-  if (findLiquidacionEnLista(liquidacionesExistentes, gym.name, claseKey, fecha)) return;
+  if (!gym) return null;
 
   const claseCredits = (record.get("Creditos") as number) ?? 0;
   const tipoRaw = firstSelectValue(record.get("Tipo"));
@@ -480,19 +482,134 @@ async function asegurarLiquidacionAntesDeAvanzar(params: {
   const precio = precioClase !== undefined && precioClase !== null ? precioClase : gym.pricePerReservation;
 
   const reservas = reservasParaClaseYFecha(todasLasReservas, record.id, horario);
-  const counts = buildCountsFromReservas(reservas, claseCredits, tipo, precio, {
+  const counts = buildOcurrenciaCounts(reservas, claseCredits, tipo, precio, {
     tipoA: gym.porcentajeTipoA,
     tipoB: gym.porcentajeTipoB,
   });
 
-  const { id } = await createLiquidacion({
+  const resultado = await agregarOcurrenciaALiquidacion({
     gimnasio: gym.name,
-    clase: claseKey,
-    fecha,
+    claseKey,
+    claseFechaISO: horario,
     fechaDePago: computeFechaDePago(horario),
     counts,
+    liquidacionesExistentes,
   });
-  liquidacionesExistentes.push({ id, gimnasio: gym.name, clase: claseKey, fecha, reservasFinalesEnviadas: false });
+
+  if (resultado.yaIncluida) return null;
+  return { gimnasio: gym.name, clase: claseKey, fecha: toBogotaDateString(horario), total: counts.totalAPagar };
+}
+
+type OcurrenciaReal = {
+  gimnasioId: string;
+  claseId: string;
+  fechaISO: string;
+  reservas: { estado: string; userName: string }[];
+};
+
+/** Agrupa las reservas CONFIRMADAS (todo menos "Cancelado on time") por
+ * ocurrencia real: gimnasio + clase + la fecha exacta que quedó congelada
+ * en cada Reserva al momento de reservar. Es clave usar la fecha de la
+ * RESERVA, no el "Horario" actual de la fila de Clase — una clase
+ * recurrente reutiliza la misma fila semana a semana (ver
+ * renovarClasesPasadas, que adelanta el Horario +7 días en la misma fila),
+ * así que para cualquier clase que ya rodó varias veces desde que alguien
+ * reservó, su Horario actual ya no tiene nada que ver con la fecha real de
+ * esa reserva. Usar el Horario actual acá fue justo el bug de la primera
+ * versión de este archivo: creaba liquidaciones en $0 con la fecha de hoy
+ * en vez de encontrar la plata real de la fecha en que pasó la clase. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function agruparReservasPorOcurrencia(todasLasReservas: readonly any[]): Map<string, OcurrenciaReal> {
+  const grupos = new Map<string, OcurrenciaReal>();
+  for (const r of todasLasReservas) {
+    const estado = ((r.get("Estado") as string) ?? "Reservado").trim();
+    if (estado === "Cancelado on time") continue;
+
+    const claseId = (r.get("Clase") as string[] | undefined)?.[0];
+    const gimnasioId = (r.get("Gimnasios") as string[] | undefined)?.[0];
+    const fechaISO = r.get("Fecha") as string | undefined;
+    if (!claseId || !gimnasioId || !fechaISO) continue;
+
+    const userName = ((r.get("Usuario") as string) ?? "Desconocido").trim();
+    const key = `${gimnasioId}|${claseId}|${fechaISO}`;
+    const existente = grupos.get(key);
+    if (existente) {
+      existente.reservas.push({ estado, userName });
+    } else {
+      grupos.set(key, { gimnasioId, claseId, fechaISO, reservas: [{ estado, userName }] });
+    }
+  }
+  return grupos;
+}
+
+/**
+ * Red de seguridad diaria (ver /api/cron/liquidaciones-respaldo): revisa
+ * TODAS las reservas confirmadas de clases que ya deberían estar
+ * facturadas (empiezan en menos de 24h o ya pasaron) y crea la liquidación
+ * de cualquiera que no la tenga — sin importar la razón por la que se
+ * saltó el cron normal de 24h antes (/api/cron/liquidaciones, que corre
+ * desde un servicio en Railway fuera de este repo, así que una falla ahí
+ * no se puede diagnosticar desde el código). No reemplaza ese cron — este
+ * nunca manda el PDF de asistentes ni el correo al gimnasio, solo se
+ * asegura de que el registro de plata exista. Si crea algo, es porque el
+ * mecanismo normal falló en algún punto — el llamador decide si avisar
+ * por correo con la lista.
+ *
+ * A propósito NO crea liquidaciones en $0 para clases sin ninguna reserva
+ * (a diferencia del cron normal de 24h antes) — esta red de seguridad
+ * existe para no perder plata real, no para mantener un placeholder por
+ * cada clase vacía; con cientos de clases en la tabla, intentar igualar
+ * ese comportamiento exacto aquí multiplicaría las escrituras sin ningún
+ * beneficio real.
+ */
+export async function generarLiquidacionesFaltantes(): Promise<{ creadas: LiquidacionCreada[] }> {
+  const base = getAirtableBase();
+  const [todasLasReservas, clases, liquidacionesExistentes] = await Promise.all([
+    base("Reservas").select().all(),
+    getAllClasesConFecha(),
+    fetchAllLiquidaciones(),
+  ]);
+
+  const claseById = new Map(clases.map((c) => [c.id, c]));
+  const grupos = agruparReservasPorOcurrencia(todasLasReservas);
+
+  const now = Date.now();
+  const LOCK_IN_HOURS = 24;
+  const creadas: LiquidacionCreada[] = [];
+
+  for (const { gimnasioId, claseId, fechaISO, reservas } of grupos.values()) {
+    const hoursUntil = (new Date(fechaISO).getTime() - now) / (1000 * 60 * 60);
+    if (hoursUntil > LOCK_IN_HOURS) continue; // todavía se puede cancelar gratis
+
+    const clase = claseById.get(claseId);
+    if (!clase) continue; // la fila de Clase ya no existe (se borró) — nada de donde sacar credits/tipo/precio
+
+    const gym = await getGymBillingInfo(gimnasioId);
+    if (!gym) continue;
+
+    const fecha = toBogotaDateString(fechaISO);
+    const claseKey = claseKeyForLiquidacion(clase.name, fechaISO);
+
+    const precio = clase.precio ?? gym.pricePerReservation;
+    const counts = buildOcurrenciaCounts(reservas, clase.credits, clase.tipo, precio, {
+      tipoA: gym.porcentajeTipoA,
+      tipoB: gym.porcentajeTipoB,
+    });
+
+    const resultado = await agregarOcurrenciaALiquidacion({
+      gimnasio: gym.name,
+      claseKey,
+      claseFechaISO: fechaISO,
+      fechaDePago: computeFechaDePago(fechaISO),
+      counts,
+      liquidacionesExistentes,
+    });
+
+    if (resultado.yaIncluida) continue;
+    creadas.push({ gimnasio: gym.name, clase: claseKey, fecha, total: counts.totalAPagar });
+  }
+
+  return { creadas };
 }
 
 /**
@@ -510,8 +627,8 @@ async function asegurarLiquidacionAntesDeAvanzar(params: {
  * "Reservas".
  *
  * Antes de adelantar cada clase, se asegura de que su liquidación de la
- * semana que está por terminar ya exista (ver
- * asegurarLiquidacionAntesDeAvanzar) — si la fila se reutiliza para la
+ * semana que está por terminar ya exista (ver asegurarLiquidacion) — si
+ * la fila se reutiliza para la
  * semana nueva sin que esto corra antes, esa semana queda sin ninguna
  * forma de recuperarse después (el cron de 24h antes ya no la va a ver, su
  * "Horario" para ese entonces ya es el de la semana siguiente). Esto fue
@@ -559,7 +676,7 @@ export async function renovarClasesPasadas(): Promise<{ renovadas: number }> {
   ]);
 
   for (const record of pendientes) {
-    await asegurarLiquidacionAntesDeAvanzar({ record, liquidacionesExistentes, todasLasReservas });
+    await asegurarLiquidacion({ record, liquidacionesExistentes, todasLasReservas });
   }
 
   const porActualizar: { id: string; fields: { Horario: string } }[] = [];

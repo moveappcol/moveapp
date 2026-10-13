@@ -4,9 +4,8 @@ import { getGymBillingInfo } from "@/lib/gyms";
 import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
 import {
   fetchAllLiquidaciones,
-  findLiquidacionEnLista,
-  createLiquidacion,
-  buildCountsFromReservas,
+  agregarOcurrenciaALiquidacion,
+  buildOcurrenciaCounts,
   computeFechaDePago,
   toBogotaDateString,
   claseKeyForLiquidacion,
@@ -63,25 +62,26 @@ export async function GET(req: NextRequest) {
     const fecha = toBogotaDateString(clase.fecha);
     const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
 
-    if (findLiquidacionEnLista(todasLasLiquidaciones, gym.name, claseKey, fecha)) {
-      skipped += 1;
-      continue;
-    }
-
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const precio = clase.precio ?? gym.pricePerReservation;
-    const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
+    const counts = buildOcurrenciaCounts(reservas, clase.credits, clase.tipo, precio, {
       tipoA: gym.porcentajeTipoA,
       tipoB: gym.porcentajeTipoB,
     });
 
-    await createLiquidacion({
+    const resultado = await agregarOcurrenciaALiquidacion({
       gimnasio: gym.name,
-      clase: claseKey,
-      fecha,
+      claseKey,
+      claseFechaISO: clase.fecha,
       fechaDePago: computeFechaDePago(clase.fecha),
       counts,
+      liquidacionesExistentes: todasLasLiquidaciones,
     });
+
+    if (resultado.yaIncluida) {
+      skipped += 1;
+      continue;
+    }
 
     generated += 1;
 

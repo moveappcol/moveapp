@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
-import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
+import {
+  fetchAllReservasDetalle,
+  filterReservationsDetailForClase,
+  marcarListaFinalEnviada,
+} from "@/lib/reservations";
 import {
   fetchAllLiquidaciones,
-  findLiquidacionEnLista,
-  createLiquidacion,
-  updateLiquidacionCounts,
-  buildCountsFromReservas,
-  markReservasFinalesEnviadas,
+  agregarOcurrenciaALiquidacion,
+  buildOcurrenciaCounts,
   computeFechaDePago,
   toBogotaDateString,
   claseKeyForLiquidacion,
@@ -73,44 +74,41 @@ export async function GET(req: NextRequest) {
 
     const fecha = toBogotaDateString(clase.fecha);
     const claseKey = claseKeyForLiquidacion(clase.name, clase.fecha);
-
-    let liquidacion = findLiquidacionEnLista(todasLasLiquidaciones, gym.name, claseKey, fecha);
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
-    const precio = clase.precio ?? gym.pricePerReservation;
-    const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
-      tipoA: gym.porcentajeTipoA,
-      tipoB: gym.porcentajeTipoB,
-    });
+    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
 
-    if (!liquidacion) {
-      // No debería pasar (la liquidación ya se genera a las 24h), pero por
-      // si el cron de las 24h no alcanzó a correr, la creamos igual.
-      const { id } = await createLiquidacion({
-        gimnasio: gym.name,
-        clase: claseKey,
-        fecha,
-        fechaDePago: computeFechaDePago(clase.fecha),
-        counts,
-      });
-      liquidacion = { id, gimnasio: gym.name, clase: claseKey, fecha, reservasFinalesEnviadas: false };
-    } else {
-      // Puede haber reservas nuevas hechas después del corte de 24h — se
-      // actualizan los conteos y totales antes de mandar la lista final.
-      await updateLiquidacionCounts(liquidacion.id, counts);
-    }
-
-    if (liquidacion.reservasFinalesEnviadas) {
+    // "Lista final enviada" vive en cada reserva (ver marcarListaFinalEnviada
+    // en reservations.ts) — si cualquiera de las confirmadas ya la tiene
+    // marcada, es que este cron ya procesó esta clase antes.
+    if (confirmadas.some((r) => r.listaFinalEnviada)) {
       skipped += 1;
       continue;
     }
 
-    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
+    const precio = clase.precio ?? gym.pricePerReservation;
+    const counts = buildOcurrenciaCounts(reservas, clase.credits, clase.tipo, precio, {
+      tipoA: gym.porcentajeTipoA,
+      tipoB: gym.porcentajeTipoB,
+    });
 
-    // Sin reservas no hay lista final que avisar — se marca como procesada
-    // igual para que el cron no la siga revisando cada vez que corre, pero
-    // no se genera ni se manda ningún PDF vacío.
+    // Puede haber reservas nuevas hechas después del corte de 24h — esto
+    // crea la liquidación si por algo el cron de 24h no alcanzó a correr,
+    // o actualiza los números de esta ocurrencia dentro de su quincena si
+    // ya existía (ver agregarOcurrenciaALiquidacion).
+    await agregarOcurrenciaALiquidacion({
+      gimnasio: gym.name,
+      claseKey,
+      claseFechaISO: clase.fecha,
+      fechaDePago: computeFechaDePago(clase.fecha),
+      counts,
+      liquidacionesExistentes: todasLasLiquidaciones,
+    });
+
+    // Sin reservas no hay lista final que avisar — no se genera ni se
+    // manda ningún PDF vacío (y no hay ninguna reserva confirmada a la que
+    // marcarle "Lista final enviada", así que simplemente no vuelve a
+    // entrar acá para esta clase porque ya no hay nada pendiente).
     if (confirmadas.length === 0) {
-      await markReservasFinalesEnviadas(liquidacion.id);
       skipped += 1;
       continue;
     }
@@ -138,7 +136,7 @@ export async function GET(req: NextRequest) {
         archivo: `${clase.name}-${fecha}`,
         pdf,
       });
-      await markReservasFinalesEnviadas(liquidacion.id);
+      await marcarListaFinalEnviada(confirmadas.map((r) => r.id));
       sent += 1;
     } catch (err) {
       emailFailed += 1;

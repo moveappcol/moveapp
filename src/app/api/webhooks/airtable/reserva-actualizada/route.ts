@@ -4,10 +4,9 @@ import { getClaseById } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
 import { getReservationsDetailForClase } from "@/lib/reservations";
 import {
-  findLiquidacion,
-  updateLiquidacionCounts,
-  buildCountsFromReservas,
-  toBogotaDateString,
+  corregirOcurrencia,
+  buildOcurrenciaCounts,
+  computeFechaDePago,
   claseKeyForLiquidacion,
 } from "@/lib/liquidaciones";
 
@@ -64,20 +63,26 @@ export async function POST(req: NextRequest) {
   const gym = await getGymBillingInfo(clase.gimnasioId);
   if (!gym) return NextResponse.json({ ok: true, skipped: "gimnasio no encontrado" });
 
-  const fecha = toBogotaDateString(fechaReserva);
   const claseKey = claseKeyForLiquidacion(clase.name, fechaReserva);
-  const liquidacion = await findLiquidacion(gym.name, claseKey, fecha);
-  if (!liquidacion) {
-    return NextResponse.json({ ok: true, skipped: "todavía no existe liquidación para esta clase" });
-  }
 
   const reservas = await getReservationsDetailForClase(claseId, fechaReserva);
   const precio = clase.precio ?? gym.pricePerReservation;
-  const counts = buildCountsFromReservas(reservas, clase.credits, clase.tipo, precio, {
+  const counts = buildOcurrenciaCounts(reservas, clase.credits, clase.tipo, precio, {
     tipoA: gym.porcentajeTipoA,
     tipoB: gym.porcentajeTipoB,
   });
-  const totals = await updateLiquidacionCounts(liquidacion.id, counts);
 
-  return NextResponse.json({ ok: true, totals });
+  const resultado = await corregirOcurrencia({
+    gimnasio: gym.name,
+    claseKey,
+    claseFechaISO: fechaReserva,
+    fechaDePago: computeFechaDePago(fechaReserva),
+    counts,
+  });
+
+  if (!resultado.ok) {
+    return NextResponse.json({ ok: true, skipped: resultado.skipped });
+  }
+
+  return NextResponse.json({ ok: true, totalOcurrencia: counts.totalAPagar });
 }

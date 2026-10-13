@@ -1,0 +1,15 @@
+name: Liquidaciones faltantes (respaldo diario)
+
+on:
+  schedule:
+    - cron: "0 11 * * *" # 6am America/Bogota (UTC-5)
+  workflow_dispatch: {}
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger liquidaciones-respaldo cron
+        run: |
+          curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X GET "https://www.uniqueappcol.com/api/cron/liquidaciones-respaldo" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

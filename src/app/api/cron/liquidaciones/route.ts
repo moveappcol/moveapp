@@ -55,6 +55,15 @@ export async function GET(req: NextRequest) {
 
     const hoursUntilClass = (new Date(clase.fecha).getTime() - now) / (1000 * 60 * 60);
     if (hoursUntilClass > LOCK_IN_HOURS) continue; // todavía se puede cancelar gratis
+    // Una clase que YA pasó nunca debe generar el correo "Reservas
+    // confirmadas en 24h" — sin este piso, cualquier clase vieja que no
+    // tuviera todavía su liquidación (ej. justo después de limpiar la
+    // tabla) se procesa aquí mismo y le manda al gimnasio el PDF de "24h
+    // antes" para una clase que ya ocurrió, sin importar hace cuánto. El
+    // respaldo de clases atrasadas sin facturar es trabajo de
+    // /api/cron/liquidaciones-respaldo, que nunca manda correos — este
+    // cron es solo para el aviso puntual a tiempo.
+    if (hoursUntilClass < 0) continue;
 
     const gym = await getGymBillingInfo(clase.gimnasioId);
     if (!gym) continue;

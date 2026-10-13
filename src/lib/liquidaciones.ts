@@ -1,4 +1,4 @@
-import { getAirtableBase } from "./airtable";
+import { getAirtableBase, escapeFormulaValue } from "./airtable";
 
 /**
  * Esquema en Airtable — tabla "Liquidacion" (una fila por GIMNASIO por
@@ -273,6 +273,29 @@ function serializarBloque(claseKey: string, claseFechaISO: string, counts: Ocurr
   return `${marcador}\n${JSON.stringify(numeros)}\n${resumen}\n${detalleIndentado}`;
 }
 
+/** Busca EN AIRTABLE, en el momento exacto en que se llama (no en un
+ * snapshot traído minutos antes), si ya existe la fila de quincena de este
+ * gimnasio+corte. Hace falta este round-trip extra justo antes de escribir
+ * porque dos procesos pueden estar facturando al mismo tiempo (el cron
+ * normal de 24h antes, que corre cada 5 min en Railway, y el de respaldo,
+ * o una corrección manual) — si ambos se guiaran solo por un snapshot
+ * tomado al principio de su propia corrida, el que escribe de último
+ * pisaría por completo lo que el otro acababa de sumar (ninguno hace un
+ * incremento atómico, cada uno reescribe la fila entera). Esto fue
+ * justo lo que pasó la primera vez: una corrida de respaldo intentando
+ * sumar ocurrencias viejas de LUCKY GIRL PILATES perdió toda esa plata
+ * porque el cron normal, corriendo en paralelo, sobreescribió la fila con
+ * solo las clases del día. No elimina la ventana de carrera por completo
+ * (sigue habiendo un hueco entre este read y el write de abajo), pero la
+ * reduce de "toda la corrida del cron" a "una sola llamada a Airtable". */
+async function buscarPeriodoFresco(gimnasio: string, fechaDePago: string): Promise<LiquidacionRecord | null> {
+  const base = getAirtableBase();
+  const formula = `AND({Gimnasio} = "${escapeFormulaValue(gimnasio)}", {Fecha de pago} = "${escapeFormulaValue(fechaDePago)}")`;
+  const records = await base(LIQUIDACION_TABLE).select({ filterByFormula: formula }).all();
+  const candidatos = records.map(mapLiquidacionRecord).filter((r) => esFilaDelModeloNuevo(r.detalle));
+  return candidatos[0] ?? null;
+}
+
 async function upsertOcurrencia(params: {
   gimnasio: string;
   claseKey: string;
@@ -288,7 +311,7 @@ async function upsertOcurrencia(params: {
   const marcador = marcadorOcurrencia(claseKey, claseFechaISO);
   const nuevoBloque = serializarBloque(claseKey, claseFechaISO, counts);
 
-  const existente = findLiquidacionPeriodo(liquidacionesExistentes, gimnasio, fechaDePago);
+  const existente = await buscarPeriodoFresco(gimnasio, fechaDePago);
 
   if (!existente) {
     if (!crearSiNoExiste) return { id: "", creado: false, omitido: true };
@@ -374,8 +397,14 @@ async function upsertOcurrencia(params: {
     { typecast: true }
   );
 
-  Object.assign(existente, { detalle: nuevoDetalle, ...nuevosNumeros });
-  return { id: existente.id, creado: esNueva, omitido: false };
+  const actualizado: LiquidacionRecord = { ...existente, detalle: nuevoDetalle, ...nuevosNumeros };
+  const posEnMemoria = liquidacionesExistentes.findIndex((r) => r.id === actualizado.id);
+  if (posEnMemoria === -1) {
+    liquidacionesExistentes.push(actualizado);
+  } else {
+    liquidacionesExistentes[posEnMemoria] = actualizado;
+  }
+  return { id: actualizado.id, creado: esNueva, omitido: false };
 }
 
 export type AgregarOcurrenciaResult = { id: string; yaIncluida: boolean };

@@ -9,7 +9,7 @@ import {
   createLiquidacion,
   buildCountsFromReservas,
 } from "./liquidaciones";
-import { getGymBillingInfo } from "./gyms";
+import { getGymBillingInfo, getGyms, esGimnasioDeExperiencias } from "./gyms";
 
 const CACHE_TTL_MS = 5_000;
 const CLASES_CON_CUPOS_CACHE_KEY = "classes:allWithCupos";
@@ -518,18 +518,35 @@ async function asegurarLiquidacionAntesDeAvanzar(params: {
  * justo lo que pasó con la semana del 17 de septiembre de 2026, corregido
  * a mano una vez — este seguro es para que no se repita.
  *
+ * Nunca toca las clases del gimnasio "Experiencias" (ver
+ * esGimnasioDeExperiencias en gyms.ts) — esas son eventos puntuales de
+ * UNIQUE, no clases recurrentes, así que no deben reaparecer solas una
+ * semana después. Dejarlas afuera de este cron fue justo lo que faltó
+ * cuando "Brunch + Yoga" se duplicó sobre una fecha real el 12 de octubre
+ * de 2026 (resuelto a mano esa vez).
+ *
  * Idempotente: una clase ya adelantada queda con fecha futura, así que la
  * próxima corrida la salta sola (no hay nada que marcar aparte).
  */
 export async function renovarClasesPasadas(): Promise<{ renovadas: number }> {
   const base = getAirtableBase();
-  const records = await base("Clases")
-    .select({ filterByFormula: 'AND({Clase} != "", {Horario} != "")' })
-    .all();
+  const [records, { gyms }] = await Promise.all([
+    base("Clases")
+      .select({ filterByFormula: 'AND({Clase} != "", {Horario} != "")' })
+      .all(),
+    getGyms(),
+  ]);
+
+  const idsExperiencias = new Set(
+    gyms.filter((g) => esGimnasioDeExperiencias(g.name)).map((g) => g.id)
+  );
 
   const hoy = toBogotaDateString(new Date().toISOString());
 
   const pendientes = records.filter((record) => {
+    const gimnasioId = (record.get(GIMNASIO_FIELD) as string[] | undefined)?.[0];
+    if (gimnasioId && idsExperiencias.has(gimnasioId)) return false;
+
     const horario = record.get("Horario") as string;
     return toBogotaDateString(horario) < hoy; // ese día ya terminó
   });

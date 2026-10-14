@@ -62,8 +62,10 @@ export default function ClassesByDayExplorer({
 
       // Las clases sin cupo nunca se muestran en este explorador — salvo
       // que sea una clase que la propia persona ya reservó (su reserva no
-      // debe desaparecer solo porque el cupo se llenó después).
-      if (!reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
+      // debe desaparecer solo porque el cupo se llenó después), o una
+      // marcada "Próximamente" (todavía no tiene sentido hablar de cupos:
+      // se anuncia antes de abrir reservas, ver proximamente en classes.ts).
+      if (!c.proximamente && !reservedSet.has(c.id) && c.cuposDisponibles <= 0) return false;
 
       const gym = c.gimnasioId ? gymsById[c.gimnasioId] : undefined;
       if (actividadSeleccionada) {
@@ -222,6 +224,8 @@ export default function ClassesByDayExplorer({
                     <p className="mt-3 font-body text-sm font-medium text-move-green/70">
                       {yaReservada
                         ? t.yaReservada
+                        : clase.proximamente
+                        ? t.proximamente
                         : clase.cuposDisponibles <= 2
                         ? clase.cuposDisponibles === 1
                           ? t.ultimoCupo

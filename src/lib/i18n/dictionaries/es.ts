@@ -94,6 +94,7 @@ export const es = {
       ultimoCupo: "Último cupo disponible",
       ultimos2Cupos: "Últimos 2 cupos disponibles",
       cuposDisponibles: "Cupos disponibles",
+      proximamente: "Próximamente",
       gimnasioGenerico: "Gimnasio",
       todasLasActividades: "Todas las actividades",
       todosLosHorarios: "Todo el día",
@@ -197,6 +198,7 @@ export const es = {
     listo: "Listo",
     sinClasesProgramadas: "Este gimnasio todavía no tiene clases programadas.",
     noHayClasesEsteDia: "No hay clases programadas para este día.",
+    proximamenteAviso: "Todavía no se puede reservar — muy pronto abrimos cupos.",
     waitlist: {
       enEspera: (posicion: number | null) =>
         `Estás en la lista de espera${posicion ? ` (posición ${posicion})` : ""} — te avisamos si se libera un cupo.`,
@@ -204,6 +206,14 @@ export const es = {
       salirDeLista: "Salir de la lista",
       uniendo: "Uniendo…",
       unirme: "Unirme a la lista de espera",
+      completarPerfil: "Completar perfil",
+    },
+    avisame: {
+      enEspera: (_posicion: number | null) => "Ya estás en la lista — te avisamos apenas se pueda reservar.",
+      saliendo: "Saliendo…",
+      salirDeLista: "Quitarme de la lista",
+      uniendo: "Anotando…",
+      unirme: "Avísame cuando pueda reservar",
       completarPerfil: "Completar perfil",
     },
   },

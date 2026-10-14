@@ -57,6 +57,15 @@ export type Clase = {
   /** Descripción de la clase (de qué se trata) — opcional, null si el staff
    * todavía no la puso en Airtable. */
   descripcion: string | null;
+  /** true si esta ocurrencia todavía no se puede reservar (se está
+   * anunciando antes de abrir cupos — típicamente una Experiencia nueva).
+   * Mientras sea true, la UI nunca muestra "Reservar" ni "clase llena":
+   * siempre un botón de "Avísame cuando pueda reservar" (reutiliza el
+   * mismo mecanismo de lista de espera — ver joinWaitlist en waitlist.ts),
+   * sin importar cuántos cupos tenga. false para toda clase existente
+   * (campo nuevo en Airtable, vacío = false — nunca cambia nada ya
+   * publicado). */
+  proximamente: boolean;
 };
 
 /** Los créditos que realmente se cobran al reservar — el descuento si
@@ -94,6 +103,9 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *   - "Descripción "  (texto largo, opcional — OJO: trae un espacio al
  *      final del nombre del campo; se le muestra a la persona al ver la
  *      clase)
+ *   - Próximamente   (casilla, opcional — ver el campo `proximamente` en
+ *      el tipo Clase arriba; vacío/sin marcar = false, se comporta como
+ *      cualquier clase normal)
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
  *
@@ -177,6 +189,7 @@ function mapRecordToClase(
     duracionMinutos: duracion && duracion > 0 ? duracion / 60 : DEFAULT_DURACION_MINUTOS,
     actividad: actividad || null,
     descripcion: descripcion || null,
+    proximamente: Boolean(record.get("Próximamente")),
   };
 }
 

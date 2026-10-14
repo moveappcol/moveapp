@@ -35,6 +35,9 @@ export async function bookClass(
   if (clase.cuposDisponibles <= 0) {
     return { ok: false, error: "Esta clase ya no tiene cupos disponibles." };
   }
+  if (clase.proximamente) {
+    return { ok: false, error: "Esta clase todavía no se puede reservar." };
+  }
 
   const userName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || email;

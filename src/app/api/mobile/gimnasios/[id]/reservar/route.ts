@@ -35,6 +35,9 @@ export async function POST(
   if (clase.cuposDisponibles <= 0) {
     return NextResponse.json({ ok: false, error: "Esta clase ya no tiene cupos disponibles." }, { status: 400 });
   }
+  if (clase.proximamente) {
+    return NextResponse.json({ ok: false, error: "Esta clase todavía no se puede reservar." }, { status: 400 });
+  }
 
   const result = await createReservation({
     userEmail: user.email,

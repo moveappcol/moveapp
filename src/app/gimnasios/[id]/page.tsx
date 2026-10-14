@@ -66,11 +66,16 @@ export default async function GymPage({
       const account = await getUserCreditsByEmail(email);
       if (!canAccessGymByGenero(gym.genero, account?.genero ?? null)) notFound();
       reservedClaseIds = await getActiveReservationClaseIds(email);
-      const llenas = classes.filter((c) => c.cuposDisponibles <= 0 && !reservedClaseIds.has(c.id));
-      const statuses = await Promise.all(
-        llenas.map((c) => getWaitlistStatus(c.id, email))
+      // El estado de lista de espera se precalcula tanto para clases llenas
+      // como para las marcadas "Próximamente" (ahí los cupos no importan —
+      // siempre muestran el botón de "Avísame", ver proximamente en Clase).
+      const necesitanEstado = classes.filter(
+        (c) => (c.cuposDisponibles <= 0 || c.proximamente) && !reservedClaseIds.has(c.id)
       );
-      llenas.forEach((c, i) => {
+      const statuses = await Promise.all(
+        necesitanEstado.map((c) => getWaitlistStatus(c.id, email))
+      );
+      necesitanEstado.forEach((c, i) => {
         waitlistStatus[c.id] = statuses[i];
       });
     }

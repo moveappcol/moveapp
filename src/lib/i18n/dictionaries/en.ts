@@ -91,6 +91,7 @@ export const en: Dictionary = {
       ultimoCupo: "Last spot available",
       ultimos2Cupos: "Last 2 spots available",
       cuposDisponibles: "Spots available",
+      proximamente: "Coming soon",
       gimnasioGenerico: "Gym",
       todasLasActividades: "All activities",
       todosLosHorarios: "All day",
@@ -193,6 +194,7 @@ export const en: Dictionary = {
     listo: "Done",
     sinClasesProgramadas: "This gym doesn't have any classes scheduled yet.",
     noHayClasesEsteDia: "No classes scheduled for this day.",
+    proximamenteAviso: "Not open for booking yet — spots open soon.",
     waitlist: {
       enEspera: (posicion: number | null) =>
         `You're on the waitlist${posicion ? ` (position ${posicion})` : ""} — we'll let you know if a spot opens up.`,
@@ -200,6 +202,14 @@ export const en: Dictionary = {
       salirDeLista: "Leave waitlist",
       uniendo: "Joining…",
       unirme: "Join waitlist",
+      completarPerfil: "Complete profile",
+    },
+    avisame: {
+      enEspera: (_posicion: number | null) => "You're on the list — we'll let you know as soon as booking opens.",
+      saliendo: "Leaving…",
+      salirDeLista: "Leave list",
+      uniendo: "Adding you…",
+      unirme: "Notify me when I can book",
       completarPerfil: "Complete profile",
     },
   },

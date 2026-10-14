@@ -135,7 +135,7 @@ function ClaseCard({
           {clase.descripcion && (
             <p className="mt-1 font-body text-sm text-move-green/70">{clase.descripcion}</p>
           )}
-          <CuposAviso cuposDisponibles={clase.cuposDisponibles} t={t} />
+          {!clase.proximamente && <CuposAviso cuposDisponibles={clase.cuposDisponibles} t={t} />}
         </div>
         <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
           {precioEfectivo(clase) < clase.credits && (
@@ -154,6 +154,27 @@ function ClaseCard({
           />
         ) : yaReservada ? (
           <p className="font-body text-sm font-medium text-move-green">{t.yaReservada}</p>
+        ) : clase.proximamente ? (
+          <>
+            <p className="mb-2 font-body text-sm text-move-green/50">{t.proximamenteAviso}</p>
+            <Show when="signed-in">
+              <WaitlistForm
+                gimnasioId={gimnasioId}
+                claseId={clase.id}
+                initialEnEspera={waitlistStatus?.enEspera ?? false}
+                initialPosicion={waitlistStatus?.posicion ?? null}
+                t={t.avisame}
+              />
+            </Show>
+            <Show when="signed-out">
+              <Link
+                href="/iniciar-sesion"
+                className="font-heading text-sm font-semibold text-move-coral hover:underline"
+              >
+                {t.iniciaSesionListaEspera}
+              </Link>
+            </Show>
+          </>
         ) : !reservasAbiertas ? (
           <p className="font-body text-sm text-move-green/50">{t.reservasAbrenEl(reservasAbrenLabel)}</p>
         ) : !clase.fecha ? (

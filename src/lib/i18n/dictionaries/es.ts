@@ -213,7 +213,7 @@ export const es = {
       saliendo: "Saliendo…",
       salirDeLista: "Quitarme de la lista",
       uniendo: "Anotando…",
-      unirme: "Avísame cuando pueda reservar",
+      unirme: "¡Quiero ser parte!",
       completarPerfil: "Completar perfil",
     },
   },

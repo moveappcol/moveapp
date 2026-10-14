@@ -103,9 +103,14 @@ export function precioEfectivo(clase: Pick<Clase, "credits" | "descuentoCreditos
  *   - "Descripción "  (texto largo, opcional — OJO: trae un espacio al
  *      final del nombre del campo; se le muestra a la persona al ver la
  *      clase)
- *   - Próximamente   (casilla, opcional — ver el campo `proximamente` en
- *      el tipo Clase arriba; vacío/sin marcar = false, se comporta como
- *      cualquier clase normal)
+ *   - "Se puede reservar" (casilla, opcional — OJO: a pesar del nombre,
+ *      la app la lee al REVÉS: MARCADA bloquea la reserva (es la que
+ *      arranca una clase nueva como "próximamente"), vacía/sin marcar se
+ *      comporta como cualquier clase normal y SÍ se puede reservar. Quedó
+ *      así a propósito: el campo es nuevo, así que todas las clases que
+ *      ya existían tenían que seguir reservándose igual que siempre sin
+ *      que nadie tuviera que ir a marcar cientos de filas una por una —
+ *      ver el campo `proximamente` en el tipo Clase arriba)
  *
  * "Numero", "Reservas" y "Reservas 2" existen pero no se usan aquí.
  *
@@ -189,7 +194,7 @@ function mapRecordToClase(
     duracionMinutos: duracion && duracion > 0 ? duracion / 60 : DEFAULT_DURACION_MINUTOS,
     actividad: actividad || null,
     descripcion: descripcion || null,
-    proximamente: Boolean(record.get("Próximamente")),
+    proximamente: Boolean(record.get("Se puede reservar")),
   };
 }
 

@@ -209,7 +209,7 @@ export const en: Dictionary = {
       saliendo: "Leaving…",
       salirDeLista: "Leave list",
       uniendo: "Adding you…",
-      unirme: "Notify me when I can book",
+      unirme: "I want in!",
       completarPerfil: "Complete profile",
     },
   },

@@ -89,7 +89,11 @@ export default function PanelLive({
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <CuposEditor claseId={clase.id} cuposActuales={clase.cuposTotales} />
+                    <CuposEditor
+                      claseId={clase.id}
+                      cuposActuales={clase.cuposTotales}
+                      onActualizado={refrescar}
+                    />
                     <EliminarClase claseId={clase.id} onEliminada={refrescar} />
                   </div>
                 </div>

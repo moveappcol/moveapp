@@ -1,21 +1,31 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { actualizarCupos } from "./actions";
 import type { UpdateCuposResult } from "@/lib/classes";
 
 export default function CuposEditor({
   claseId,
   cuposActuales,
+  onActualizado,
 }: {
   claseId: string;
   cuposActuales: number;
+  onActualizado: () => void;
 }) {
   const action = actualizarCupos.bind(null, claseId);
   const [state, formAction, isPending] = useActionState<UpdateCuposResult | null, FormData>(
     action,
     null
   );
+
+  // Igual que en EliminarClase: sin esto, el resto del panel (inscritos,
+  // lista de espera) se quedaba mostrando los datos viejos hasta el
+  // próximo refresco automático (cada 20s).
+  useEffect(() => {
+    if (state?.ok === true) onActualizado();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   return (
     <form action={formAction} className="flex items-center gap-2">

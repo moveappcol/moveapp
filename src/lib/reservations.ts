@@ -10,7 +10,7 @@ import {
   reservationsOpenLabel,
 } from "./gyms";
 import { sendLowRatingAlertEmail, sendNewReservationEmail, sendWaitlistPromotedEmail } from "./email";
-import { getWaitingInOrder, markWaitlistPromoted, getAllWaitingEntries } from "./waitlist";
+import { getWaitingInOrder, markWaitlistPromoted, markWaitlistDenied, getAllWaitingEntries } from "./waitlist";
 import { sendPushNotification } from "./push";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
@@ -333,6 +333,19 @@ export async function createReservation(params: ReservationParams): Promise<Book
 
   const remainingCredits = await deductCredits(account.recordId, claseCredits);
   invalidateClasesCupos();
+
+  // Si esta persona ya estaba en la lista de espera de esta misma clase y
+  // reservó directo (sin pasar por la promoción automática), su entrada se
+  // queda "Esperando" para siempre — nada más la cerraba. Eso hacía que el
+  // gimnasio la viera a la vez como inscrita Y en lista de espera en su
+  // panel. No bloquea la reserva ya hecha si esto falla.
+  try {
+    const esperando = await getWaitingInOrder(claseId);
+    const propia = esperando.find((e) => e.correo.toLowerCase() === userEmail.toLowerCase());
+    if (propia) await markWaitlistDenied(propia.id);
+  } catch {
+    // ver comentario arriba
+  }
 
   await sendNewReservationEmail({
     ownerEmail: OWNER_EMAIL,

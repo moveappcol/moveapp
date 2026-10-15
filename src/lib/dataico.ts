@@ -28,7 +28,13 @@ const RESOLUTION_PREFIX = "UNQ";
  * dian_resolutions queda vacío). Solo hace falta el prefijo, creado dentro
  * del panel de Dataico (Ventas > Notas Crédito > Numeraciones), 2026-09-23. */
 const CREDIT_NOTE_PREFIX = "NCE";
-const IVA_RATE = 19;
+/** UNIQUE dejó de estar obligada a cobrar IVA (confirmado 2026-10-15) — el
+ * valor que paga la persona es neto, sin IVA, así que ya no se desglosa
+ * nada: se factura el total completo como base, con IVA en 0. Se deja la
+ * tasa en 0 (no se quita el bloque "taxes" de la factura) porque es la
+ * forma estándar de reportarle a la DIAN un ítem sin IVA, en vez de
+ * omitir el impuesto por completo. */
+const IVA_RATE = 0;
 
 /** "PRUEBAS" no envía nada real a la DIAN — se usa hasta confirmar que la
  * primera factura de verdad pasa sin errores de validación. Cambiar a
@@ -69,9 +75,10 @@ export type CreateInvoiceParams = {
    * Dataico lo exige para poder facturar (soporte, 2026-09-23). */
   sku: string;
   concepto: string;
-  /** Total en COP que ya pagó la persona — con IVA incluido (así se le
-   * muestra el precio en toda la plataforma). Se desglosa acá mismo en
-   * base + IVA para la factura. */
+  /** Total en COP que ya pagó la persona. El nombre quedó de cuando sí se
+   * cobraba IVA (se desglosaba en base + IVA para la factura) — ahora, con
+   * IVA_RATE en 0, todo el valor se factura como base sin ningún
+   * descuento, así que este número ya es el neto completo. */
   totalConIva: number;
   correo: string;
   nombre: string;

@@ -607,6 +607,15 @@ export async function promoverListasDeEsperaConCupo(): Promise<{ promovidos: num
     if (!clase.gimnasioId) continue;
     if (!clase.fecha || new Date(clase.fecha).getTime() <= ahora) continue;
     if (!esperandoPorClase.has(clase.id)) continue;
+    // Una clase "Próximamente" (ver proximamente en classes.ts) reutiliza
+    // esta misma lista de espera para el botón "¡Quiero ser parte!", pero
+    // nunca debe promoverse sola solo porque tiene cupos — normalmente SÍ
+    // tiene cupos libres (nadie puede reservarla todavía), así que sin
+    // este freno este cron reservaba y cobraba créditos automáticamente
+    // a cualquiera que se anotara, sin que el gimnasio hubiera abierto
+    // reservas de verdad. Confirmado en producción: pasó con una cuenta
+    // real antes de agregar este chequeo.
+    if (clase.proximamente) continue;
 
     promovidos += await promoverDeListaDeEspera({
       claseId: clase.id,

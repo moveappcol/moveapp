@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
-import { formatCOP } from "@/lib/credits-pricing";
+import { ahorroPorcentaje, formatCOP } from "@/lib/credits-pricing";
 import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
@@ -73,6 +73,9 @@ export default async function SuscribirsePage({
       </h1>
       <p className="mt-2 font-body text-sm text-move-green/70">
         {t.subscribe.subtitle(formatCOP(plan.price))}
+      </p>
+      <p className="mt-1 font-heading text-xs font-bold text-move-coral">
+        {t.subscribe.ahorras(ahorroPorcentaje(plan))}
       </p>
       <p className="mt-2 font-body text-xs text-move-green/50">{t.subscribe.limiteMensual}</p>
 

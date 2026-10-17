@@ -1,5 +1,20 @@
 @import "tailwindcss";
 
+/* En iOS/WebKit (Safari y el navegador interno de Instagram, donde entra la
+   mayoría del tráfico de UNIQUE), un elemento con una regla :hover definida
+   a veces necesita un primer toque solo para "activar" ese estado y un
+   segundo toque para que el clic de verdad se dispare — el típico botón o
+   tarjeta que "no responde" la primera vez. Redefine `hover:` para que solo
+   aplique en dispositivos que de verdad tienen mouse, nunca en touch, donde
+   no hace falta ni tiene sentido un estado hover. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 :root {
   --background: #ffffff;
   --foreground: #063009;

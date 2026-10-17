@@ -389,6 +389,7 @@ export const en: Dictionary = {
       title: (name: string, label: string) => `Subscribe to ${name} (${label})`,
       subtitle: (price: string) =>
         `${price}/month · billed automatically every month to the same card until you cancel. You can cancel or change plans anytime from "My subscription".`,
+      ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. a drop-in class at the gym`,
       limiteMensual: "You can access each gym a maximum of 3 times per month.",
     },
     topup: {

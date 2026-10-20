@@ -2,6 +2,8 @@ import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getClaseByIdBasic } from "./classes";
 import { getGymBillingInfo } from "./gyms";
 import { sendNewWaitlistEmail } from "./email";
+import { crearNotificacion } from "./notificaciones";
+import { formatFechaLarga, formatHora } from "./dias";
 
 const LISTA_ESPERA_TABLE = "Lista de espera";
 const OWNER_EMAIL = "gerencia@uniqueappcol.com";
@@ -111,6 +113,20 @@ export async function joinWaitlist(params: {
     gimnasio: gym?.name ?? "",
     fechaISO: clase?.fecha ?? null,
   });
+
+  if (clase?.gimnasioId) {
+    try {
+      await crearNotificacion({
+        gimnasioId: clase.gimnasioId,
+        tipo: "Lista de espera",
+        mensaje: `${params.nombre} entró a la lista de espera de ${clase.name}${
+          clase.fecha ? ` — ${formatFechaLarga(clase.fecha)}, ${formatHora(clase.fecha)}.` : "."
+        }`,
+      });
+    } catch {
+      // ver crearNotificacion — nunca debe tumbar la entrada ya hecha.
+    }
+  }
 
   return { posicion: esperando.length + 1 };
 }

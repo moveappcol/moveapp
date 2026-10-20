@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { getClaseTemplatesForGym } from "@/lib/classes";
 import { requireGymManager, loadPanelDias } from "./data";
 import PanelLive from "./panel-live";
+import NotificationBell from "./notification-bell";
 
 export default async function GimnasioPanelPage() {
   const { userId } = await auth();
@@ -18,11 +19,14 @@ export default async function GimnasioPanelPage() {
 
   return (
     <section className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <div>
-        <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-coral">
-          Panel de gimnasio
-        </p>
-        <h1 className="mt-1 font-heading text-2xl font-bold text-move-green">{gym.name}</h1>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-coral">
+            Panel de gimnasio
+          </p>
+          <h1 className="mt-1 font-heading text-2xl font-bold text-move-green">{gym.name}</h1>
+        </div>
+        <NotificationBell />
       </div>
 
       <p className="mt-2 font-body text-sm text-move-green/60">

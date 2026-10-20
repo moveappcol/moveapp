@@ -19,6 +19,8 @@ import {
 } from "./email";
 import { getWaitingInOrder, markWaitlistPromoted, markWaitlistDenied, getAllWaitingEntries } from "./waitlist";
 import { sendPushNotification } from "./push";
+import { crearNotificacion } from "./notificaciones";
+import { formatFechaLarga, formatHora } from "./dias";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 const LOW_RATING_THRESHOLD = 3;
@@ -364,6 +366,17 @@ export async function createReservation(params: ReservationParams): Promise<Book
     creditosRestantes: remainingCredits,
   }).catch(() => {});
 
+  try {
+    const claseReservada = await getClaseById(claseId);
+    await crearNotificacion({
+      gimnasioId,
+      tipo: "Nueva reserva",
+      mensaje: `${userName} reservó ${claseReservada?.name ?? "una clase"} — ${formatFechaLarga(fechaISO)}, ${formatHora(fechaISO)}.`,
+    });
+  } catch {
+    // ver crearNotificacion — nunca debe tumbar la reserva ya hecha.
+  }
+
   return { ok: true, reservationId: created[0].id, remainingCredits };
 }
 
@@ -506,6 +519,18 @@ export async function cancelReservation(params: {
       ? sendCancelacionConAvisoEmail(emailParams)
       : sendCancelacionTardiaEmail(emailParams)
     ).catch(() => {});
+
+    try {
+      await crearNotificacion({
+        gimnasioId,
+        tipo: "Cancelación",
+        mensaje: `${userName} canceló ${clase.name} — ${formatFechaLarga(fecha)}, ${formatHora(fecha)}.${
+          onTime ? "" : " Cancelación tardía: igual se les paga ese cupo."
+        }`,
+      });
+    } catch {
+      // ver crearNotificacion — nunca debe tumbar la cancelación ya hecha.
+    }
   }
 
   return { ok: true, refunded: onTime };

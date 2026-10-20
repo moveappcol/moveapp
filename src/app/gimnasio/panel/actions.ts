@@ -15,6 +15,11 @@ import {
 } from "@/lib/classes";
 import { promoverEntradaListaEspera } from "@/lib/reservations";
 import { markWaitlistDenied } from "@/lib/waitlist";
+import {
+  getNotificacionesGimnasio,
+  marcarNotificacionesLeidas,
+  type Notificacion,
+} from "@/lib/notificaciones";
 import { requireGymManager, loadPanelDias, type PanelDia } from "./data";
 
 export async function actualizarCupos(
@@ -137,4 +142,21 @@ export async function eliminarClasePanel(claseId: string): Promise<EliminarClase
   const result = await eliminarClase(claseId, gym.id);
   if (result.ok) revalidatePath("/gimnasio/panel");
   return result;
+}
+
+/** Releída por la campana cada pocos segundos (ver notification-bell.tsx) —
+ * cancelaciones, entradas a lista de espera y nuevas reservas de ESTE
+ * gimnasio, más recientes primero. */
+export async function obtenerNotificaciones(): Promise<Notificacion[]> {
+  const gym = await requireGymManager();
+  if (!gym) return [];
+  return getNotificacionesGimnasio(gym.id);
+}
+
+/** Se llama al abrir la campana — marca como leídas todas las que estaban
+ * pendientes de ESTE gimnasio. */
+export async function marcarNotificacionesLeidasPanel(): Promise<void> {
+  const gym = await requireGymManager();
+  if (!gym) return;
+  await marcarNotificacionesLeidas(gym.id);
 }

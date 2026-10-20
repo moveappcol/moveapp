@@ -394,6 +394,7 @@ export const es = {
       subtitle: (price: string) =>
         `${price} al mes · se cobra automáticamente cada mes a la misma tarjeta hasta que canceles. Puedes cancelar o cambiar de plan cuando quieras desde "Mi suscripción".`,
       ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
+      sinPermanencia: "Sin cláusula de permanencia — cancela cuando quieras.",
       limiteMensual: "Puedes acceder a cada gimnasio un máximo de 3 veces al mes.",
     },
     topup: {

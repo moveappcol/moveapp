@@ -77,6 +77,9 @@ export default async function SuscribirsePage({
       <p className="mt-1 font-heading text-xs font-bold text-move-coral">
         {t.subscribe.ahorras(ahorroPorcentaje(plan))}
       </p>
+      <p className="mt-1 font-heading text-xs font-semibold text-move-green">
+        {t.subscribe.sinPermanencia}
+      </p>
       <p className="mt-2 font-body text-xs text-move-green/50">{t.subscribe.limiteMensual}</p>
 
       <div className="mt-8">

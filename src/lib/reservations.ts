@@ -3,13 +3,20 @@ import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById, precioEfectivo, invalidateClasesCupos, getAllClasesDeTodosLosGimnasios } from "./classes";
 import {
   getGymById,
+  getGymBillingInfo,
   getGyms,
   canAccessGymByGenero,
   DEFAULT_BOOKING_CUTOFF_MINUTES,
   reservationsAreOpen,
   reservationsOpenLabel,
 } from "./gyms";
-import { sendLowRatingAlertEmail, sendNewReservationEmail, sendWaitlistPromotedEmail } from "./email";
+import {
+  sendLowRatingAlertEmail,
+  sendNewReservationEmail,
+  sendWaitlistPromotedEmail,
+  sendCancelacionConAvisoEmail,
+  sendCancelacionTardiaEmail,
+} from "./email";
 import { getWaitingInOrder, markWaitlistPromoted, markWaitlistDenied, getAllWaitingEntries } from "./waitlist";
 import { sendPushNotification } from "./push";
 
@@ -477,7 +484,7 @@ export async function cancelReservation(params: {
 
   const gimnasioId = (record.get("Gimnasios") as string[] | undefined)?.[0];
   if (gimnasioId) {
-    const gym = await getGymById(gimnasioId);
+    const gym = await getGymBillingInfo(gimnasioId);
     await promoverDeListaDeEspera({
       claseId: clase.id,
       gimnasioId,
@@ -486,6 +493,19 @@ export async function cancelReservation(params: {
       fechaISO: fecha,
       cuposLibres: 1,
     });
+
+    const userName = ((record.get("Usuario") as string) ?? "Alguien").trim();
+    const emailParams = {
+      ownerEmail: OWNER_EMAIL,
+      gymEmail: gym?.email ?? null,
+      userName,
+      gimnasio: gym?.name ?? gimnasioId,
+      fechaISO: fecha,
+    };
+    await (onTime
+      ? sendCancelacionConAvisoEmail(emailParams)
+      : sendCancelacionTardiaEmail(emailParams)
+    ).catch(() => {});
   }
 
   return { ok: true, refunded: onTime };

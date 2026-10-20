@@ -417,6 +417,83 @@ export async function sendNewWaitlistEmail(params: {
   }
 }
 
+/** Cancelación con AVISO — la persona canceló con ${CANCELLATION_WINDOW_HOURS}h
+ * o más de anticipación (ver `onTime` en cancelReservation), así que se le
+ * devolvieron los créditos y el gimnasio NO cobra ese cupo: es puramente
+ * informativo, para que sepan que ese puesto quedó libre de verdad. */
+export async function sendCancelacionConAvisoEmail(params: {
+  ownerEmail: string;
+  gymEmail: string | null;
+  userName: string;
+  gimnasio: string;
+  fechaISO: string;
+}): Promise<void> {
+  const fecha = new Date(params.fechaISO).toLocaleString("es-CO", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  });
+
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">❌ Cancelación con aviso</p>
+      <p><strong>${escapeHtml(params.userName)}</strong> canceló su reserva con tiempo de sobra.</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+      <p style="color:#666;">Le devolvimos el crédito, así que ese cupo queda libre — no les toca pagarlo.</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      ...recipients(params.gymEmail, params.ownerEmail),
+      subject: `Cancelación — ${params.userName} en ${params.gimnasio}`,
+      html,
+    });
+  } catch {
+    // No bloquea la cancelación ya hecha — si falla, simplemente no llega.
+  }
+}
+
+/** Cancelación TARDÍA — canceló dentro de las últimas
+ * ${CANCELLATION_WINDOW_HOURS}h antes de la clase (ver `onTime` en
+ * cancelReservation), así que NO se le devolvió el crédito: al gimnasio
+ * igual le toca pagarse ese cupo (ya estaba contado en la liquidación),
+ * así que puede ofrecérselo a alguien más sin perder nada. */
+export async function sendCancelacionTardiaEmail(params: {
+  ownerEmail: string;
+  gymEmail: string | null;
+  userName: string;
+  gimnasio: string;
+  fechaISO: string;
+}): Promise<void> {
+  const fecha = new Date(params.fechaISO).toLocaleString("es-CO", {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: "America/Bogota",
+  });
+
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="font-size:18px;font-weight:800;color:#063009;margin:0 0 20px;">⚠️ Cancelación tardía</p>
+      <p><strong>${escapeHtml(params.userName)}</strong> canceló su reserva a última hora.</p>
+      <p><strong>Gimnasio:</strong> ${escapeHtml(params.gimnasio)}</p>
+      <p><strong>Clase:</strong> ${escapeHtml(fecha)}</p>
+      <p style="color:#666;">Igual se les paga ese cupo — no le devolvimos el crédito a la persona. Pueden ofrecérselo a alguien más si quieren.</p>
+    </div>
+  `;
+
+  try {
+    await sendEmail({
+      ...recipients(params.gymEmail, params.ownerEmail),
+      subject: `Cancelación tardía — ${params.userName} en ${params.gimnasio}`,
+      html,
+    });
+  } catch {
+    // No bloquea la cancelación ya hecha — si falla, simplemente no llega.
+  }
+}
+
 /** Factura electrónica de una compra (plan o créditos) — se manda apenas
  * Dataico confirma la generación (ver facturarCompra en billing.ts). Enlaza
  * al PDF de Dataico en vez de adjuntarlo — ese link ya queda vigente de

@@ -9,6 +9,7 @@ import CuposEditor from "./cupos-editor";
 import WaitlistRow from "./waitlist-row";
 import NuevaClase from "./nueva-clase";
 import EliminarClase from "./eliminar-clase";
+import ReservasSemana from "./reservas-semana";
 
 const POLL_MS = 20_000;
 
@@ -22,6 +23,7 @@ export default function PanelLive({
   const [dias, setDias] = useState(initialDias);
   const semana = useMemo(() => semanaActual("es"), []);
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => semana[0].key);
+  const [verReservas, setVerReservas] = useState(false);
 
   const refrescar = useCallback(async () => {
     const fresh = await obtenerPanel();
@@ -39,6 +41,20 @@ export default function PanelLive({
   return (
     <div className="mt-8 space-y-6">
       <NuevaClase templates={templates} onCreada={refrescar} />
+
+      <button
+        type="button"
+        onClick={() => setVerReservas((v) => !v)}
+        className="rounded-full border border-move-green/20 px-5 py-2 font-heading text-sm font-semibold text-move-green transition-colors hover:border-move-green"
+      >
+        {verReservas ? "Ocultar reservas de la semana" : "Ver reservas de la semana"}
+      </button>
+
+      {verReservas && (
+        <div className="rounded-2xl border border-move-green/10 bg-move-green/[0.02] p-5">
+          <ReservasSemana dias={dias} />
+        </div>
+      )}
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {semana.map((dia) => (

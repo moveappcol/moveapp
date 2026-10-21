@@ -13,9 +13,9 @@ export const CREDIT_PLANS: CreditPackage[] = [
 ];
 
 export const CREDIT_TOPUPS: CreditPackage[] = [
-  { id: "topup-5", label: "5 créditos", credits: 5, price: 45_000 },
-  { id: "topup-10", label: "10 créditos", credits: 10, price: 85_000 },
-  { id: "topup-15", label: "15 créditos", credits: 15, price: 120_000 },
+  { id: "topup-5", label: "5 créditos", credits: 5, price: 39_900 },
+  { id: "topup-10", label: "10 créditos", credits: 10, price: 74_900 },
+  { id: "topup-15", label: "15 créditos", credits: 15, price: 109_900 },
 ];
 
 /** Lo que cuesta, en promedio, una clase suelta pagada directo en el

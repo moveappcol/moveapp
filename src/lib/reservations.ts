@@ -27,7 +27,7 @@ const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =
   | { ok: true; reservationId: string; remainingCredits: number }
-  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" };
+  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" };
 
 export type CancelResult =
   | { ok: true; refunded: boolean }
@@ -287,6 +287,7 @@ export async function createReservation(params: ReservationParams): Promise<Book
     return {
       ok: false,
       error: `No tienes créditos suficientes: te quedan ${account.credits} y esta clase vale ${claseCredits}.`,
+      code: "sin_creditos",
     };
   }
   if (!account.cedula) {

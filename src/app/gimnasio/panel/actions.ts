@@ -76,7 +76,13 @@ export async function aprobarListaEspera(
     fechaISO: clase.fecha,
   });
 
-  if (!result.ok) return { ok: false, error: result.error };
+  if (!result.ok) {
+    const error =
+      result.code === "sin_creditos"
+        ? `${nombre} no tiene créditos suficientes para esta clase todavía.`
+        : result.error;
+    return { ok: false, error };
+  }
 
   revalidatePath("/gimnasio/panel");
   return { ok: true };

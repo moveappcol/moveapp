@@ -14,6 +14,16 @@ const TABLES = [
   "Cupones",
 ] as const;
 
+// Límite de Excel: una celda no admite más de 32767 caracteres.
+const EXCEL_CELL_MAX_LENGTH = 32767;
+
+function truncateForExcel(value: unknown): unknown {
+  if (typeof value === "string" && value.length > EXCEL_CELL_MAX_LENGTH) {
+    return value.slice(0, EXCEL_CELL_MAX_LENGTH);
+  }
+  return value;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function recordToRow(record: any): Record<string, unknown> {
   const row: Record<string, unknown> = {
@@ -21,7 +31,8 @@ function recordToRow(record: any): Record<string, unknown> {
     "Creado": record._rawJson?.createdTime ?? "",
   };
   for (const [key, value] of Object.entries(record.fields as Record<string, unknown>)) {
-    row[key] = Array.isArray(value) ? value.join(", ") : value;
+    const flattened = Array.isArray(value) ? value.join(", ") : value;
+    row[key] = truncateForExcel(flattened);
   }
   return row;
 }

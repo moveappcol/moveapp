@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { buyTopup } from "@/app/pagos/actions";
+import { checkPagoStatus } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
@@ -86,8 +87,31 @@ export default function BuyTopupForm({
       startTransition(async () => {
         const result = await buyTopup(topupId, json.data.id);
         if (!result.ok) {
-          if (result.pending) {
+          if (result.pending && result.reference) {
             setPending(true);
+            // Wompi casi siempre resuelve en segundos (lo confirmamos con un
+            // pago real que tardó 13s) — se consulta varias veces antes de
+            // rendirse y mandar a la persona a esperar un correo. Sin esto,
+            // alguien a quien le rechazan la tarjeta se queda viendo
+            // "procesando" para siempre, sin enterarse de que falló (pasó
+            // de verdad: ver el correo rechazado del 21 de oct).
+            const reference = result.reference;
+            for (let intento = 0; intento < 15; intento++) {
+              await new Promise((r) => setTimeout(r, 2000));
+              const estado = await checkPagoStatus(reference);
+              if (estado?.estado === "Aprobado") {
+                setPending(false);
+                setSuccess(estado.creditos);
+                return;
+              }
+              if (estado?.estado === "Rechazado") {
+                setPending(false);
+                setError(t.pagoRechazado);
+                return;
+              }
+            }
+            // Después de 30s sigue "Pendiente" de verdad — ahí sí puede
+            // tardar más (webhook caído, etc.), se manda a esperar el correo.
             setTimeout(() => router.push("/mi-suscripcion"), 2500);
             return;
           }

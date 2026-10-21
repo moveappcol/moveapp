@@ -373,6 +373,7 @@ export const es = {
     noConectoWompi: "No pudimos conectar con Wompi. Intenta de nuevo.",
     procesando: "Procesando…",
     pagoEnProceso: 'Tu pago está siendo procesado. Te avisaremos apenas se confirme — revisa "Mi suscripción" en unos minutos.',
+    pagoRechazado: "Tu banco rechazó el pago. No te cobramos nada — intenta de nuevo con esta u otra tarjeta.",
     verMiPerfil: "Ver mi perfil",
     subscribe: {
       tienesCupon: "¿Tienes un cupón?",

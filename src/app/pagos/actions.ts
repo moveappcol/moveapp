@@ -66,7 +66,7 @@ export async function startCheckout(kind: PurchaseKind, itemId: string): Promise
 
 export type BuyTopupResult =
   | { ok: true; credits: number }
-  | { ok: false; error: string; pending?: boolean };
+  | { ok: false; error: string; pending?: boolean; reference?: string };
 
 /** Compra de créditos adicionales con el mismo modelo que suscribirse a un
  * plan: tarjeta tokenizada en la propia página, sin salir a la pasarela de

@@ -369,6 +369,7 @@ export const en: Dictionary = {
     noConectoWompi: "We couldn't connect to Wompi. Try again.",
     procesando: "Processing…",
     pagoEnProceso: 'Your payment is being processed. We\'ll let you know as soon as it\'s confirmed — check "My subscription" in a few minutes.',
+    pagoRechazado: "Your bank declined the payment. You weren't charged — try again with this card or another one.",
     verMiPerfil: "View my profile",
     subscribe: {
       tienesCupon: "Have a coupon?",

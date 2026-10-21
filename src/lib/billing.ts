@@ -149,7 +149,7 @@ export type ChargeResult =
        * caso, el webhook ya lo hizo. */
       credited: boolean;
     }
-  | { ok: false; error: string; pending?: boolean };
+  | { ok: false; error: string; pending?: boolean; reference?: string };
 
 /** Cobra un plan contra una fuente de pago guardada y, si Wompi aprueba,
  * acredita los créditos. Usado tanto por el primer cobro (al suscribirse)
@@ -213,7 +213,7 @@ export async function chargeSubscriptionPlan(params: {
     // Sigue en proceso del lado de Wompi. Dejamos el Pago en "Pendiente"
     // (con el TransaccionId real) y el webhook lo confirma más tarde.
     await updatePagoEstado(pagoId, "Pendiente", tx.id);
-    return { ok: false, pending: true, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
+    return { ok: false, pending: true, reference, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
   }
 
   if (tx.status !== "APPROVED") {
@@ -282,7 +282,7 @@ export async function chargeTopup(params: {
 
   if (tx.status === "PENDING") {
     await updatePagoEstado(pagoId, "Pendiente", tx.id);
-    return { ok: false, pending: true, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
+    return { ok: false, pending: true, reference, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
   }
 
   if (tx.status !== "APPROVED") {

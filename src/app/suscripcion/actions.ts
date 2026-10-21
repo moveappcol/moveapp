@@ -12,13 +12,32 @@ import {
   getSubscriptionByEmail,
 } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
+import { findPagoByReferencia } from "@/lib/pagos";
 import { validateCoupon, markCouponRedeemed, fechaInicioVigente, LANZAMIENTO_INICIO_DIFERIDO } from "@/lib/cupones";
 import { addCreditsByEmail } from "@/lib/users";
 import { validarCodigoReferido, type ValidacionCodigoReferido } from "@/lib/referidos";
 
 export type SubscribeResult =
   | { ok: true; credits: number }
-  | { ok: false; error: string; pending?: boolean };
+  | { ok: false; error: string; pending?: boolean; reference?: string };
+
+export type PagoEstadoResult = { estado: "Pendiente" | "Aprobado" | "Rechazado"; creditos: number } | null;
+
+/** Para la pantalla de "tu pago está en proceso" — consulta si ya se
+ * resolvió sin que la persona tenga que quedarse adivinando. Solo deja ver
+ * el estado de un pago del correo que de verdad tiene la sesión abierta. */
+export async function checkPagoStatus(referencia: string): Promise<PagoEstadoResult> {
+  const { userId } = await auth();
+  if (!userId) return null;
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return null;
+
+  const pago = await findPagoByReferencia(referencia);
+  if (!pago || pago.correo.toLowerCase() !== email.toLowerCase()) return null;
+  if (pago.estado !== "Pendiente" && pago.estado !== "Aprobado" && pago.estado !== "Rechazado") return null;
+  return { estado: pago.estado, creditos: pago.creditos };
+}
 
 export type CouponPreview =
   | { ok: true; tipo: "Créditos gratis"; creditos: number }

@@ -7,6 +7,7 @@ import {
   applyCoupon,
   redeemFreeCoupon,
   checkCodigoReferido,
+  checkPagoStatus,
   type CouponPreview,
 } from "@/app/suscripcion/actions";
 import { formatCOP } from "@/lib/credits-pricing";
@@ -223,8 +224,27 @@ export default function SubscribeForm({
           codigoReferidoInput.trim() || undefined
         );
         if (!result.ok) {
-          if (result.pending) {
+          if (result.pending && result.reference) {
             setPending(true);
+            // Ver el mismo comentario en buy-topup-form.tsx: Wompi resuelve
+            // casi siempre en segundos — se consulta antes de mandar a
+            // esperar un correo, para no dejar a alguien pensando que su
+            // pago "sigue procesando" cuando en realidad ya lo rechazaron.
+            const reference = result.reference;
+            for (let intento = 0; intento < 15; intento++) {
+              await new Promise((r) => setTimeout(r, 2000));
+              const estado = await checkPagoStatus(reference);
+              if (estado?.estado === "Aprobado") {
+                setPending(false);
+                setSuccess(estado.creditos);
+                return;
+              }
+              if (estado?.estado === "Rechazado") {
+                setPending(false);
+                setError(t.pagoRechazado);
+                return;
+              }
+            }
             setTimeout(() => router.push("/mi-suscripcion"), 2500);
             return;
           }

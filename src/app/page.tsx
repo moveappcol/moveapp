@@ -25,9 +25,9 @@ export default async function Home() {
       <Hero />
       <ExperiencesTeaser />
       <ReferralBanner />
-      <HowItWorksSection />
       <GymsSection />
       <PlansSection />
+      <HowItWorksSection />
       <ContactSection t={dict.home.contact} />
     </>
   );

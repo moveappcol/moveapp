@@ -1,0 +1,22 @@
+# El disparo automático vive normalmente en el servicio
+# cron-referidos-vencidos en Railway (nunca tuvo respaldo en GitHub
+# Actions hasta ahora). REACTIVADO TEMPORAL el 21 de octubre de 2026:
+# Railway tuvo una caída grande (dashboard, API y builds abajo) y sus Cron
+# Jobs dejaron de correr — mientras se resuelve, este horario diario evita
+# que se quede sin correr. Quitar el `schedule:` de acá (dejando solo
+# workflow_dispatch) en cuanto Railway confirme que sus crones volvieron.
+name: Vencer créditos de referido
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 10 * * *" # ~5am America/Bogota (UTC-5)
+
+jobs:
+  vencer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger referidos-vencidos cron
+        run: |
+          curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X GET "https://www.uniqueappcol.com/api/cron/referidos-vencidos" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

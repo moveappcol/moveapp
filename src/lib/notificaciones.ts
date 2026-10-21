@@ -1,4 +1,4 @@
-import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { getAirtableBase } from "./airtable";
 
 /**
  * Esquema en Airtable — tabla "Notificaciones" (campana del panel de
@@ -57,23 +57,28 @@ export async function getNotificacionesGimnasio(
   limit = 20
 ): Promise<Notificacion[]> {
   const base = getAirtableBase();
-  // No se puede ordenar por la fecha interna de Airtable (createdTime) desde
-  // acá — se trae un cupo generoso y se ordena del lado de acá, más abajo.
-  const records = await base(NOTIFICACIONES_TABLE)
-    .select({
-      filterByFormula: `FIND("${escapeFormulaValue(gimnasioId)}", ARRAYJOIN({Gimnasio}))`,
-      maxRecords: limit * 3,
-    })
-    .all();
+  // ARRAYJOIN sobre un campo de link junta el NOMBRE del gimnasio vinculado,
+  // no su id (mismo problema que en reservations.ts/classes.ts), así que no
+  // se puede filtrar por gimnasioId en la fórmula — se trae todo y se filtra
+  // en JS, igual que ahí.
+  const records = await base(NOTIFICACIONES_TABLE).select().all();
 
   return records
-    .map((r) => ({
-      id: r.id,
-      tipo: (r.get("Tipo") as TipoNotificacion) ?? "Nueva reserva",
-      mensaje: (r.get("Mensaje") as string) ?? "",
-      leida: Boolean(r.get("Leída")),
-      createdTime: r._rawJson.createdTime as string,
-    }))
+    .filter((r) => ((r.get("Gimnasio") as string[]) ?? []).includes(gimnasioId))
+    .map((r) => {
+      // "Tipo" quedó como selección múltiple en Airtable (no texto plano),
+      // así que llega como arreglo de un solo valor en vez de string — se
+      // soportan ambas formas por si algún día se cambia el tipo de campo.
+      const tipoRaw = r.get("Tipo");
+      const tipo = (Array.isArray(tipoRaw) ? tipoRaw[0] : tipoRaw) as TipoNotificacion;
+      return {
+        id: r.id,
+        tipo: tipo ?? "Nueva reserva",
+        mensaje: (r.get("Mensaje") as string) ?? "",
+        leida: Boolean(r.get("Leída")),
+        createdTime: r._rawJson.createdTime as string,
+      };
+    })
     .sort((a, b) => b.createdTime.localeCompare(a.createdTime))
     .slice(0, limit);
 }
@@ -82,11 +87,11 @@ export async function getNotificacionesGimnasio(
  * se llama cuando el gimnasio abre la campana. */
 export async function marcarNotificacionesLeidas(gimnasioId: string): Promise<void> {
   const base = getAirtableBase();
-  const noLeidas = await base(NOTIFICACIONES_TABLE)
-    .select({
-      filterByFormula: `AND(FIND("${escapeFormulaValue(gimnasioId)}", ARRAYJOIN({Gimnasio})), NOT({Leída}))`,
-    })
-    .all();
+  const records = await base(NOTIFICACIONES_TABLE).select().all();
+  const noLeidas = records.filter(
+    (r) =>
+      ((r.get("Gimnasio") as string[]) ?? []).includes(gimnasioId) && !r.get("Leída")
+  );
 
   if (noLeidas.length === 0) return;
 

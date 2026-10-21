@@ -1,11 +1,16 @@
-# El disparo automático (cada 5 min) se movió al servicio cron-recordatorio-clase
-# en Railway — GitHub Actions no garantiza esa cadencia en repos de bajo
-# tráfico (se veían huecos de hasta 5 horas). Este workflow queda solo como
-# respaldo manual (workflow_dispatch).
+# El disparo automático vive normalmente en el servicio
+# cron-recordatorio-clase en Railway. REACTIVADO TEMPORAL el 21 de octubre
+# de 2026: Railway tuvo una caída grande (dashboard, API y builds abajo) y
+# sus Cron Jobs dejaron de correr — mientras se resuelve, este horario de
+# respaldo evita que se deje de avisar a la gente antes de su clase.
+# Quitar el `schedule:` de acá (dejando solo workflow_dispatch) en cuanto
+# Railway confirme que sus crones volvieron.
 name: Recordatorio de clase 3h antes
 
 on:
   workflow_dispatch: {}
+  schedule:
+    - cron: "*/10 * * * *"
 
 jobs:
   recordar:

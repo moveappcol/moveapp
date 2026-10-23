@@ -51,7 +51,10 @@ export async function POST(req: NextRequest) {
   }
 
   const clase = await getClaseById(claseId);
-  const gym = clase?.gimnasioId ? await getGymById(clase.gimnasioId) : null;
+  if (!clase) {
+    return NextResponse.json({ ok: false, error: "Esta clase ya no está disponible." }, { status: 404 });
+  }
+  const gym = clase.gimnasioId ? await getGymById(clase.gimnasioId) : null;
   if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
     return NextResponse.json(
       { ok: false, error: "Este gimnasio no está disponible para tu perfil." },

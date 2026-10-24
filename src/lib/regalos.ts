@@ -3,6 +3,7 @@ import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { withLock } from "./server-cache";
 import { addCreditsByEmail } from "./users";
 import { findCatalogItem } from "./orders";
+import { validateCoupon, redeemFreeCouponForEmail } from "./cupones";
 
 /**
  * Esquema en Airtable — tabla "Regalos" (un plan comprado como regalo,
@@ -139,7 +140,16 @@ export type CanjearRegaloResult =
 export async function canjearRegalo(codigo: string, correoDestino: string): Promise<CanjearRegaloResult> {
   return withLock(`regalo:${codigo.toUpperCase()}`, async () => {
     const regalo = await findRegaloByCodigo(codigo);
-    if (!regalo) return { ok: false, error: "No encontramos ese código de regalo." };
+    if (!regalo) {
+      // No es un código de regalo (tabla "Regalos") — puede ser un cupón de
+      // créditos gratis (tabla "Cupones", ej. UNIQUE24) canjeado desde esta
+      // misma entrada ("¿Te regalaron un plan? Canjéalo aquí").
+      const cupon = await validateCoupon(codigo);
+      if (cupon.ok && cupon.cupon.tipo === "Créditos gratis") {
+        return redeemFreeCouponForEmail(correoDestino, codigo);
+      }
+      return { ok: false, error: "No encontramos ese código." };
+    }
 
     if (regalo.estado === "Activado") {
       return { ok: false, error: "Este código ya fue canjeado." };

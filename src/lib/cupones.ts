@@ -1,4 +1,5 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
+import { addCreditsByEmail } from "./users";
 
 /** Mientras dure el lanzamiento, cualquier plan pagado ANTES de esta fecha
  * empieza a correr ese día (no desde hoy) — nadie paga ahora y le vuelven a
@@ -151,4 +152,25 @@ export async function validateCoupon(code: string): Promise<CuponValidationResul
 export async function markCouponRedeemed(recordId: string, usosActuales: number): Promise<void> {
   const base = getAirtableBase();
   await base(CUPONES_TABLE).update([{ id: recordId, fields: { "Usos actuales ": usosActuales + 1 } }]);
+}
+
+export type RedeemFreeCouponResult = { ok: true; credits: number } | { ok: false; error: string };
+
+/** Canjea un cupón de "Créditos gratis": suma los créditos directo a la
+ * cuenta, sin pasar por Wompi ni pedir tarjeta. No activa ni renueva
+ * ninguna suscripción — es un abono único. Comparten esta lógica la web
+ * (ver redeemFreeCoupon en suscripcion/actions.ts) y la app (ver
+ * api/mobile/cupon/canjear). */
+export async function redeemFreeCouponForEmail(email: string, code: string): Promise<RedeemFreeCouponResult> {
+  const validated = await validateCoupon(code);
+  if (!validated.ok) return { ok: false, error: validated.error };
+  if (validated.cupon.tipo !== "Créditos gratis") {
+    return { ok: false, error: "Ese cupón no es de créditos gratis." };
+  }
+
+  const creditos = validated.cupon.creditos ?? 0;
+  await addCreditsByEmail(email, creditos, false);
+  await markCouponRedeemed(validated.cupon.recordId, validated.cupon.usosActuales);
+
+  return { ok: true, credits: creditos };
 }

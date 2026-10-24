@@ -13,8 +13,13 @@ import {
 } from "@/lib/subscriptions";
 import { findCatalogItem } from "@/lib/orders";
 import { findPagoByReferencia } from "@/lib/pagos";
-import { validateCoupon, markCouponRedeemed, fechaInicioVigente, LANZAMIENTO_INICIO_DIFERIDO } from "@/lib/cupones";
-import { addCreditsByEmail } from "@/lib/users";
+import {
+  validateCoupon,
+  markCouponRedeemed,
+  fechaInicioVigente,
+  redeemFreeCouponForEmail,
+  LANZAMIENTO_INICIO_DIFERIDO,
+} from "@/lib/cupones";
 import { validarCodigoReferido, type ValidacionCodigoReferido } from "@/lib/referidos";
 
 export type SubscribeResult =
@@ -193,18 +198,9 @@ export async function redeemFreeCoupon(code: string): Promise<RedeemFreeCouponRe
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
 
-  const validated = await validateCoupon(code);
-  if (!validated.ok) return { ok: false, error: validated.error };
-  if (validated.cupon.tipo !== "Créditos gratis") {
-    return { ok: false, error: "Ese cupón no es de créditos gratis." };
-  }
-
-  const creditos = validated.cupon.creditos ?? 0;
-  await addCreditsByEmail(email, creditos, false);
-  await markCouponRedeemed(validated.cupon.recordId, validated.cupon.usosActuales);
-
-  revalidatePath("/mi-suscripcion");
-  return { ok: true, credits: creditos };
+  const result = await redeemFreeCouponForEmail(email, code);
+  if (result.ok) revalidatePath("/mi-suscripcion");
+  return result;
 }
 
 export async function cancelMySubscription(): Promise<void> {

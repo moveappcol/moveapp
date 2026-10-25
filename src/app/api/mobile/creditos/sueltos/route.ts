@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeCreditosSueltos } from "@/lib/billing";
+import { MINIMO_CREDITOS_SUELTOS } from "@/lib/credits-pricing";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 
 /** Equivalente móvil de buyCreditosSueltos (pagos/actions.ts de la web) —
@@ -17,9 +18,12 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const cantidad = Number(body?.cantidad);
   const cardToken = body?.cardToken as string | undefined;
-  if (!Number.isInteger(cantidad) || cantidad < 1 || !cardToken) {
+  if (!cardToken) {
+    return NextResponse.json({ ok: false, error: "Falta el token de la tarjeta." }, { status: 400 });
+  }
+  if (!Number.isInteger(cantidad) || cantidad < MINIMO_CREDITOS_SUELTOS) {
     return NextResponse.json(
-      { ok: false, error: "Falta la cantidad de créditos o el token de la tarjeta." },
+      { ok: false, error: `El mínimo es ${MINIMO_CREDITOS_SUELTOS} créditos sueltos.` },
       { status: 400 }
     );
   }

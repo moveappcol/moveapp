@@ -6,6 +6,7 @@ import {
   formatCOP,
   ahorroPorcentaje,
   PRECIO_CREDITO_SUELTO,
+  MINIMO_CREDITOS_SUELTOS,
 } from "@/lib/credits-pricing";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
@@ -173,7 +174,7 @@ export default async function PlansSection() {
             {t.creditosSueltosTitle}
           </h3>
           <p className="mt-1 max-w-xl font-body text-sm text-move-green/70">
-            {t.creditosSueltosBody(formatCOP(PRECIO_CREDITO_SUELTO))}
+            {t.creditosSueltosBody(formatCOP(PRECIO_CREDITO_SUELTO), MINIMO_CREDITOS_SUELTOS)}
           </p>
           <Link
             href={userId ? "/creditos-sueltos" : "/crear-cuenta"}

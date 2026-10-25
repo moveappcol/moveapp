@@ -4,12 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { buyCreditosSueltos } from "@/app/pagos/actions";
 import { checkPagoStatus } from "@/app/suscripcion/actions";
-import {
-  formatCOP,
-  precioCreditosSueltos,
-  CARGO_OPERATIVO_UMBRAL_CREDITOS,
-  CARGO_OPERATIVO_CREDITOS_SUELTOS,
-} from "@/lib/credits-pricing";
+import { formatCOP, precioCreditosSueltos, MINIMO_CREDITOS_SUELTOS } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -41,7 +36,7 @@ export default function BuyCreditosSueltosForm({
   const submittingRef = useRef(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [cantidad, setCantidad] = useState(1);
+  const [cantidad, setCantidad] = useState(MINIMO_CREDITOS_SUELTOS);
   const precio = precioCreditosSueltos(cantidad);
 
   const [number, setNumber] = useState("");
@@ -52,7 +47,7 @@ export default function BuyCreditosSueltosForm({
   const [accepted, setAccepted] = useState(false);
 
   function ajustarCantidad(delta: number) {
-    setCantidad((prev) => Math.max(1, prev + delta));
+    setCantidad((prev) => Math.max(MINIMO_CREDITOS_SUELTOS, prev + delta));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -154,7 +149,7 @@ export default function BuyCreditosSueltosForm({
           <button
             type="button"
             onClick={() => ajustarCantidad(-1)}
-            disabled={cantidad <= 1}
+            disabled={cantidad <= MINIMO_CREDITOS_SUELTOS}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-move-green/20 font-heading text-lg font-semibold text-move-green transition-colors hover:border-move-green disabled:opacity-40"
           >
             −
@@ -174,12 +169,6 @@ export default function BuyCreditosSueltosForm({
           </span>
         </div>
       </label>
-
-      {cantidad < CARGO_OPERATIVO_UMBRAL_CREDITOS && (
-        <p className="font-body text-xs text-move-green/60">
-          {t.creditosSueltos.cargoOperativoNota(formatCOP(CARGO_OPERATIVO_CREDITOS_SUELTOS))}
-        </p>
-      )}
 
       <CardFields
         number={number}

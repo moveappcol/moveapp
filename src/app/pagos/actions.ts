@@ -14,6 +14,7 @@ import { buildReference, findCatalogItem, type PurchaseKind } from "@/lib/orders
 import { createPendingPago } from "@/lib/pagos";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { chargeTopup, chargeCreditosSueltos } from "@/lib/billing";
+import { MINIMO_CREDITOS_SUELTOS } from "@/lib/credits-pricing";
 import { getMetaRequestContext } from "@/lib/meta-request-context";
 
 export async function startCheckout(kind: PurchaseKind, itemId: string): Promise<void> {
@@ -130,8 +131,8 @@ export async function buyCreditosSueltos(
   const { userId } = await auth();
   if (!userId) return { ok: false, error: "Debes iniciar sesión." };
 
-  if (!Number.isInteger(cantidad) || cantidad < 1) {
-    return { ok: false, error: "Cantidad de créditos inválida." };
+  if (!Number.isInteger(cantidad) || cantidad < MINIMO_CREDITOS_SUELTOS) {
+    return { ok: false, error: `El mínimo es ${MINIMO_CREDITOS_SUELTOS} créditos sueltos.` };
   }
 
   const user = await currentUser();

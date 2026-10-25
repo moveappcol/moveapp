@@ -1,5 +1,11 @@
 import crypto from "node:crypto";
-import { CREDIT_PLANS, CREDIT_TOPUPS, precioCreditosSueltos, type CreditPackage } from "./credits-pricing";
+import {
+  CREDIT_PLANS,
+  CREDIT_TOPUPS,
+  precioCreditosSueltos,
+  MINIMO_CREDITOS_SUELTOS,
+  type CreditPackage,
+} from "./credits-pricing";
 
 /** "regalo" = comprar un plan como regalo (ver regalos.ts): usa el mismo
  * catálogo que "plan" (CREDIT_PLANS), pero no acredita al comprador ni
@@ -23,10 +29,10 @@ function findSueltoItem(itemId: string): CreditPackage | null {
   const match = SUELTO_ID_PATTERN.exec(itemId);
   if (!match) return null;
   const cantidad = Number(match[1]);
-  if (!Number.isInteger(cantidad) || cantidad < 1) return null;
+  if (!Number.isInteger(cantidad) || cantidad < MINIMO_CREDITOS_SUELTOS) return null;
   return {
     id: itemId,
-    label: `${cantidad} ${cantidad === 1 ? "crédito suelto" : "créditos sueltos"}`,
+    label: `${cantidad} créditos sueltos`,
     credits: cantidad,
     price: precioCreditosSueltos(cantidad),
   };

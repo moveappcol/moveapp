@@ -20,23 +20,18 @@ export const CREDIT_TOPUPS: CreditPackage[] = [
 
 /** Créditos sueltos: precio fijo por crédito, sin necesidad de plan ni de
  * ningún paquete fijo — para quien solo quiere probar una clase o
- * experiencia puntual (ej. una experiencia de 2 créditos), donde el mínimo
- * de 5 de un topup normal lo obligaría a comprar de más. */
+ * experiencia puntual, donde el mínimo de 5 de un topup normal lo
+ * obligaría a comprar de más. Mínimo de 3 créditos (no desde 1): bajo eso,
+ * la parte fija de la comisión de Wompi pesa demasiado proporcionalmente —
+ * y antes que sumar un cargo operativo aparte para compras chicas (que
+ * complica el precio: "$8.000 por crédito" dejaba de ser cierto en la
+ * práctica), se prefiere mantener el precio siempre exacto y simple. */
 export const PRECIO_CREDITO_SUELTO = 8_000;
+export const MINIMO_CREDITOS_SUELTOS = 3;
 
-/** En compras muy chicas (menos de este umbral de créditos), la parte FIJA
- * de la comisión de Wompi pesa mucho más proporcionalmente — ej. en una
- * compra de $8.000, el cargo fijo de Wompi ($700 + IVA) ya es ~10% del
- * total, antes de sumarle el % variable. CARGO_OPERATIVO_CREDITOS_SUELTOS
- * absorbe esa diferencia sin tocar el precio por crédito. */
-export const CARGO_OPERATIVO_UMBRAL_CREDITOS = 3;
-export const CARGO_OPERATIVO_CREDITOS_SUELTOS = 2_000;
-
-/** Precio total de comprar `cantidad` créditos sueltos — incluye el cargo
- * operativo si la compra queda por debajo del umbral. */
+/** Precio total de comprar `cantidad` créditos sueltos. */
 export function precioCreditosSueltos(cantidad: number): number {
-  const base = cantidad * PRECIO_CREDITO_SUELTO;
-  return cantidad < CARGO_OPERATIVO_UMBRAL_CREDITOS ? base + CARGO_OPERATIVO_CREDITOS_SUELTOS : base;
+  return cantidad * PRECIO_CREDITO_SUELTO;
 }
 
 /** Lo que cuesta, en promedio, una clase suelta pagada directo en el

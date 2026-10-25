@@ -109,8 +109,8 @@ export const en: Dictionary = {
       comprar: "Buy",
       necesitasPlanActivo: "You need an active plan to buy extra credits",
       creditosSueltosTitle: "Just want to try something once?",
-      creditosSueltosBody: (precioPorCredito: string) =>
-        `Buy single credits for ${precioPorCredito} each, starting at 1 credit, no plan needed. They expire a month after you buy them.`,
+      creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
+        `Buy single credits for ${precioPorCredito} each (${minimo}-credit minimum), no plan needed. They expire a month after you buy them.`,
       creditosSueltosCta: "Buy single credits",
       disclaimer: "You can cancel classes up to 24h in advance at no cost. To promote diversity across the network, you can book a maximum of 3 times per month at each gym.",
     },
@@ -268,7 +268,7 @@ export const en: Dictionary = {
       { q: "How is my personal information handled?", a: "Your information is handled in accordance with Colombian Law 1581 on Personal Data Protection. We only share with gyms the data necessary for your class attendance, and you decide whether you want to receive promotional communications — that option is never checked by default, and you can turn it off anytime from your account." },
       { q: "What payment methods does UNIQUE accept?", a: "At UNIQUE you can pay however you prefer: credit and debit cards (Visa, Mastercard, American Express), PSE, Nequi, Bancolombia, and other methods available through Wompi, the payment gateway backed by Bancolombia. Your information always travels encrypted and UNIQUE never stores your card details — your payments are 100% secure, start to finish." },
       { q: "Do I have to sign a long-term contract?", a: "No. UNIQUE is designed to give you flexibility: you get your credit plan as you choose, with no forced long-term commitments, and you can cancel your plan whenever you want." },
-      { q: "Can I buy credits without a plan?", a: "Yes. You can buy single credits for $8,000 COP each, starting at 1 credit, to book that one specific class or experience you want to try. They're valid for 1 month. If you train regularly, plans work out cheaper per credit." },
+      { q: "Can I buy credits without a plan?", a: "Yes. You can buy single credits for $8,000 COP each (3-credit minimum), to book that one specific class or experience you want to try. They're valid for 1 month. If you train regularly, plans work out cheaper per credit." },
       { q: "I have a gym or studio and want to become a UNIQUE partner, how do I do that?", a: "We'd love to meet you. Write to us through our contact channels on our website's form and we'll get in touch." },
       { q: "Who do I talk to if I have a problem or a question?", a: "You can contact our support team through the contact form on our website, and we'll get back to you as quickly as possible. We're here to make your experience with UNIQUE the best it can be." },
     ],
@@ -408,11 +408,9 @@ export const en: Dictionary = {
     },
     creditosSueltos: {
       title: "Single credits",
-      subtitle: (precioPorCredito: string) =>
-        `${precioPorCredito} per credit, no plan needed — great for trying one class or experience. They expire a month after you buy them.`,
+      subtitle: (precioPorCredito: string, minimo: number) =>
+        `${precioPorCredito} per credit, no plan needed — great for trying one class or experience. ${minimo}-credit minimum. They expire a month after you buy them.`,
       cantidadLabel: "How many credits do you want?",
-      cargoOperativoNota: (cargo: string) =>
-        `1-2 credit purchases include a ${cargo} service fee (it covers the fixed cost of processing small payments).`,
       total: (price: string) => `Total: ${price}`,
       comprarPorPrecio: (price: string) => `Buy — ${price}`,
       compraAprobadaTitle: "Your purchase was approved",

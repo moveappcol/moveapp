@@ -112,8 +112,8 @@ export const es = {
       comprar: "Comprar",
       necesitasPlanActivo: "Necesitas un plan activo para comprar adicionales",
       creditosSueltosTitle: "¿Solo quieres probar algo puntual?",
-      creditosSueltosBody: (precioPorCredito: string) =>
-        `Compra créditos sueltos a ${precioPorCredito} cada uno, desde 1 crédito, sin necesidad de plan. Vencen al mes de comprarlos.`,
+      creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
+        `Compra créditos sueltos a ${precioPorCredito} cada uno (mínimo ${minimo}), sin necesidad de plan. Vencen al mes de comprarlos.`,
       creditosSueltosCta: "Comprar créditos sueltos",
       disclaimer: "Puedes cancelar las clases hasta 24h antes sin costo. Para promover la diversidad de la red, puedes acceder a cada gimnasio un máximo de 3 veces al mes.",
     },
@@ -272,7 +272,7 @@ export const es = {
       { q: "¿Cómo se maneja mi información personal?", a: "Tu información se maneja conforme a la Ley 1581 de Protección de Datos Personales. Solo compartimos con los gimnasios los datos necesarios para tu asistencia a las clases, y tú decides si quieres recibir comunicaciones promocionales — esa opción nunca viene marcada por defecto, y puedes desactivarla cuando quieras desde tu cuenta." },
       { q: "¿Qué métodos de pago acepta UNIQUE?", a: "En UNIQUE puedes pagar como prefieras: tarjetas de crédito y débito (Visa, Mastercard, American Express), PSE, Nequi, Bancolombia y otros medios disponibles a través de Wompi, la pasarela de pagos respaldada por Bancolombia. Tu información viaja siempre encriptada y UNIQUE nunca almacena los datos de tu tarjeta — tus pagos son 100% seguros, de principio a fin." },
       { q: "¿Tengo que firmar un contrato a largo plazo?", a: "No. UNIQUE está pensado para darte flexibilidad: adquieres tu plan de créditos según lo que elijas, sin permanencias forzosas de largo plazo, puedes cancelar tu plan cuando quieras." },
-      { q: "¿Puedo comprar créditos sin plan?", a: "Sí. Puedes comprar créditos sueltos a $8.000 cada uno, desde 1 crédito, para reservar esa clase o experiencia específica que quieres probar. Tienen vigencia de 1 mes. Si entrenas seguido, los planes te salen más baratos por crédito." },
+      { q: "¿Puedo comprar créditos sin plan?", a: "Sí. Puedes comprar créditos sueltos a $8.000 cada uno (mínimo 3 créditos), para reservar esa clase o experiencia específica que quieres probar. Tienen vigencia de 1 mes. Si entrenas seguido, los planes te salen más baratos por crédito." },
       { q: "Tengo un gimnasio o estudio y quiero ser aliado de UNIQUE, ¿cómo hago?", a: "Nos encantaría conocerte. Escríbenos a través de nuestros canales de contacto en el formulario de nuestra página web y nos pondremos en contacto." },
       { q: "¿Con quién hablo si tengo un problema o una pregunta?", a: "Puedes contactar a nuestro equipo de soporte a través del formulario de contacto en nuestra página web, te responderemos lo más rápido posible. Estamos para ayudarte a que tu experiencia con UNIQUE sea la mejor." },
     ],
@@ -412,11 +412,9 @@ export const es = {
     },
     creditosSueltos: {
       title: "Créditos sueltos",
-      subtitle: (precioPorCredito: string) =>
-        `${precioPorCredito} por crédito, sin plan — ideal para probar una clase o experiencia puntual. Vencen al mes de comprarlos.`,
+      subtitle: (precioPorCredito: string, minimo: number) =>
+        `${precioPorCredito} por crédito, sin plan — ideal para probar una clase o experiencia puntual. Mínimo ${minimo} créditos. Vencen al mes de comprarlos.`,
       cantidadLabel: "¿Cuántos créditos quieres?",
-      cargoOperativoNota: (cargo: string) =>
-        `Las compras de 1-2 créditos incluyen un cargo operativo de ${cargo} (cubre el costo fijo de procesar pagos chicos).`,
       total: (price: string) => `Total: ${price}`,
       comprarPorPrecio: (price: string) => `Comprar — ${price}`,
       compraAprobadaTitle: "Tu compra fue aprobada",

@@ -7,7 +7,7 @@ import { TRIAL_DURATION_DAYS } from "./credits-pricing";
  * Esquema en Airtable — tabla "Pruebas" (una fila por Prueba UNIQUE de 1
  * semana comprada):
  *   - Correo                (texto)
- *   - Telefono               (texto — copiado del perfil al momento de comprar,
+ *   - telefono               (texto, en minúscula — copiado del perfil al momento de comprar,
  *      para bloquear una segunda prueba con otro correo pero el mismo celular)
  *   - TarjetaHash            (texto, opcional — hash de bin+last_four+exp de
  *      la tarjeta usada, si el cliente lo manda; señal secundaria, nunca la
@@ -17,7 +17,8 @@ import { TRIAL_DURATION_DAYS } from "./credits-pricing";
  *      Starter, que es el primer pago de "plan" real que hace esta cuenta —
  *      comprar la prueba en sí no otorga nada de referidos, ver
  *      procesarReferido en referidos.ts)
- *   - PagoId                 (texto — id del registro en "Pagos")
+ *   - " PagoId" (con un espacio al INICIO del nombre del campo, no al
+ *      final — así quedó en Airtable) (texto — id del registro en "Pagos")
  *   - WompiPaymentSourceId   (texto — la fuente de pago guardada en Wompi,
  *      para poder cobrar el Starter después sin pedir tarjeta otra vez)
  *   - FechaInicio            (fecha y hora — momento exacto del pago aprobado)
@@ -43,7 +44,7 @@ import { TRIAL_DURATION_DAYS } from "./credits-pricing";
  *      créditos sobrantes de una prueba cancelada que llegó a su FechaFin;
  *      evita que el cron de vencidos la procese dos veces)
  */
-const PRUEBAS_TABLE = "Pruebas";
+const PRUEBAS_TABLE = "Prueba";
 
 /** Texto exacto de la casilla legal del checkout (Ley 1480) — se exporta
  * para que la UI y lo que se guarda como evidencia en AceptacionTexto
@@ -75,10 +76,10 @@ function mapRecordToPrueba(record: any): Prueba {
   return {
     id: record.id,
     correo: (record.get("Correo") as string) ?? "",
-    telefono: (record.get("Telefono") as string) || null,
+    telefono: (record.get("telefono") as string) || null,
     tarjetaHash: (record.get("TarjetaHash") as string) || null,
     codigoReferido: (record.get("CodigoReferido") as string) || null,
-    pagoId: (record.get("PagoId") as string) ?? "",
+    pagoId: (record.get(" PagoId") as string) ?? "",
     paymentSourceId: Number(record.get("WompiPaymentSourceId")) || 0,
     fechaInicio: (record.get("FechaInicio") as string) ?? "",
     fechaFin: (record.get("FechaFin") as string) ?? "",
@@ -130,7 +131,7 @@ export async function getPruebaById(id: string): Promise<Prueba | null> {
 export async function getPruebaByPagoId(pagoId: string): Promise<Prueba | null> {
   const base = getAirtableBase();
   const records = await base(PRUEBAS_TABLE)
-    .select({ filterByFormula: `{PagoId} = "${escapeFormulaValue(pagoId)}"`, maxRecords: 1 })
+    .select({ filterByFormula: `{ PagoId} = "${escapeFormulaValue(pagoId)}"`, maxRecords: 1 })
     .all();
   const record = records[0];
   return record ? mapRecordToPrueba(record) : null;
@@ -166,7 +167,7 @@ export async function esElegibleParaPrueba(
   if (pagosPrevios.length > 0) return { ok: false, error: MENSAJE_NO_ELEGIBLE };
 
   const clausulas = [`LOWER({Correo}) = LOWER("${escapeFormulaValue(correo)}")`];
-  if (telefono) clausulas.push(`{Telefono} = "${escapeFormulaValue(telefono)}"`);
+  if (telefono) clausulas.push(`{telefono} = "${escapeFormulaValue(telefono)}"`);
   if (tarjetaHash) clausulas.push(`{TarjetaHash} = "${escapeFormulaValue(tarjetaHash)}"`);
 
   const pruebasPrevias = await base(PRUEBAS_TABLE)
@@ -198,10 +199,10 @@ export async function crearPrueba(params: {
       {
         fields: {
           Correo: params.correo,
-          Telefono: params.telefono ?? "",
+          telefono: params.telefono ?? "",
           TarjetaHash: params.tarjetaHash ?? "",
           CodigoReferido: params.codigoReferido ?? "",
-          PagoId: params.pagoId,
+          " PagoId": params.pagoId,
           WompiPaymentSourceId: String(params.paymentSourceId),
           FechaInicio: fechaInicio,
           FechaFin: fechaFin,

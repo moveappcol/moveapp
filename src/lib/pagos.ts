@@ -101,7 +101,9 @@ function mapRecordToPago(
         ? "plan"
         : (record.get("Tipo") as string) === "Regalo"
           ? "regalo"
-          : "topup",
+          : (record.get("Tipo") as string) === "Suelto"
+            ? "suelto"
+            : "topup",
     item: (record.get("item") as string) ?? "",
     creditos: (record.get("Creditos") as number) ?? 0,
     estado: ((record.get("Estado") as string) ?? "Pendiente") as PagoEstado,
@@ -142,7 +144,14 @@ export async function createPendingPago(params: {
   const baseFields = {
     Referencia: params.referencia,
     Correo: params.correo,
-    Tipo: params.tipo === "plan" ? "Plan" : params.tipo === "regalo" ? "Regalo" : "Adicional",
+    Tipo:
+      params.tipo === "plan"
+        ? "Plan"
+        : params.tipo === "regalo"
+          ? "Regalo"
+          : params.tipo === "suelto"
+            ? "Suelto"
+            : "Adicional",
     item: params.item,
     Creditos: params.creditos,
     Valor: params.valor,

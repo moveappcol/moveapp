@@ -1,5 +1,5 @@
 import { chargeWithPaymentSource } from "./wompi";
-import { findCatalogItem, buildReference } from "./orders";
+import { findCatalogItem, buildReference, buildSueltoItemId } from "./orders";
 import {
   createPendingPago,
   updatePagoEstado,
@@ -297,6 +297,72 @@ export async function chargeTopup(params: {
       correo: params.correo,
       sku: item.id,
       concepto: `Créditos adicionales UNIQUE — ${item.label}`,
+      totalConIva: item.price,
+      pagoId,
+    });
+  }
+  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
+}
+
+/** Compra de créditos sueltos (ver precioCreditosSueltos en
+ * credits-pricing.ts): a diferencia de chargeTopup, no requiere plan
+ * activo y SÍ extiende el vencimiento 1 mes desde hoy (como un plan o un
+ * regalo) — es la entrada para quien no tiene cuenta con créditos todavía
+ * y solo quiere probar una clase o experiencia puntual. */
+export async function chargeCreditosSueltos(params: {
+  correo: string;
+  cantidad: number;
+  paymentSourceId: number;
+  ownerRef: string;
+  fbp?: string | null;
+  fbc?: string | null;
+}): Promise<ChargeResult> {
+  const itemId = buildSueltoItemId(params.cantidad);
+  const item = findCatalogItem("suelto", itemId);
+  if (!item) return { ok: false, error: "Cantidad de créditos inválida." };
+
+  const reference = buildReference("suelto", itemId, params.ownerRef);
+  const pagoId = await createPendingPago({
+    referencia: reference,
+    correo: params.correo,
+    tipo: "suelto",
+    item: itemId,
+    creditos: item.credits,
+    fbp: params.fbp,
+    fbc: params.fbc,
+    valor: item.price,
+  });
+
+  let tx;
+  try {
+    tx = await chargeWithPaymentSource({
+      amountInCents: item.price * 100,
+      customerEmail: params.correo,
+      paymentSourceId: params.paymentSourceId,
+      reference,
+    });
+  } catch (err) {
+    await updatePagoEstado(pagoId, "Rechazado", "");
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos cobrar la tarjeta." };
+  }
+
+  if (tx.status === "PENDING") {
+    await updatePagoEstado(pagoId, "Pendiente", tx.id);
+    return { ok: false, pending: true, reference, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
+  }
+
+  if (tx.status !== "APPROVED") {
+    await updatePagoEstado(pagoId, "Rechazado", tx.id);
+    return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
+  }
+
+  const credited = await claimPagoAprobado(reference, tx.id);
+  if (credited) {
+    await addCreditsByEmail(params.correo, item.credits, true);
+    await facturarCompra({
+      correo: params.correo,
+      sku: item.id,
+      concepto: `Créditos sueltos UNIQUE — ${item.label}`,
       totalConIva: item.price,
       pagoId,
     });

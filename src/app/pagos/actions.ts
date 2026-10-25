@@ -13,7 +13,7 @@ import {
 import { buildReference, findCatalogItem, type PurchaseKind } from "@/lib/orders";
 import { createPendingPago } from "@/lib/pagos";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
-import { chargeTopup } from "@/lib/billing";
+import { chargeTopup, chargeCreditosSueltos } from "@/lib/billing";
 import { getMetaRequestContext } from "@/lib/meta-request-context";
 
 export async function startCheckout(kind: PurchaseKind, itemId: string): Promise<void> {
@@ -105,6 +105,57 @@ export async function buyTopup(topupId: string, cardToken: string): Promise<BuyT
   const result = await chargeTopup({
     correo: email,
     topupId,
+    paymentSourceId: paymentSource.id,
+    ownerRef: userId,
+    fbp,
+    fbc,
+  });
+
+  if (!result.ok) return result;
+
+  revalidatePath("/mi-suscripcion");
+  return { ok: true, credits: result.credits };
+}
+
+export type BuyCreditosSueltosResult =
+  | { ok: true; credits: number }
+  | { ok: false; error: string; pending?: boolean; reference?: string };
+
+/** Compra de créditos sueltos — mismo modelo de tarjeta tokenizada que
+ * buyTopup, pero sin requerir plan activo (ver chargeCreditosSueltos). */
+export async function buyCreditosSueltos(
+  cantidad: number,
+  cardToken: string
+): Promise<BuyCreditosSueltosResult> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, error: "Debes iniciar sesión." };
+
+  if (!Number.isInteger(cantidad) || cantidad < 1) {
+    return { ok: false, error: "Cantidad de créditos inválida." };
+  }
+
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
+
+  const tokens = await fetchFreshAcceptanceTokens();
+
+  let paymentSource;
+  try {
+    paymentSource = await createPaymentSource({
+      cardToken,
+      customerEmail: email,
+      acceptanceToken: tokens.acceptanceToken,
+      personalAuthToken: tokens.personalAuthToken,
+    });
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos guardar la tarjeta." };
+  }
+
+  const { fbp, fbc } = await getMetaRequestContext();
+  const result = await chargeCreditosSueltos({
+    correo: email,
+    cantidad,
     paymentSourceId: paymentSource.id,
     ownerRef: userId,
     fbp,

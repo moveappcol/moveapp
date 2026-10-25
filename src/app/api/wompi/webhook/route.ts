@@ -161,14 +161,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan");
+  await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan" || pago.tipo === "suelto");
   await facturarCompra({
     correo: pago.correo,
     sku: item.id,
     concepto:
       pago.tipo === "plan"
         ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`
-        : `Créditos adicionales UNIQUE — ${item.label}`,
+        : pago.tipo === "suelto"
+          ? `Créditos sueltos UNIQUE — ${item.label}`
+          : `Créditos adicionales UNIQUE — ${item.label}`,
     totalConIva: montoEsperado,
     pagoId: pago.id,
   });

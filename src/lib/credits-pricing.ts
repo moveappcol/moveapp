@@ -18,6 +18,27 @@ export const CREDIT_TOPUPS: CreditPackage[] = [
   { id: "topup-15", label: "15 créditos", credits: 15, price: 109_900 },
 ];
 
+/** Créditos sueltos: precio fijo por crédito, sin necesidad de plan ni de
+ * ningún paquete fijo — para quien solo quiere probar una clase o
+ * experiencia puntual (ej. una experiencia de 2 créditos), donde el mínimo
+ * de 5 de un topup normal lo obligaría a comprar de más. */
+export const PRECIO_CREDITO_SUELTO = 8_000;
+
+/** En compras muy chicas (menos de este umbral de créditos), la parte FIJA
+ * de la comisión de Wompi pesa mucho más proporcionalmente — ej. en una
+ * compra de $8.000, el cargo fijo de Wompi ($700 + IVA) ya es ~10% del
+ * total, antes de sumarle el % variable. CARGO_OPERATIVO_CREDITOS_SUELTOS
+ * absorbe esa diferencia sin tocar el precio por crédito. */
+export const CARGO_OPERATIVO_UMBRAL_CREDITOS = 3;
+export const CARGO_OPERATIVO_CREDITOS_SUELTOS = 2_000;
+
+/** Precio total de comprar `cantidad` créditos sueltos — incluye el cargo
+ * operativo si la compra queda por debajo del umbral. */
+export function precioCreditosSueltos(cantidad: number): number {
+  const base = cantidad * PRECIO_CREDITO_SUELTO;
+  return cantidad < CARGO_OPERATIVO_UMBRAL_CREDITOS ? base + CARGO_OPERATIVO_CREDITOS_SUELTOS : base;
+}
+
 /** Lo que cuesta, en promedio, una clase suelta pagada directo en el
  * gimnasio (sin plan UNIQUE) por cada crédito que esa clase vale — ej. una
  * clase de 8 créditos ronda los $71.000–$80.000 sueltos, una de 6 créditos

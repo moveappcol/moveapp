@@ -5,6 +5,7 @@ import {
   CREDIT_TOPUPS,
   formatCOP,
   ahorroPorcentaje,
+  PRECIO_CREDITO_SUELTO,
 } from "@/lib/credits-pricing";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
@@ -165,6 +166,21 @@ export default async function PlansSection() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="mt-10 rounded-2xl border border-move-green/10 bg-white px-6 py-5">
+          <h3 className="font-heading text-lg font-semibold text-move-green">
+            {t.creditosSueltosTitle}
+          </h3>
+          <p className="mt-1 max-w-xl font-body text-sm text-move-green/70">
+            {t.creditosSueltosBody(formatCOP(PRECIO_CREDITO_SUELTO))}
+          </p>
+          <Link
+            href={userId ? "/creditos-sueltos" : "/crear-cuenta"}
+            className="mt-4 inline-block rounded-full bg-move-green px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {t.creditosSueltosCta}
+          </Link>
         </div>
 
         <div className="mt-16">

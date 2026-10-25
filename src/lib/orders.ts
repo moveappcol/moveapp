@@ -1,14 +1,39 @@
 import crypto from "node:crypto";
-import { CREDIT_PLANS, CREDIT_TOPUPS, type CreditPackage } from "./credits-pricing";
+import { CREDIT_PLANS, CREDIT_TOPUPS, precioCreditosSueltos, type CreditPackage } from "./credits-pricing";
 
 /** "regalo" = comprar un plan como regalo (ver regalos.ts): usa el mismo
  * catálogo que "plan" (CREDIT_PLANS), pero no acredita al comprador ni
  * activa una suscripción — el webhook genera un código canjeable en vez de
  * eso. Se compra sin sesión de Clerk (ver clerkUserId="guest" en
- * buildReference), a propósito: quien regala no necesita crear cuenta. */
-export type PurchaseKind = "plan" | "topup" | "regalo";
+ * buildReference), a propósito: quien regala no necesita crear cuenta.
+ * "suelto" = créditos sueltos (ver precioCreditosSueltos en
+ * credits-pricing.ts): no viene de un catálogo fijo como los demás — el
+ * itemId codifica la cantidad ("suelto-<n>") y el precio se calcula acá
+ * mismo, así el webhook de Wompi puede reconstruirlo solo desde la
+ * referencia sin depender de ningún estado guardado aparte. */
+export type PurchaseKind = "plan" | "topup" | "regalo" | "suelto";
+
+const SUELTO_ID_PATTERN = /^suelto-(\d+)$/;
+
+export function buildSueltoItemId(cantidad: number): string {
+  return `suelto-${cantidad}`;
+}
+
+function findSueltoItem(itemId: string): CreditPackage | null {
+  const match = SUELTO_ID_PATTERN.exec(itemId);
+  if (!match) return null;
+  const cantidad = Number(match[1]);
+  if (!Number.isInteger(cantidad) || cantidad < 1) return null;
+  return {
+    id: itemId,
+    label: `${cantidad} ${cantidad === 1 ? "crédito suelto" : "créditos sueltos"}`,
+    credits: cantidad,
+    price: precioCreditosSueltos(cantidad),
+  };
+}
 
 export function findCatalogItem(kind: PurchaseKind, itemId: string): CreditPackage | null {
+  if (kind === "suelto") return findSueltoItem(itemId);
   const catalog = kind === "topup" ? CREDIT_TOPUPS : CREDIT_PLANS;
   return catalog.find((item) => item.id === itemId) ?? null;
 }
@@ -32,6 +57,6 @@ export function parseReference(reference: string | undefined | null): ParsedRefe
   const parts = reference.split(".");
   if (parts.length !== 6 || parts[0] !== "mv") return null;
   const [, kind, itemId, clerkUserId] = parts;
-  if (kind !== "plan" && kind !== "topup" && kind !== "regalo") return null;
+  if (kind !== "plan" && kind !== "topup" && kind !== "regalo" && kind !== "suelto") return null;
   return { kind, itemId, clerkUserId };
 }

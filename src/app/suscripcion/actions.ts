@@ -20,6 +20,8 @@ import {
   redeemFreeCouponForEmail,
   LANZAMIENTO_INICIO_DIFERIDO,
 } from "@/lib/cupones";
+import { getPruebaActivaByEmail, cancelarPrueba, reactivarPrueba } from "@/lib/pruebas";
+import { sendTrialCancelledEmail } from "@/lib/email";
 import { validarCodigoReferido, type ValidacionCodigoReferido } from "@/lib/referidos";
 
 export type SubscribeResult =
@@ -220,5 +222,36 @@ export async function changeMyPlan(newPlanId: string): Promise<void> {
   const email = user?.primaryEmailAddress?.emailAddress;
   if (!email) return;
   await scheduleChangePlan(email, newPlanId);
+  revalidatePath("/mi-suscripcion");
+}
+
+/** Cancela la renovación automática de la Prueba UNIQUE — en máximo 2 clics
+ * desde "Mi suscripción" (este botón + la confirmación del navegador), sin
+ * tener que escribir a soporte. Conserva créditos y acceso hasta FechaFin
+ * (ver cancelarPrueba en pruebas.ts). */
+export async function cancelarMiPrueba(): Promise<void> {
+  const { userId } = await auth();
+  if (!userId) return;
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return;
+
+  const prueba = await getPruebaActivaByEmail(email);
+  const cancelada = await cancelarPrueba(email);
+  if (cancelada && prueba) {
+    await sendTrialCancelledEmail({ correo: email, fechaFin: prueba.fechaFin }).catch(() => {});
+  }
+  revalidatePath("/mi-suscripcion");
+}
+
+/** Reactiva la Prueba UNIQUE mientras siga vigente — vuelve a quedar
+ * sujeta a la conversión automática al Starter en su FechaFin original. */
+export async function reactivarMiPrueba(): Promise<void> {
+  const { userId } = await auth();
+  if (!userId) return;
+  const user = await currentUser();
+  const email = user?.primaryEmailAddress?.emailAddress;
+  if (!email) return;
+  await reactivarPrueba(email);
   revalidatePath("/mi-suscripcion");
 }

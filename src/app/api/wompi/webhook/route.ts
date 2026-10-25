@@ -20,6 +20,13 @@ import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
 import { sendOpsAlertEmail, sendGiftPurchaseEmail } from "@/lib/email";
 import { crearRegalo } from "@/lib/regalos";
 import { procesarReferido } from "@/lib/referidos";
+import {
+  getPruebaById,
+  getPruebaByPagoId,
+  marcarConvertida,
+  crearPrueba,
+  TEXTO_ACEPTACION_PRUEBA,
+} from "@/lib/pruebas";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -161,6 +168,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // Si este pago "plan" en realidad es la conversión de una prueba
+  // (convertirPruebaAStarter construye la referencia con `prueba.id` como
+  // ownerRef) resuelta tarde por este webhook en vez de la respuesta
+  // síncrona: vence lo que sobre de los 16 créditos de la prueba ANTES de
+  // acreditar los del Starter — nunca deben pasar de una a la otra — y
+  // marca la prueba como convertida para que el cron no la vuelva a cobrar.
+  const pruebaConvertida = pago.tipo === "plan" ? await getPruebaById(parsed.clerkUserId) : null;
+  if (pruebaConvertida) {
+    await deductCreditsByEmail(pruebaConvertida.correo, pruebaConvertida.creditosOtorgados);
+  }
+
+  // Si este pago "prueba" se aprobó tarde (quedó "Pendiente" del lado
+  // síncrono, chargeTrial nunca llegó a crear la fila en "Pruebas"): se
+  // reconstruye acá con lo disponible. El teléfono se recupera del perfil
+  // (ya completo a esta altura); la evidencia de aceptación usa el texto
+  // legal exacto pero sin IP/user-agent (no viajan en el webhook) — mismo
+  // patrón de "mejor esfuerzo" que ya se decidió para TarjetaHash.
+  if (pago.tipo === "prueba" && !(await getPruebaByPagoId(pago.id))) {
+    const persona = await getUserCreditsByEmail(pago.correo);
+    await crearPrueba({
+      correo: pago.correo,
+      telefono: persona?.telefono ?? null,
+      tarjetaHash: null,
+      codigoReferido: pago.codigoReferido,
+      pagoId: pago.id,
+      paymentSourceId: pago.paymentSourceId ?? 0,
+      creditos: pago.creditos,
+      aceptacionTexto: TEXTO_ACEPTACION_PRUEBA,
+      aceptacionIp: null,
+      aceptacionUserAgent: null,
+    });
+  }
+
   await addCreditsByEmail(pago.correo, pago.creditos, pago.tipo === "plan" || pago.tipo === "suelto");
   await facturarCompra({
     correo: pago.correo,
@@ -170,7 +210,9 @@ export async function POST(req: NextRequest) {
         ? `Suscripción UNIQUE — Plan ${item.name ?? item.label}`
         : pago.tipo === "suelto"
           ? `Créditos sueltos UNIQUE — ${item.label}`
-          : `Créditos adicionales UNIQUE — ${item.label}`,
+          : pago.tipo === "prueba"
+            ? `Prueba UNIQUE 1 semana — ${item.label}`
+            : `Créditos adicionales UNIQUE — ${item.label}`,
     totalConIva: montoEsperado,
     pagoId: pago.id,
   });
@@ -189,7 +231,16 @@ export async function POST(req: NextRequest) {
         paymentSourceId: pago.paymentSourceId ?? existing?.paymentSourceId ?? 0,
       });
     }
-    if (pago.codigoReferido) {
+    if (pruebaConvertida) {
+      await marcarConvertida(pruebaConvertida.id);
+      if (pruebaConvertida.codigoReferido) {
+        await procesarReferido({
+          correoReferido: pago.correo,
+          codigo: pruebaConvertida.codigoReferido,
+          pagoId: pago.id,
+        });
+      }
+    } else if (pago.codigoReferido) {
       await procesarReferido({ correoReferido: pago.correo, codigo: pago.codigoReferido, pagoId: pago.id });
     }
   }

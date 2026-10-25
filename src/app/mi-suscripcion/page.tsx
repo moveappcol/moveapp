@@ -3,12 +3,15 @@ import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { CREDIT_PLANS, formatCOP } from "@/lib/credits-pricing";
-import { cancelMySubscription, changeMyPlan } from "@/app/suscripcion/actions";
+import { cancelMySubscription, changeMyPlan, cancelarMiPrueba, reactivarMiPrueba } from "@/app/suscripcion/actions";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import CancelSubscriptionButton from "@/components/pagos/cancel-subscription-button";
+import TrialStatusCard from "@/components/pagos/trial-status-card";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import { getOrCreateCodigoReferido, CREDITOS_POR_REFERIDO } from "@/lib/referidos";
+import { getPruebaByEmail } from "@/lib/pruebas";
+import { getUserCreditsByEmail } from "@/lib/users";
 
 export default async function MiSuscripcionPage({
   searchParams,
@@ -31,6 +34,22 @@ export default async function MiSuscripcionPage({
     subscription?.planSiguiente && CREDIT_PLANS.find((p) => p.id === subscription.planSiguiente);
   const codigoReferidoInfo = email ? await getOrCreateCodigoReferido(email) : null;
 
+  const ahora = new Date().toISOString();
+  const pruebaRaw = email ? await getPruebaByEmail(email) : null;
+  const prueba =
+    pruebaRaw && (pruebaRaw.estado === "Activa" || pruebaRaw.estado === "Cancelada") && pruebaRaw.fechaFin > ahora
+      ? pruebaRaw
+      : null;
+  const account = prueba && email ? await getUserCreditsByEmail(email) : null;
+  const fechaFinPruebaLabel = prueba
+    ? new Date(prueba.fechaFin).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
+        timeZone: "America/Bogota",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
+
   return (
     <section className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
       <h1 className="font-heading text-3xl font-bold text-move-green">{t.title}</h1>
@@ -42,24 +61,35 @@ export default async function MiSuscripcionPage({
       )}
 
       {!subscription || subscription.estado !== "Activa" ? (
-        <div className="mt-8 rounded-2xl border border-move-green/10 bg-white p-6">
-          <p className="font-body text-sm text-move-green/70">
-            {subscription?.estado === "Cancelada"
-              ? t.estadoCancelada
-              : subscription?.estado === "Pago fallido"
-                ? t.estadoPagoFallido
-                : t.sinSuscripcion}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {CREDIT_PLANS.map((p) => (
-              <Link
-                key={p.id}
-                href={`/suscribirse/${p.id}`}
-                className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                {t.suscribirmeA(p.name ?? "", p.label)}
-              </Link>
-            ))}
+        <div className="mt-8 space-y-6">
+          {prueba && (
+            <TrialStatusCard
+              credits={account?.credits ?? 0}
+              fechaFinLabel={fechaFinPruebaLabel}
+              cancelada={prueba.estado === "Cancelada"}
+              cancelarAction={cancelarMiPrueba}
+              reactivarAction={reactivarMiPrueba}
+            />
+          )}
+          <div className="rounded-2xl border border-move-green/10 bg-white p-6">
+            <p className="font-body text-sm text-move-green/70">
+              {subscription?.estado === "Cancelada"
+                ? t.estadoCancelada
+                : subscription?.estado === "Pago fallido"
+                  ? t.estadoPagoFallido
+                  : t.sinSuscripcion}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {CREDIT_PLANS.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/suscribirse/${p.id}`}
+                  className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  {t.suscribirmeA(p.name ?? "", p.label)}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       ) : (

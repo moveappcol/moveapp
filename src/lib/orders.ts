@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import {
   CREDIT_PLANS,
   CREDIT_TOPUPS,
+  TRIAL_PLAN,
   precioCreditosSueltos,
   MINIMO_CREDITOS_SUELTOS,
   type CreditPackage,
@@ -17,7 +18,7 @@ import {
  * itemId codifica la cantidad ("suelto-<n>") y el precio se calcula acá
  * mismo, así el webhook de Wompi puede reconstruirlo solo desde la
  * referencia sin depender de ningún estado guardado aparte. */
-export type PurchaseKind = "plan" | "topup" | "regalo" | "suelto";
+export type PurchaseKind = "plan" | "topup" | "regalo" | "suelto" | "prueba";
 
 const SUELTO_ID_PATTERN = /^suelto-(\d+)$/;
 
@@ -40,6 +41,7 @@ function findSueltoItem(itemId: string): CreditPackage | null {
 
 export function findCatalogItem(kind: PurchaseKind, itemId: string): CreditPackage | null {
   if (kind === "suelto") return findSueltoItem(itemId);
+  if (kind === "prueba") return itemId === TRIAL_PLAN.id ? TRIAL_PLAN : null;
   const catalog = kind === "topup" ? CREDIT_TOPUPS : CREDIT_PLANS;
   return catalog.find((item) => item.id === itemId) ?? null;
 }
@@ -63,6 +65,13 @@ export function parseReference(reference: string | undefined | null): ParsedRefe
   const parts = reference.split(".");
   if (parts.length !== 6 || parts[0] !== "mv") return null;
   const [, kind, itemId, clerkUserId] = parts;
-  if (kind !== "plan" && kind !== "topup" && kind !== "regalo" && kind !== "suelto") return null;
+  if (
+    kind !== "plan" &&
+    kind !== "topup" &&
+    kind !== "regalo" &&
+    kind !== "suelto" &&
+    kind !== "prueba"
+  )
+    return null;
   return { kind, itemId, clerkUserId };
 }

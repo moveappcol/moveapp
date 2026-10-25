@@ -9,12 +9,17 @@ import {
   reserveNextNotaCreditoNumero,
   type Pago,
 } from "./pagos";
-import { addCreditsByEmail, getUserCreditsByEmail } from "./users";
+import { addCreditsByEmail, deductCreditsByEmail, getUserCreditsByEmail } from "./users";
 import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl } from "./dataico";
 import { isTipoDocumento } from "./documento";
 import { sendOpsAlertEmail, sendInvoiceEmail, sendGiftPurchaseEmail } from "./email";
 import { procesarReferido } from "./referidos";
 import { crearRegalo } from "./regalos";
+import { crearPrueba, type Prueba } from "./pruebas";
+import { upsertSubscription } from "./subscriptions";
+import { TRIAL_PLAN } from "./credits-pricing";
+
+const STARTER_PLAN_ID = "plan-starter";
 
 const OWNER_EMAIL = "uniqueappcol@gmail.com";
 
@@ -305,6 +310,177 @@ export async function chargeCreditosSueltos(params: {
       totalConIva: item.price,
       pagoId,
     });
+  }
+  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
+}
+
+export type TrialChargeResult =
+  | { ok: true; transactionId: string; credits: number; fechaFin: string; credited: boolean }
+  | { ok: false; error: string; pending?: boolean; reference?: string };
+
+/** Cobra la Prueba UNIQUE de 1 semana (ver TRIAL_PLAN en
+ * credits-pricing.ts) — mismo patrón de tarjeta tokenizada que
+ * chargeSubscriptionPlan, pero sin extender Vencimiento (la vigencia de 7
+ * días vive en la tabla "Pruebas", no en ese campo compartido) y creando
+ * ahí mismo el registro que controla la conversión automática y el
+ * reintento de cobro. */
+export async function chargeTrial(params: {
+  correo: string;
+  telefono: string | null;
+  paymentSourceId: number;
+  ownerRef: string;
+  tarjetaHash?: string | null;
+  codigoReferido?: string | null;
+  aceptacionTexto: string;
+  aceptacionIp: string | null;
+  aceptacionUserAgent: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+}): Promise<TrialChargeResult> {
+  const item = findCatalogItem("prueba", TRIAL_PLAN.id);
+  if (!item) return { ok: false, error: "Prueba desconocida." };
+
+  const reference = buildReference("prueba", item.id, params.ownerRef);
+  const pagoId = await createPendingPago({
+    referencia: reference,
+    correo: params.correo,
+    tipo: "prueba",
+    item: item.id,
+    creditos: item.credits,
+    fbp: params.fbp,
+    fbc: params.fbc,
+    valor: item.price,
+    paymentSourceId: params.paymentSourceId,
+    // Se guarda también acá (no solo en "Pruebas") para que el webhook de
+    // Wompi pueda reconstruir el código de referido si este cobro queda
+    // "Pendiente" y se resuelve async — ver esa rama en api/wompi/webhook.
+    codigoReferido: params.codigoReferido,
+  });
+
+  let tx;
+  try {
+    tx = await chargeWithPaymentSource({
+      amountInCents: item.price * 100,
+      customerEmail: params.correo,
+      paymentSourceId: params.paymentSourceId,
+      reference,
+    });
+  } catch (err) {
+    await updatePagoEstado(pagoId, "Rechazado", "");
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos cobrar la tarjeta." };
+  }
+
+  if (tx.status === "PENDING") {
+    await updatePagoEstado(pagoId, "Pendiente", tx.id);
+    return {
+      ok: false,
+      pending: true,
+      reference,
+      error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme.",
+    };
+  }
+
+  if (tx.status !== "APPROVED") {
+    await updatePagoEstado(pagoId, "Rechazado", tx.id);
+    return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
+  }
+
+  const credited = await claimPagoAprobado(reference, tx.id);
+  let fechaFin = "";
+  if (credited) {
+    await addCreditsByEmail(params.correo, item.credits, false);
+    const prueba = await crearPrueba({
+      correo: params.correo,
+      telefono: params.telefono,
+      tarjetaHash: params.tarjetaHash ?? null,
+      codigoReferido: params.codigoReferido ?? null,
+      pagoId,
+      paymentSourceId: params.paymentSourceId,
+      creditos: item.credits,
+      aceptacionTexto: params.aceptacionTexto,
+      aceptacionIp: params.aceptacionIp,
+      aceptacionUserAgent: params.aceptacionUserAgent,
+    });
+    fechaFin = prueba.fechaFin;
+    await facturarCompra({
+      correo: params.correo,
+      sku: item.id,
+      concepto: `Prueba UNIQUE 1 semana — ${item.label}`,
+      totalConIva: item.price,
+      pagoId,
+    });
+  }
+  return { ok: true, transactionId: tx.id, credits: item.credits, fechaFin, credited };
+}
+
+/** Cobra el plan Starter al terminar una prueba no cancelada — llamado solo
+ * desde el cron de conversión (ver api/cron/convertir-pruebas). Antes de
+ * acreditar los 32 créditos del Starter, vence lo que haya sobrado de los
+ * 16 de la prueba (nunca pasan al plan nuevo, como se prometió en el
+ * checkout) — mismo deductCreditsByEmail que usa
+ * expirarCreditosDePruebasVencidas para una prueba cancelada. */
+export async function convertirPruebaAStarter(prueba: Prueba): Promise<ChargeResult> {
+  const item = findCatalogItem("plan", STARTER_PLAN_ID);
+  if (!item) return { ok: false, error: "Plan Starter desconocido." };
+
+  const reference = buildReference("plan", item.id, prueba.id);
+  const pagoId = await createPendingPago({
+    referencia: reference,
+    correo: prueba.correo,
+    tipo: "plan",
+    item: item.id,
+    creditos: item.credits,
+    valor: item.price,
+    paymentSourceId: prueba.paymentSourceId,
+  });
+
+  let tx;
+  try {
+    tx = await chargeWithPaymentSource({
+      amountInCents: item.price * 100,
+      customerEmail: prueba.correo,
+      paymentSourceId: prueba.paymentSourceId,
+      reference,
+    });
+  } catch (err) {
+    await updatePagoEstado(pagoId, "Rechazado", "");
+    return { ok: false, error: err instanceof Error ? err.message : "No pudimos cobrar la tarjeta." };
+  }
+
+  if (tx.status === "PENDING") {
+    await updatePagoEstado(pagoId, "Pendiente", tx.id);
+    return {
+      ok: false,
+      pending: true,
+      reference,
+      error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme.",
+    };
+  }
+
+  if (tx.status !== "APPROVED") {
+    await updatePagoEstado(pagoId, "Rechazado", tx.id);
+    return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
+  }
+
+  const credited = await claimPagoAprobado(reference, tx.id);
+  if (credited) {
+    await deductCreditsByEmail(prueba.correo, prueba.creditosOtorgados);
+    await addCreditsByEmail(prueba.correo, item.credits, true);
+    await upsertSubscription({
+      correo: prueba.correo,
+      plan: item.id,
+      paymentSourceId: prueba.paymentSourceId,
+    });
+    await facturarCompra({
+      correo: prueba.correo,
+      sku: item.id,
+      concepto: `Suscripción UNIQUE — Plan ${item.name ?? item.label} (conversión de prueba)`,
+      totalConIva: item.price,
+      pagoId,
+    });
+    if (prueba.codigoReferido) {
+      await procesarReferido({ correoReferido: prueba.correo, codigo: prueba.codigoReferido, pagoId });
+    }
   }
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }

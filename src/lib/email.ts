@@ -1,4 +1,5 @@
 import { formatCOP } from "./credits-pricing";
+import { formatFechaLarga, formatHora } from "./dias";
 
 type EmailAttachment = { filename: string; content: string };
 
@@ -837,6 +838,102 @@ export async function sendContactEmail(params: {
   await sendEmail({
     to: [params.ownerEmail],
     subject: `Nuevo mensaje de contacto — ${params.name}`,
+    html,
+  });
+}
+
+function fechaFinLabel(fechaFin: string): string {
+  return `${formatFechaLarga(fechaFin)} a las ${formatHora(fechaFin)}`;
+}
+
+/** Confirma la compra de la Prueba UNIQUE de 1 semana — recuerda, arriba
+ * del botón de pago ya se le mostró lo mismo, la conversión automática al
+ * Starter si no cancela. */
+export async function sendTrialPurchaseEmail(params: { correo: string; fechaFin: string }): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>¡Arrancó tu Prueba UNIQUE de 1 semana! Ya tienes 16 créditos disponibles.</p>
+      <p>El <strong>${fechaFinLabel(params.fechaFin)}</strong> se activa automáticamente el plan Starter (${formatCOP(209_900)}/mes, 32 créditos), salvo que canceles antes desde "Mi suscripción".</p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.correo], subject: "Tu Prueba UNIQUE ya está activa", html });
+}
+
+/** 48h antes de que termine la prueba — ver getPruebasParaRecordatorio en
+ * pruebas.ts. */
+export async function sendTrialReminderEmail(params: {
+  correo: string;
+  fechaFin: string;
+  cancelarUrl: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>Tu Prueba UNIQUE termina el <strong>${fechaFinLabel(params.fechaFin)}</strong>.</p>
+      <p>Si no cancelas, se activa tu plan Starter por ${formatCOP(209_900)}/mes con 32 créditos.</p>
+      <p>Si no quieres continuar, cancela aquí: <a href="${params.cancelarUrl}" style="color:#ff4f3f;font-weight:700;">${params.cancelarUrl}</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.correo], subject: "Tu Prueba UNIQUE termina en 48 horas", html });
+}
+
+/** Confirma que se canceló la renovación — los créditos y el acceso se
+ * mantienen hasta fechaFin, nunca se cobra el Starter después de eso. */
+export async function sendTrialCancelledEmail(params: { correo: string; fechaFin: string }): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>Cancelamos la renovación de tu Prueba UNIQUE — no te vamos a cobrar el plan Starter.</p>
+      <p>Tus créditos y tu acceso siguen disponibles hasta el <strong>${fechaFinLabel(params.fechaFin)}</strong>.</p>
+      <p>Si cambias de opinión, puedes reactivarla desde "Mi suscripción" mientras siga vigente.</p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.correo], subject: "Cancelamos tu renovación de la Prueba UNIQUE", html });
+}
+
+/** Confirma que la prueba se convirtió al Starter — el recibo real lo manda
+ * aparte sendInvoiceEmail (vía facturarCompra); este es el aviso de que ya
+ * quedó activo. */
+export async function sendTrialConvertedEmail(params: { correo: string; credits: number }): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>Tu Prueba UNIQUE terminó y activamos tu plan Starter — ya tienes ${params.credits} créditos disponibles.</p>
+      <p>Te vamos a cobrar ${formatCOP(209_900)} cada mes hasta que decidas cancelar desde "Mi suscripción".</p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.correo], subject: "¡Bienvenido a tu plan Starter! 🎉", html });
+}
+
+/** Cobro fallido al terminar la prueba — `definitivo` distingue el primer
+ * intento (se reintentará en 24h) del segundo (ya no hay más intentos, la
+ * cuenta se queda sin plan activo). */
+export async function sendTrialPaymentFailedEmail(params: {
+  correo: string;
+  definitivo: boolean;
+  actualizarTarjetaUrl: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p>No pudimos cobrar tu plan Starter al terminar tu Prueba UNIQUE.</p>
+      <p>${
+        params.definitivo
+          ? "Ya lo intentamos dos veces — tu cuenta se queda sin plan activo por ahora."
+          : "Vamos a intentarlo de nuevo en 24 horas."
+      }</p>
+      <p>Actualiza tu tarjeta aquí: <a href="${params.actualizarTarjetaUrl}" style="color:#ff4f3f;font-weight:700;">${params.actualizarTarjetaUrl}</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({
+    to: [params.correo],
+    subject: params.definitivo ? "No pudimos activar tu plan Starter" : "No pudimos cobrar tu plan Starter",
     html,
   });
 }

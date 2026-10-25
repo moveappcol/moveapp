@@ -36,6 +36,17 @@ export default async function PlansSection() {
           <p className="mt-2 font-body text-move-green/70">{t.subtitle}</p>
         </div>
 
+        <div className="mt-8 rounded-2xl border border-move-coral bg-white px-6 py-5">
+          <h3 className="font-heading text-lg font-semibold text-move-green">{t.trialTitle}</h3>
+          <p className="mt-1 max-w-xl font-body text-sm text-move-green/70">{t.trialBody}</p>
+          <Link
+            href={userId ? "/prueba" : "/crear-cuenta"}
+            className="mt-4 inline-block rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {t.trialCta}
+          </Link>
+        </div>
+
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {CREDIT_PLANS.map((plan, i) => (
             <div

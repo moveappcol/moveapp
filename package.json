@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run"
   },
   "dependencies": {
     "@clerk/localizations": "^4.12.1",
@@ -35,6 +36,9 @@
     "eslint-config-next": "16.2.10",
     "railway": "^3.11.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.3.5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^5.0.5"
   }
 }

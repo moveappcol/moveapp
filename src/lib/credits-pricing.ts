@@ -18,6 +18,19 @@ export const CREDIT_TOPUPS: CreditPackage[] = [
   { id: "topup-15", label: "15 créditos", credits: 15, price: 109_900 },
 ];
 
+/** Prueba UNIQUE de 1 semana: pago único, 16 créditos, vigentes exactamente
+ * TRIAL_DURATION_DAYS desde el pago (no un mes como un plan) — si no se
+ * cancela antes de que termine, se cobra el plan Starter automáticamente
+ * (ver chargeTrial/convertirPruebaAStarter en billing.ts). */
+export const TRIAL_PLAN: CreditPackage = {
+  id: "trial-1semana",
+  name: "Prueba UNIQUE",
+  label: "16 créditos",
+  credits: 16,
+  price: 69_000,
+};
+export const TRIAL_DURATION_DAYS = 7;
+
 /** Créditos sueltos: precio fijo por crédito, sin necesidad de plan ni de
  * ningún paquete fijo — para quien solo quiere probar una clase o
  * experiencia puntual, donde el mínimo de 5 de un topup normal lo

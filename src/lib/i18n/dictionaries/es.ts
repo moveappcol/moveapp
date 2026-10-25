@@ -107,6 +107,9 @@ export const es = {
       ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
       billedMonthly: "Se cobra automáticamente cada mes. Cancela cuando quieras.",
       elegirPlan: "Elegir plan",
+      trialTitle: "¿No estás seguro todavía? Prueba 1 semana por $69.000",
+      trialBody: "16 créditos por 7 días. Si no cancelas, se activa tu plan Starter automáticamente.",
+      trialCta: "Empezar mi prueba",
       creditosSueltosTitle: "¿Solo quieres probar algo puntual?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Compra créditos sueltos a ${precioPorCredito} cada uno (mínimo ${minimo}), sin necesidad de plan. Vencen al mes de comprarlos.`,
@@ -409,6 +412,24 @@ export const es = {
       comprarPorPrecio: (price: string) => `Comprar — ${price}`,
       compraAprobadaTitle: "Tu compra fue aprobada",
       compraAprobadaMessage: (creditos: number) => `Ya tienes ${creditos} créditos disponibles.`,
+    },
+    trial: {
+      title: "Prueba UNIQUE — 1 semana",
+      subtitle: (precio: string) => `${precio} · 16 créditos, válidos por 7 días.`,
+      resumenPago: (precio: string, fechaFin: string) =>
+        `Pagas ${precio} hoy. El ${fechaFin} se activa tu plan Starter por $209.900/mes si no cancelas.`,
+      casillaLegal:
+        "Entiendo que al terminar mi semana de prueba se me cobrará automáticamente el plan Starter ($209.900/mes), salvo que cancele antes.",
+      debeAceptarCasillaLegal: "Debes marcar la casilla para continuar.",
+      codigoReferidoLabel: "¿Alguien te refirió? (opcional)",
+      codigoReferidoNota: "Se aplica cuando se active tu plan Starter, no en esta compra.",
+      comprarPorPrecio: (price: string) => `Comprar — ${price}`,
+      compraAprobadaTitle: "¡Tu Prueba UNIQUE ya está activa!",
+      compraAprobadaMessage: (creditos: number, fechaFin: string) =>
+        `Ya tienes ${creditos} créditos disponibles, válidos hasta el ${fechaFin}.`,
+      noElegibleTitle: "No eres elegible para la prueba",
+      noElegibleMessage: "La prueba es solo para nuevos usuarios. Mira nuestros planes.",
+      verPlanes: "Ver planes",
     },
     resultado: {
       approvedTitle: "¡Pago aprobado!",

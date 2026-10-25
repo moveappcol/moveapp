@@ -104,6 +104,9 @@ export const en: Dictionary = {
       ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. drop-in classes at the gym`,
       billedMonthly: "Billed automatically every month. Cancel anytime.",
       elegirPlan: "Choose plan",
+      trialTitle: "Not sure yet? Try 1 week for $69,000 COP",
+      trialBody: "16 credits for 7 days. If you don't cancel, your Starter plan activates automatically.",
+      trialCta: "Start my trial",
       creditosSueltosTitle: "Just want to try something once?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Buy single credits for ${precioPorCredito} each (${minimo}-credit minimum), no plan needed. They expire a month after you buy them.`,
@@ -405,6 +408,24 @@ export const en: Dictionary = {
       comprarPorPrecio: (price: string) => `Buy — ${price}`,
       compraAprobadaTitle: "Your purchase was approved",
       compraAprobadaMessage: (creditos: number) => `You now have ${creditos} credits available.`,
+    },
+    trial: {
+      title: "UNIQUE Trial — 1 week",
+      subtitle: (precio: string) => `${precio} · 16 credits, valid for 7 days.`,
+      resumenPago: (precio: string, fechaFin: string) =>
+        `You pay ${precio} today. On ${fechaFin}, your Starter plan activates at $209,900 COP/month unless you cancel.`,
+      casillaLegal:
+        "I understand that when my trial week ends, I will automatically be charged for the Starter plan ($209,900 COP/month), unless I cancel before then.",
+      debeAceptarCasillaLegal: "You must check the box to continue.",
+      codigoReferidoLabel: "Did someone refer you? (optional)",
+      codigoReferidoNota: "It applies when your Starter plan activates, not on this purchase.",
+      comprarPorPrecio: (price: string) => `Buy — ${price}`,
+      compraAprobadaTitle: "Your UNIQUE Trial is active!",
+      compraAprobadaMessage: (creditos: number, fechaFin: string) =>
+        `You now have ${creditos} credits available, valid until ${fechaFin}.`,
+      noElegibleTitle: "You're not eligible for the trial",
+      noElegibleMessage: "The trial is only for new users. Check out our plans.",
+      verPlanes: "View plans",
     },
     resultado: {
       approvedTitle: "Payment approved!",

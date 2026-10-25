@@ -241,74 +241,13 @@ export async function chargeSubscriptionPlan(params: {
   return { ok: true, transactionId: tx.id, credits: item.credits, credited };
 }
 
-/** Cobra un paquete de créditos adicionales contra una fuente de pago
- * guardada. El llamador debe validar antes que la persona tenga un plan
- * activo — los adicionales no son una suscripción en sí mismos. */
-export async function chargeTopup(params: {
-  correo: string;
-  topupId: string;
-  paymentSourceId: number;
-  ownerRef: string;
-  fbp?: string | null;
-  fbc?: string | null;
-}): Promise<ChargeResult> {
-  const item = findCatalogItem("topup", params.topupId);
-  if (!item) return { ok: false, error: "Paquete de créditos desconocido." };
-
-  const reference = buildReference("topup", params.topupId, params.ownerRef);
-  const pagoId = await createPendingPago({
-    referencia: reference,
-    correo: params.correo,
-    tipo: "topup",
-    item: params.topupId,
-    creditos: item.credits,
-    fbp: params.fbp,
-    fbc: params.fbc,
-    valor: item.price,
-  });
-
-  let tx;
-  try {
-    tx = await chargeWithPaymentSource({
-      amountInCents: item.price * 100,
-      customerEmail: params.correo,
-      paymentSourceId: params.paymentSourceId,
-      reference,
-    });
-  } catch (err) {
-    await updatePagoEstado(pagoId, "Rechazado", "");
-    return { ok: false, error: err instanceof Error ? err.message : "No pudimos cobrar la tarjeta." };
-  }
-
-  if (tx.status === "PENDING") {
-    await updatePagoEstado(pagoId, "Pendiente", tx.id);
-    return { ok: false, pending: true, reference, error: "Tu pago está siendo procesado. Te avisaremos apenas se confirme." };
-  }
-
-  if (tx.status !== "APPROVED") {
-    await updatePagoEstado(pagoId, "Rechazado", tx.id);
-    return { ok: false, error: `Pago ${tx.status.toLowerCase()}.` };
-  }
-
-  const credited = await claimPagoAprobado(reference, tx.id);
-  if (credited) {
-    await addCreditsByEmail(params.correo, item.credits, false);
-    await facturarCompra({
-      correo: params.correo,
-      sku: item.id,
-      concepto: `Créditos adicionales UNIQUE — ${item.label}`,
-      totalConIva: item.price,
-      pagoId,
-    });
-  }
-  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
-}
-
 /** Compra de créditos sueltos (ver precioCreditosSueltos en
- * credits-pricing.ts): a diferencia de chargeTopup, no requiere plan
- * activo y SÍ extiende el vencimiento 1 mes desde hoy (como un plan o un
- * regalo) — es la entrada para quien no tiene cuenta con créditos todavía
- * y solo quiere probar una clase o experiencia puntual. */
+ * credits-pricing.ts): no requiere plan activo y SÍ extiende el
+ * vencimiento 1 mes desde hoy (como un plan o un regalo) — es la entrada
+ * para quien no tiene cuenta con créditos todavía y solo quiere probar una
+ * clase o experiencia puntual. Reemplazó a los paquetes fijos de
+ * "créditos adicionales" (topups), que exigían un plan activo para
+ * comprarse. */
 export async function chargeCreditosSueltos(params: {
   correo: string;
   cantidad: number;

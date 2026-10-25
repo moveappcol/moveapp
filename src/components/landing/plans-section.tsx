@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import {
   CREDIT_PLANS,
-  CREDIT_TOPUPS,
   formatCOP,
   ahorroPorcentaje,
   PRECIO_CREDITO_SUELTO,
   MINIMO_CREDITOS_SUELTOS,
 } from "@/lib/credits-pricing";
-import { getSubscriptionByEmail } from "@/lib/subscriptions";
 import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
 import CreditCalculator from "./credit-calculator";
 import { getLocale } from "@/lib/i18n/locale";
@@ -18,16 +16,6 @@ export default async function PlansSection() {
   const { userId } = await auth();
   const locale = await getLocale();
   const t = getDictionary(locale).home.plans;
-
-  let hasActiveSubscription = false;
-  if (userId) {
-    const user = await currentUser();
-    const email = user?.primaryEmailAddress?.emailAddress;
-    if (email) {
-      const subscription = await getSubscriptionByEmail(email);
-      hasActiveSubscription = subscription?.estado === "Activa";
-    }
-  }
 
   // Mismo cupón que se aplica solo en el checkout (ver DEFAULT_COUPON_CODE)
   // — se valida acá también para mostrar el precio ya descontado en la
@@ -123,53 +111,7 @@ export default async function PlansSection() {
           ))}
         </div>
 
-        <div className="mt-16">
-          <h3 className="font-heading text-xl font-semibold text-move-green">
-            {t.creditosAdicionalesTitle}
-          </h3>
-          <p className="mt-2 max-w-xl font-body text-move-green/70">{t.creditosAdicionalesBody}</p>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {CREDIT_TOPUPS.map((topup) => (
-              <div
-                key={topup.id}
-                className="flex items-center justify-between rounded-2xl border border-move-green/10 bg-white px-6 py-4"
-              >
-                <div>
-                  <span className="block font-heading text-sm font-medium text-move-green">
-                    {topup.label}
-                  </span>
-                  <span className="block font-heading text-sm font-semibold text-move-coral">
-                    {formatCOP(topup.price)}
-                  </span>
-                </div>
-                {!userId ? (
-                  <Link
-                    href="/crear-cuenta"
-                    className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                  >
-                    {t.comprar}
-                  </Link>
-                ) : hasActiveSubscription ? (
-                  <Link
-                    href={`/comprar-creditos/${topup.id}`}
-                    className="rounded-full bg-move-green px-4 py-2 font-heading text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                  >
-                    {t.comprar}
-                  </Link>
-                ) : (
-                  <span
-                    title={t.necesitasPlanActivo}
-                    className="cursor-not-allowed rounded-full bg-move-green/30 px-4 py-2 font-heading text-xs font-semibold text-white/80"
-                  >
-                    {t.comprar}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-10 rounded-2xl border border-move-green/10 bg-white px-6 py-5">
+        <div className="mt-16 rounded-2xl border border-move-green/10 bg-white px-6 py-5">
           <h3 className="font-heading text-lg font-semibold text-move-green">
             {t.creditosSueltosTitle}
           </h3>

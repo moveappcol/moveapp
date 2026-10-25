@@ -107,10 +107,6 @@ export const es = {
       ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
       billedMonthly: "Se cobra automáticamente cada mes. Cancela cuando quieras.",
       elegirPlan: "Elegir plan",
-      creditosAdicionalesTitle: "Créditos adicionales",
-      creditosAdicionalesBody: "¿Se te acabaron los créditos antes de fin de mes? Suma más sin esperar a tu próximo ciclo. Disponible solo con un plan activo.",
-      comprar: "Comprar",
-      necesitasPlanActivo: "Necesitas un plan activo para comprar adicionales",
       creditosSueltosTitle: "¿Solo quieres probar algo puntual?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Compra créditos sueltos a ${precioPorCredito} cada uno (mínimo ${minimo}), sin necesidad de plan. Vencen al mes de comprarlos.`,
@@ -119,7 +115,7 @@ export const es = {
     },
     calculator: {
       title: "Calculadora de créditos",
-      subtitle: "Dinos cuántos créditos quieres, o cuánto quieres gastar, y te mostramos la combinación de plan + adicionales más conveniente.",
+      subtitle: "Dinos cuántos créditos quieres, o cuánto quieres gastar, y te mostramos la combinación de plan + créditos sueltos más conveniente.",
       modeCredits: "Quiero X créditos",
       modeBudget: "Tengo un presupuesto",
       creditsLabel: "Créditos que quieres tener",
@@ -129,11 +125,11 @@ export const es = {
       teAlcanzaPara: (credits: number) => `Te alcanza para ${credits} créditos.`,
       porPrecio: (price: string) => `Por ${price}.`,
       planLine: (name: string, label: string, price: string) => `Plan ${name} (${label}) — ${price}`,
-      topupLine: (qty: number, label: string, price: string) => `${qty}× adicional de ${label} — ${price}`,
+      sueltosLine: (credits: number, price: string) => `+ ${credits} créditos sueltos — ${price}`,
       presupuestoInsuficiente: (label: string, price: string) =>
         `Tu presupuesto no alcanza ni para el plan más pequeño (${label} por ${price}).`,
       ingresaNumero: "Ingresa un número de créditos mayor a 0.",
-      footnote: "Estimado combinando 1 plan mensual + créditos adicionales. Los créditos adicionales solo se pueden comprar durante el mes de un plan activo, y los créditos vencen al cumplirse el mes.",
+      footnote: "Estimado combinando 1 plan mensual + créditos sueltos. Los créditos vencen al mes de comprarlos.",
     },
     contact: {
       title: "Contacto",
@@ -249,7 +245,8 @@ export const es = {
     planesTitle: "Nuestros planes",
     creditosLabel: (n: number) => `${n} créditos`,
     alMes: "al mes",
-    topupsIntro: "¿Se te acabaron los créditos antes de fin de mes? Puedes comprar créditos adicionales sin cambiar de plan:",
+    topupsIntro: (precioPorCredito: string, minimo: number) =>
+      `¿Se te acabaron los créditos antes de fin de mes, o solo quieres probar algo puntual? Puedes comprar créditos sueltos a ${precioPorCredito} cada uno (mínimo ${minimo}), con o sin plan activo.`,
     cancelacionesTitle: "Cancelaciones y no-shows",
     cancelacionesP1: "Puedes cancelar tu reserva hasta 24 horas antes de la hora de la clase sin que se te cobren los créditos — quedan disponibles en tu cuenta para usarlos en otra clase.",
     cancelacionesP2: "Si cancelas después de ese plazo, o simplemente no asistes, los créditos de esa clase se descuentan igual — el gimnasio ya reservó ese cupo para ti.",
@@ -402,13 +399,6 @@ export const es = {
       ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
       sinPermanencia: "Sin cláusula de permanencia — cancela cuando quieras.",
       limiteMensual: "Puedes acceder a cada gimnasio un máximo de 3 veces al mes.",
-    },
-    topup: {
-      comprar: (label: string) => `Comprar ${label}`,
-      subtitle: (price: string) => `${price} · se cobra una sola vez a la tarjeta que ingreses acá, no vuelve a cobrarse.`,
-      comprarPorPrecio: (price: string) => `Comprar — ${price}`,
-      compraAprobadaTitle: "Tu compra fue aprobada",
-      compraAprobadaMessage: (creditos: number) => `Ya tienes ${creditos} créditos adicionales disponibles.`,
     },
     creditosSueltos: {
       title: "Créditos sueltos",

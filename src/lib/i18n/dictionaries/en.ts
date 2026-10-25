@@ -104,10 +104,6 @@ export const en: Dictionary = {
       ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. drop-in classes at the gym`,
       billedMonthly: "Billed automatically every month. Cancel anytime.",
       elegirPlan: "Choose plan",
-      creditosAdicionalesTitle: "Extra credits",
-      creditosAdicionalesBody: "Ran out of credits before the end of the month? Add more without waiting for your next cycle. Only available with an active plan.",
-      comprar: "Buy",
-      necesitasPlanActivo: "You need an active plan to buy extra credits",
       creditosSueltosTitle: "Just want to try something once?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Buy single credits for ${precioPorCredito} each (${minimo}-credit minimum), no plan needed. They expire a month after you buy them.`,
@@ -116,7 +112,7 @@ export const en: Dictionary = {
     },
     calculator: {
       title: "Credit calculator",
-      subtitle: "Tell us how many credits you want, or how much you want to spend, and we'll show you the best plan + extras combination.",
+      subtitle: "Tell us how many credits you want, or how much you want to spend, and we'll show you the best plan + single credits combination.",
       modeCredits: "I want X credits",
       modeBudget: "I have a budget",
       creditsLabel: "Credits you want to have",
@@ -126,11 +122,11 @@ export const en: Dictionary = {
       teAlcanzaPara: (credits: number) => `That's enough for ${credits} credits.`,
       porPrecio: (price: string) => `For ${price}.`,
       planLine: (name: string, label: string, price: string) => `${name} plan (${label}) — ${price}`,
-      topupLine: (qty: number, label: string, price: string) => `${qty}× ${label} top-up — ${price}`,
+      sueltosLine: (credits: number, price: string) => `+ ${credits} single credits — ${price}`,
       presupuestoInsuficiente: (label: string, price: string) =>
         `Your budget isn't enough for even the smallest plan (${label} for ${price}).`,
       ingresaNumero: "Enter a number of credits greater than 0.",
-      footnote: "Estimated by combining 1 monthly plan + extra credits. Extra credits can only be bought during the month of an active plan, and credits expire at the end of that month.",
+      footnote: "Estimated by combining 1 monthly plan + single credits. Credits expire a month after you buy them.",
     },
     contact: {
       title: "Contact",
@@ -245,7 +241,8 @@ export const en: Dictionary = {
     planesTitle: "Our plans",
     creditosLabel: (n: number) => `${n} credits`,
     alMes: "per month",
-    topupsIntro: "Ran out of credits before the end of the month? You can buy extra credits without changing plans:",
+    topupsIntro: (precioPorCredito: string, minimo: number) =>
+      `Ran out of credits before the end of the month, or just want to try something once? You can buy single credits for ${precioPorCredito} each (${minimo}-credit minimum), with or without an active plan.`,
     cancelacionesTitle: "Cancellations and no-shows",
     cancelacionesP1: "You can cancel your booking up to 24 hours before the class starts at no cost to your credits — they stay available in your account to use for another class.",
     cancelacionesP2: "If you cancel after that window, or simply don't show up, the credits for that class are deducted anyway — the gym already held that spot for you.",
@@ -398,13 +395,6 @@ export const en: Dictionary = {
       ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. a drop-in class at the gym`,
       sinPermanencia: "No lock-in contract — cancel anytime.",
       limiteMensual: "You can access each gym a maximum of 3 times per month.",
-    },
-    topup: {
-      comprar: (label: string) => `Buy ${label}`,
-      subtitle: (price: string) => `${price} · charged once to the card you enter here, never charged again.`,
-      comprarPorPrecio: (price: string) => `Buy — ${price}`,
-      compraAprobadaTitle: "Your purchase was approved",
-      compraAprobadaMessage: (creditos: number) => `You now have ${creditos} extra credits available.`,
     },
     creditosSueltos: {
       title: "Single credits",

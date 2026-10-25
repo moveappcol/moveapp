@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import {
   CREDIT_PLANS,
+  PRECIO_CREDITO_SUELTO,
   estimateCostForCredits,
   estimateCreditsForBudget,
   formatCOP,
@@ -111,11 +112,11 @@ export default function CreditCalculator({ locale }: { locale: Locale }) {
               </p>
               <ul className="mt-3 space-y-1 font-body text-sm text-move-green/70">
                 <li>{t.planLine(result.plan.name ?? "", result.plan.label, formatCOP(result.plan.price))}</li>
-                {result.topups.map((item) => (
-                  <li key={item.pkg.id}>
-                    {t.topupLine(item.quantity, item.pkg.label, formatCOP(item.pkg.price * item.quantity))}
+                {result.extraCredits > 0 && (
+                  <li>
+                    {t.sueltosLine(result.extraCredits, formatCOP(result.extraCredits * PRECIO_CREDITO_SUELTO))}
                   </li>
-                ))}
+                )}
               </ul>
             </>
           ) : (

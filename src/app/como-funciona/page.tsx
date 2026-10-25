@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CREDIT_PLANS, CREDIT_TOPUPS, formatCOP } from "@/lib/credits-pricing";
+import { CREDIT_PLANS, PRECIO_CREDITO_SUELTO, MINIMO_CREDITOS_SUELTOS, formatCOP } from "@/lib/credits-pricing";
 import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -78,16 +78,7 @@ export default async function ComoFuncionaPage() {
             </div>
           ))}
         </div>
-        <p className="mt-4">
-          {t.topupsIntro}{" "}
-          {CREDIT_TOPUPS.map((tp, i) => (
-            <span key={tp.id}>
-              {i > 0 && " · "}
-              {t.creditosLabel(tp.credits)} ({formatCOP(tp.price)})
-            </span>
-          ))}
-          .
-        </p>
+        <p className="mt-4">{t.topupsIntro(formatCOP(PRECIO_CREDITO_SUELTO), MINIMO_CREDITOS_SUELTOS)}</p>
       </Section>
 
       <Section title={t.cancelacionesTitle}>

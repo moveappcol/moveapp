@@ -14,9 +14,9 @@ describe("los créditos de la Prueba UNIQUE vencen a los 7 días", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("FechaFin queda exactamente 7 días después de FechaInicio", async () => {
-    const Pruebas = fakeTable([]);
+    const Prueba = fakeTable([]);
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      fakeBase({ Pruebas })
+      fakeBase({ Prueba })
     );
 
     const antes = Date.now();
@@ -64,7 +64,7 @@ describe("orden de vencimiento de créditos de distinto origen", () => {
     const { expirarCreditosDePruebasVencidas } = await import("@/lib/pruebas");
 
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      fakeBase({ Pruebas: fakeTable([pruebaVencida]), usuarios })
+      fakeBase({ Prueba: fakeTable([pruebaVencida]), usuarios })
     );
 
     const { procesados } = await expirarCreditosDePruebasVencidas();

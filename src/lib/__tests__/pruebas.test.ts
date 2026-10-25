@@ -15,10 +15,10 @@ import {
   expirarCreditosDePruebasVencidas,
 } from "@/lib/pruebas";
 
-function setBase(tables: { Pagos?: FakeTable; Pruebas?: FakeTable; usuarios?: FakeTable }) {
+function setBase(tables: { Pagos?: FakeTable; Prueba?: FakeTable; usuarios?: FakeTable }) {
   const full = {
     Pagos: tables.Pagos ?? fakeTable([]),
-    Pruebas: tables.Pruebas ?? fakeTable([]),
+    Prueba: tables.Prueba ?? fakeTable([]),
     usuarios: tables.usuarios ?? fakeTable([]),
   };
   (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeBase(full));
@@ -42,7 +42,7 @@ describe("esElegibleParaPrueba", () => {
   it("bloquea si el teléfono ya se usó en otra prueba (aunque sea otra cuenta)", async () => {
     setBase({
       Pagos: fakeTable([]),
-      Pruebas: fakeTable([fakeRecord("prueba1", { Correo: "otra@test.com", Telefono: "3001234567" })]),
+      Prueba: fakeTable([fakeRecord("prueba1", { Correo: "otra@test.com", Telefono: "3001234567" })]),
     });
 
     const result = await esElegibleParaPrueba("nueva@test.com", "3001234567");
@@ -51,7 +51,7 @@ describe("esElegibleParaPrueba", () => {
   });
 
   it("permite la prueba a una cuenta nueva, sin historial", async () => {
-    setBase({ Pagos: fakeTable([]), Pruebas: fakeTable([]) });
+    setBase({ Pagos: fakeTable([]), Prueba: fakeTable([]) });
 
     const result = await esElegibleParaPrueba("nueva@test.com", "3009999999");
 
@@ -69,12 +69,12 @@ describe("cancelarPrueba / reactivarPrueba", () => {
       FechaFin: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       CreditosOtorgados: 16,
     });
-    const { Pruebas } = setBase({ Pruebas: fakeTable([pruebaRecord]) });
+    const { Prueba } = setBase({ Prueba: fakeTable([pruebaRecord]) });
 
     const ok = await cancelarPrueba("ana@test.com");
 
     expect(ok).toBe(true);
-    expect(Pruebas.update).toHaveBeenCalledWith(
+    expect(Prueba.update).toHaveBeenCalledWith(
       [{ id: "p1", fields: { Estado: "Cancelada" } }],
       expect.anything()
     );
@@ -87,7 +87,7 @@ describe("cancelarPrueba / reactivarPrueba", () => {
       FechaFin: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
       CreditosOtorgados: 16,
     });
-    setBase({ Pruebas: fakeTable([pruebaRecord]) });
+    setBase({ Prueba: fakeTable([pruebaRecord]) });
 
     const ok = await cancelarPrueba("ana@test.com");
 
@@ -101,12 +101,12 @@ describe("cancelarPrueba / reactivarPrueba", () => {
       FechaFin: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       CreditosOtorgados: 16,
     });
-    const { Pruebas } = setBase({ Pruebas: fakeTable([pruebaRecord]) });
+    const { Prueba } = setBase({ Prueba: fakeTable([pruebaRecord]) });
 
     const ok = await reactivarPrueba("ana@test.com");
 
     expect(ok).toBe(true);
-    expect(Pruebas.update).toHaveBeenCalledWith(
+    expect(Prueba.update).toHaveBeenCalledWith(
       [{ id: "p1", fields: { Estado: "Activa" } }],
       expect.anything()
     );
@@ -123,7 +123,7 @@ describe("getDuePruebas", () => {
       FechaFin: new Date(Date.now() - 60_000).toISOString(),
       CreditosOtorgados: 16,
     });
-    setBase({ Pruebas: fakeTable([vencida]) });
+    setBase({ Prueba: fakeTable([vencida]) });
 
     const due = await getDuePruebas();
 
@@ -137,7 +137,7 @@ describe("getDuePruebas", () => {
       FechaFin: new Date(Date.now() + 60_000).toISOString(),
       CreditosOtorgados: 16,
     });
-    setBase({ Pruebas: fakeTable([vigente]) });
+    setBase({ Prueba: fakeTable([vigente]) });
 
     const due = await getDuePruebas();
 
@@ -153,7 +153,7 @@ describe("getDuePruebas", () => {
       ProximoReintento: new Date(Date.now() + 60_000).toISOString(),
       CreditosOtorgados: 16,
     });
-    setBase({ Pruebas: fakeTable([esperandoReintento]) });
+    setBase({ Prueba: fakeTable([esperandoReintento]) });
 
     const due = await getDuePruebas();
 
@@ -169,7 +169,7 @@ describe("getDuePruebas", () => {
       ProximoReintento: new Date(Date.now() - 1_000).toISOString(),
       CreditosOtorgados: 16,
     });
-    setBase({ Pruebas: fakeTable([reintentoListo]) });
+    setBase({ Prueba: fakeTable([reintentoListo]) });
 
     const due = await getDuePruebas();
 
@@ -188,8 +188,8 @@ describe("expirarCreditosDePruebasVencidas", () => {
       CreditosOtorgados: 16,
     });
     const usuario = fakeRecord("u1", { Correo: "ana@test.com", Creditos: 10 });
-    const { usuarios, Pruebas } = setBase({
-      Pruebas: fakeTable([cancelada]),
+    const { usuarios, Prueba } = setBase({
+      Prueba: fakeTable([cancelada]),
       usuarios: fakeTable([usuario]),
     });
 
@@ -200,7 +200,7 @@ describe("expirarCreditosDePruebasVencidas", () => {
     // 10 que de verdad le quedaban, mismo criterio que
     // expirarCreditosReferidoVencidos en referidos.ts.
     expect(usuarios.update).toHaveBeenCalledWith([{ id: "u1", fields: { Creditos: 0 } }]);
-    expect(Pruebas.update).toHaveBeenCalledWith(
+    expect(Prueba.update).toHaveBeenCalledWith(
       [{ id: "p1", fields: { CreditosVencidos: true } }],
       expect.anything()
     );
@@ -210,11 +210,11 @@ describe("expirarCreditosDePruebasVencidas", () => {
     // La fórmula del select ya filtra NOT({CreditosVencidos}) — el mock
     // simplemente no incluye ninguna fila para simular que Airtable no
     // devolvió nada.
-    const { Pruebas } = setBase({ Pruebas: fakeTable([]) });
+    const { Prueba } = setBase({ Prueba: fakeTable([]) });
 
     const { procesados } = await expirarCreditosDePruebasVencidas();
 
     expect(procesados).toBe(0);
-    expect(Pruebas.update).not.toHaveBeenCalled();
+    expect(Prueba.update).not.toHaveBeenCalled();
   });
 });

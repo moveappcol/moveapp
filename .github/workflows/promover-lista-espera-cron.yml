@@ -1,17 +1,11 @@
 # El disparo automático vive normalmente en el servicio
-# cron-promover-lista-espera en Railway (nunca tuvo respaldo en GitHub
-# Actions hasta ahora). REACTIVADO TEMPORAL el 21 de octubre de 2026:
-# Railway tuvo una caída grande (dashboard, API y builds abajo) y sus Cron
-# Jobs dejaron de correr — mientras se resuelve, este horario evita que se
-# quede alguien esperando un cupo que ya se liberó. Quitar el `schedule:`
-# de acá (dejando solo workflow_dispatch) en cuanto Railway confirme que
-# sus crones volvieron.
+# cron-promover-lista-espera en Railway. Este workflow queda solo como
+# respaldo manual (workflow_dispatch) para disparar el cron a mano si
+# hace falta.
 name: Promover lista de espera
 
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: "*/10 * * * *"
 
 jobs:
   promover:

@@ -107,6 +107,7 @@ export const es = {
       ahorras: (porcentaje: number) => `Ahorras ~${porcentaje}% vs. clase suelta en el gimnasio`,
       billedMonthly: "Se cobra automáticamente cada mes. Cancela cuando quieras.",
       elegirPlan: "Elegir plan",
+      trialBadge: "Nuevo",
       trialTitle: "¿No estás seguro todavía? Prueba 1 semana por $69.000",
       trialBody: "16 créditos por 7 días. Si no cancelas, se activa tu plan Starter automáticamente.",
       trialCta: "Empezar mi prueba",
@@ -179,6 +180,8 @@ export const es = {
     leyendaMapa: "🟢 Gimnasio · 🔴 Parqueadero",
     clasesDisponibles: "Clases disponibles",
     limiteMensual: "Puedes reservar en este gimnasio un máximo de 3 veces al mes.",
+    cancelacionPorAforo:
+      "Los gimnasios pueden cancelar una clase si no logran llenar el aforo mínimo, avisando con al menos 24 horas de anticipación.",
     horaPorConfirmar: "Hora por confirmar",
     credits: (n: number) => `${n} créditos`,
     ultimoCupo: "Último cupo disponible",
@@ -196,6 +199,11 @@ export const es = {
     completarPerfil: "Completar perfil",
     molestiasLabel: "¿Algún dolor o molestia que quieras que el gimnasio tenga en cuenta? (opcional)",
     molestiasPlaceholder: "Ej: dolor de rodilla, embarazo, lesión reciente…",
+    confirmarReservaTitulo: "¿Quieres confirmar tu reserva?",
+    confirmarReservaTexto: (nombreClase: string, credits: number) =>
+      `Vas a reservar "${nombreClase}" por ${credits} créditos.`,
+    confirmar: "Confirmar",
+    cancelar: "Cancelar",
     reservaConfirmada: "Reserva confirmada",
     creditosRestantes: (n: number) => `Créditos restantes: ${n}.`,
     listo: "Listo",

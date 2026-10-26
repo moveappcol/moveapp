@@ -104,6 +104,7 @@ export const en: Dictionary = {
       ahorras: (porcentaje: number) => `You save ~${porcentaje}% vs. drop-in classes at the gym`,
       billedMonthly: "Billed automatically every month. Cancel anytime.",
       elegirPlan: "Choose plan",
+      trialBadge: "New",
       trialTitle: "Not sure yet? Try 1 week for $69,000 COP",
       trialBody: "16 credits for 7 days. If you don't cancel, your Starter plan activates automatically.",
       trialCta: "Start my trial",
@@ -176,6 +177,8 @@ export const en: Dictionary = {
     leyendaMapa: "🟢 Gym · 🔴 Parking",
     clasesDisponibles: "Available classes",
     limiteMensual: "You can book at this gym a maximum of 3 times per month.",
+    cancelacionPorAforo:
+      "Gyms may cancel a class if they don't reach minimum attendance, with at least 24 hours' notice.",
     horaPorConfirmar: "Time to be confirmed",
     credits: (n: number) => `${n} credits`,
     ultimoCupo: "Last spot available",
@@ -192,6 +195,11 @@ export const en: Dictionary = {
     completarPerfil: "Complete profile",
     molestiasLabel: "Any pain or discomfort you'd like the gym to know about? (optional)",
     molestiasPlaceholder: "E.g. knee pain, pregnancy, recent injury…",
+    confirmarReservaTitulo: "Confirm your booking?",
+    confirmarReservaTexto: (nombreClase: string, credits: number) =>
+      `You're about to book "${nombreClase}" for ${credits} credits.`,
+    confirmar: "Confirm",
+    cancelar: "Cancel",
     reservaConfirmada: "Booking confirmed",
     creditosRestantes: (n: number) => `Credits remaining: ${n}.`,
     listo: "Done",

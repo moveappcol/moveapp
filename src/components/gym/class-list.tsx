@@ -49,6 +49,48 @@ function ConfirmModal({
   );
 }
 
+function ConfirmBeforeBookModal({
+  claseName,
+  credits,
+  onCancel,
+  onConfirm,
+  t,
+}: {
+  claseName: string;
+  credits: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+  t: T;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-move-green/45 px-6">
+      <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-xl">
+        <p className="font-heading text-lg font-bold text-move-green">{t.confirmarReservaTitulo}</p>
+        <p className="mt-1 font-body text-sm text-move-green/70">
+          {t.confirmarReservaTexto(claseName, credits)}
+        </p>
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="flex-1 rounded-full border border-move-green/20 px-5 py-2.5 font-heading text-sm font-semibold text-move-green transition-opacity hover:opacity-80"
+          >
+            {t.cancelar}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="flex-1 rounded-full bg-move-coral px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            {t.confirmar}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 export type WaitlistStatusMap = Record<string, { enEspera: boolean; posicion: number | null }>;
 
 function isBookingClosed(fecha: string, cutoffMinutes: number): boolean {
@@ -114,6 +156,8 @@ function ClaseCard({
   );
   const [dismissed, setDismissed] = useState(false);
   const justBooked = bookState?.ok && !dismissed;
+  const [showConfirmBeforeBook, setShowConfirmBeforeBook] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   return (
     <li
@@ -205,7 +249,7 @@ function ClaseCard({
         ) : (
           <>
             <Show when="signed-in">
-              <form action={bookFormAction} className="flex flex-wrap items-center gap-3">
+              <form ref={formRef} action={bookFormAction} className="flex flex-wrap items-center gap-3">
                 <label className="block w-full">
                   <span className="font-body text-xs text-move-green/60">{t.molestiasLabel}</span>
                   <textarea
@@ -217,8 +261,9 @@ function ClaseCard({
                   />
                 </label>
                 <button
-                  type="submit"
+                  type="button"
                   disabled={isBooking}
+                  onClick={() => setShowConfirmBeforeBook(true)}
                   className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {isBooking ? t.reservando : t.reservar}
@@ -235,6 +280,18 @@ function ClaseCard({
                   </Link>
                 )}
               </form>
+              {showConfirmBeforeBook && (
+                <ConfirmBeforeBookModal
+                  claseName={clase.name}
+                  credits={precioEfectivo(clase)}
+                  onCancel={() => setShowConfirmBeforeBook(false)}
+                  onConfirm={() => {
+                    setShowConfirmBeforeBook(false);
+                    formRef.current?.requestSubmit();
+                  }}
+                  t={t}
+                />
+              )}
             </Show>
             <Show when="signed-out">
               <Link

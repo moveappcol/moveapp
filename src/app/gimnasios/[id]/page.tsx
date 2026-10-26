@@ -124,6 +124,7 @@ export default async function GymPage({
         {t.clasesDisponibles}
       </h2>
       <p className="mt-1 font-body text-xs text-move-green/50">{t.limiteMensual}</p>
+      <p className="mt-1 font-body text-xs text-move-green/50">{t.cancelacionPorAforo}</p>
       <div className="mt-4">
         <ClassList
           gimnasioId={id}

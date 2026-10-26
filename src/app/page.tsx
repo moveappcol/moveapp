@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import SavingsBar from "@/components/landing/savings-bar";
 import Hero from "@/components/landing/hero";
+import TrialTeaser from "@/components/landing/trial-teaser";
 import ReferralBanner from "@/components/landing/referral-banner";
 import ExperiencesTeaser from "@/components/landing/experiences-teaser";
 import HowItWorksSection from "@/components/landing/how-it-works-section";
@@ -23,6 +24,7 @@ export default async function Home() {
       </Suspense>
       <SavingsBar />
       <Hero />
+      <TrialTeaser />
       <ExperiencesTeaser />
       <ReferralBanner />
       <GymsSection />

@@ -21,7 +21,7 @@ import { TRIAL_PLAN } from "./credits-pricing";
 
 const STARTER_PLAN_ID = "plan-starter";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Genera la factura electrónica por una compra ya cobrada y acreditada.
  * Nunca deja que un fallo acá se propague — el pago y el abono de

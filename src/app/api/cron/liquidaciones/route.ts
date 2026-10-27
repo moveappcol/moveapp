@@ -13,7 +13,7 @@ import {
 import { sendLiquidacionEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 const LOCK_IN_HOURS = 24;
 
 function formatFechaLarga(iso: string): string {

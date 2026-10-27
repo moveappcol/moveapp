@@ -22,7 +22,7 @@ import { sendPushNotification } from "./push";
 import { crearNotificacion } from "./notificaciones";
 import { formatFechaLarga, formatHora } from "./dias";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =

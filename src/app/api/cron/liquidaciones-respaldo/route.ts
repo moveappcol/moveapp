@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generarLiquidacionesFaltantes } from "@/lib/classes";
 import { sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Red de seguridad diaria — ver generarLiquidacionesFaltantes en
  * classes.ts. Corre una vez al día (hora distinta a cualquier otro cron

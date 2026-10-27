@@ -28,7 +28,7 @@ import {
   TEXTO_ACEPTACION_PRUEBA,
 } from "@/lib/pruebas";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 function statusToEstado(status: string): PagoEstado {
   if (status === "APPROVED") return "Aprobado";

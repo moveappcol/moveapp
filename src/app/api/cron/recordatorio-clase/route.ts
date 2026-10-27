@@ -22,7 +22,7 @@ function buildMapsUrl(gym: { lat: number | null; lng: number | null; address: st
   return null;
 }
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 // Ventana centrada en 3 horas antes de la clase — ancha porque el cron
 // corre cada pocos minutos y puede atrasarse. Cada reserva se marca como

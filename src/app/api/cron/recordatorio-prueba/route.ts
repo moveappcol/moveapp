@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPruebasParaRecordatorio, marcarRecordatorioEnviado } from "@/lib/pruebas";
 import { sendTrialReminderEmail, sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Corre varias veces al día (como los demás recordatorios de clase): manda
  * el aviso de 48h antes del fin de la prueba una sola vez por prueba (ver

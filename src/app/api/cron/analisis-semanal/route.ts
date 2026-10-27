@@ -9,7 +9,7 @@ import {
   type AnalisisGymRow,
 } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 const DIAS_ATRAS = 7;
 const POCA_DEMANDA_UMBRAL = 0.3;
 const NECESITA_CUPOS_UMBRAL = 0.9;

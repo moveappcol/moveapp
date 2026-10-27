@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { expirarCreditosReferidoVencidos } from "@/lib/referidos";
 import { sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Corre 1 vez al día: le quita los créditos de referido a quien refirió si
  * pasaron 30 días desde que se los dieron sin que el cron ya los hubiera

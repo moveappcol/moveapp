@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildBackupWorkbook } from "@/lib/backup";
 import { sendBackupEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 function bogotaFechaHoy(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());

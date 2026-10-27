@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { expirarCreditosDePruebasVencidas } from "@/lib/pruebas";
 import { sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Corre 1 vez al día: a las pruebas canceladas que ya llegaron a su
  * FechaFin (conservaron créditos y acceso hasta ahí, como se les prometió)

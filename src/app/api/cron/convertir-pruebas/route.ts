@@ -8,7 +8,7 @@ import {
 import { convertirPruebaAStarter } from "@/lib/billing";
 import { sendTrialConvertedEmail, sendTrialPaymentFailedEmail, sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Cobra el plan Starter de cada prueba que llegó a su FechaFin sin
  * cancelarse (ver getDuePruebas en pruebas.ts, que ya filtra por si está

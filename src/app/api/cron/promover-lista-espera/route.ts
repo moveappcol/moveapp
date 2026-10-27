@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { promoverListasDeEsperaConCupo } from "@/lib/reservations";
 import { sendOpsAlertEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Corre cada varios minutos: revisa si alguna clase con lista de espera ya
  * tiene cupo disponible (ej. porque el dueño subió "Cupos totales" a mano

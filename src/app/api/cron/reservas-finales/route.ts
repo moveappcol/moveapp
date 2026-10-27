@@ -17,7 +17,7 @@ import {
 import { sendReservasFinalesEmail, sendOpsAlertEmail } from "@/lib/email";
 import { buildReservasFinalesPdf } from "@/lib/pdf";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 // Ventana amplia porque el cron corre cada pocos minutos y puede atrasarse:
 // desde 30 min después de empezar la clase (por si acaso) hasta el aviso de
 // cada gimnasio (ver reservasFinalesMinutes — normalmente 20 min antes,

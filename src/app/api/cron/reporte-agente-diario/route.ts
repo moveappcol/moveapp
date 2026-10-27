@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendAgentReportEmail } from "@/lib/email";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 /** Recibe el reporte del agente diario de salud (corre en GitHub Actions,
  * no en este servidor) y lo manda por correo. No hace ningún chequeo por

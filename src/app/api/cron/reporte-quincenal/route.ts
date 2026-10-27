@@ -13,7 +13,7 @@ import {
   type GymFormPagos,
 } from "@/lib/pdf";
 
-const OWNER_EMAIL = "uniqueappcol@gmail.com";
+const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",

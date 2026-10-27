@@ -7,6 +7,7 @@ import { checkPagoStatus } from "@/app/suscripcion/actions";
 import { formatCOP, TRIAL_PLAN } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
 import ApprovedModal from "./approved-modal";
+import TrialStartTracker from "@/components/analytics/trial-start-tracker";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
 
@@ -152,20 +153,23 @@ export default function TrialCheckoutForm({
 
   if (success !== null) {
     return (
-      <ApprovedModal
-        title={t.trial.compraAprobadaTitle}
-        message={t.trial.compraAprobadaMessage(
-          success.credits,
-          success.fechaFin ? new Date(success.fechaFin).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
-            timeZone: "America/Bogota",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }) : fechaFinEstimada
-        )}
-        buttonLabel={t.verMiPerfil}
-        onClose={() => router.push("/mi-suscripcion")}
-      />
+      <>
+        <TrialStartTracker value={TRIAL_PLAN.price} />
+        <ApprovedModal
+          title={t.trial.compraAprobadaTitle}
+          message={t.trial.compraAprobadaMessage(
+            success.credits,
+            success.fechaFin ? new Date(success.fechaFin).toLocaleDateString(locale === "en" ? "en-US" : "es-CO", {
+              timeZone: "America/Bogota",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            }) : fechaFinEstimada
+          )}
+          buttonLabel={t.verMiPerfil}
+          onClose={() => router.push("/mi-suscripcion")}
+        />
+      </>
     );
   }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllClasesConFecha } from "@/lib/classes";
 import { getGymBillingInfo } from "@/lib/gyms";
-import { fetchAllReservasDetalle, filterReservationsDetailForClase } from "@/lib/reservations";
+import { fetchAllReservasDetalle } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
 import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail, sendOpsAlertEmail } from "@/lib/email";
 import { reporteQuincenalYaEnviado, marcarReporteQuincenalEnviado } from "@/lib/reportes-quincenales";
@@ -74,22 +74,42 @@ type PeriodoResultado = {
  * como enviado según emailFailed — si algún gimnasio no recibió el suyo,
  * se prefiere reintentar el periodo completo al día siguiente (aunque
  * implique un duplicado para quien ya lo recibió bien) a arriesgarse a que
- * alguien se quede sin el suyo para siempre. */
+ * alguien se quede sin el suyo para siempre.
+ *
+ * Importante: se agrupa por las RESERVAS reales (cada una con su propia
+ * Fecha), no por "Clases". El campo "Horario" de una Clase es solo un
+ * puntero a la PRÓXIMA ocurrencia (las clases son horarios recurrentes que
+ * comparten el mismo registro semana a semana) — compararlo contra
+ * [desde, hasta] descartaba por completo clases cuya próxima ocurrencia
+ * cae después del periodo, perdiendo TODAS sus reservas ya pasadas dentro
+ * del periodo (confirmado en producción: Balance & Body Lab mostraba 2
+ * reservas en vez de 16 para el corte del 14–27 de octubre). Cada reserva
+ * sí trae su fecha real de ocurrencia, así que agrupar por ahí es
+ * confiable sin importar cuántas semanas hayan pasado. */
 async function procesarPeriodo(desde: string, hasta: string, periodo: string): Promise<PeriodoResultado> {
   const clases = await getAllClasesConFecha();
+  const clasesPorId = new Map(clases.map((c) => [c.id, c]));
   const porGimnasio = new Map<string, GymAcumulado>();
   const todasLasReservas = await fetchAllReservasDetalle();
 
-  for (const clase of clases) {
-    if (!clase.fecha || !clase.gimnasioId) continue;
+  const ocurrencias = new Map<string, { claseId: string; fecha: string; reservas: typeof todasLasReservas }>();
+  for (const r of todasLasReservas) {
+    if (!r.fecha || !r.claseId) continue;
+    const fechaBogota = toBogotaDateString(r.fecha);
+    if (fechaBogota < desde || fechaBogota > hasta) continue;
+    const key = `${r.claseId}@${r.fecha}`;
+    const entry = ocurrencias.get(key) ?? { claseId: r.claseId, fecha: r.fecha, reservas: [] };
+    entry.reservas.push(r);
+    ocurrencias.set(key, entry);
+  }
 
-    const fecha = toBogotaDateString(clase.fecha);
-    if (fecha < desde || fecha > hasta) continue;
+  for (const { claseId, fecha: claseFechaISO, reservas } of ocurrencias.values()) {
+    const clase = clasesPorId.get(claseId);
+    if (!clase || !clase.gimnasioId) continue;
 
     const gym = await getGymBillingInfo(clase.gimnasioId);
     if (!gym) continue;
 
-    const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
     const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time");
     if (confirmadas.length === 0) continue;
 
@@ -103,13 +123,13 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
       totalAPagar: 0,
     };
 
-    const fechaCorta = formatFechaCorta(clase.fecha);
+    const fechaCorta = formatFechaCorta(claseFechaISO);
     const porcentajeA = gym.porcentajeTipoA ?? PORCENTAJE_DEFAULT_A;
     const porcentajeB = gym.porcentajeTipoB ?? PORCENTAJE_DEFAULT_B;
 
     // El Tipo A/B es del cupo de la clase entera (ver TipoClase en
-    // classes.ts) -- todas las reservas confirmadas de esta clase caen en
-    // el mismo tipo, no varía persona por persona.
+    // classes.ts) -- todas las reservas confirmadas de esta ocurrencia caen
+    // en el mismo tipo, no varía persona por persona.
     const porcentaje = clase.tipo === "A" ? porcentajeA : clase.tipo === "B" ? porcentajeB : null;
     const valorClase = clase.precio ?? gym.pricePerReservation;
     const totalPorReserva = porcentaje !== null && valorClase !== null ? valorClase * porcentaje : null;

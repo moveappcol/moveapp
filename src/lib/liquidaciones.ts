@@ -47,13 +47,26 @@ const LIQUIDACION_TABLE = "Liquidacion";
  * día (ej. "Reformer Pilates" a las 6am, 8am y 7pm) — identificar una
  * ocurrencia solo por gimnasio+nombre+día las confundiría entre sí. Se le
  * pega la hora exacta al nombre para que cada ocurrencia real tenga su
- * propia llave, sin necesitar agregar una columna nueva en Airtable. */
+ * propia llave, sin necesitar agregar una columna nueva en Airtable.
+ *
+ * El .replace(/\s/g, " ") NO es cosmético — Intl.DateTimeFormat en "es-CO"
+ * a veces separa "a. m."/"p. m." con un espacio normal y a veces con un
+ * NBSP (\xa0), según la versión de ICU del entorno donde corra (Railway vs.
+ * local, por ejemplo). Esta llave es el marcador que decide si una
+ * ocurrencia ya se facturó — si la misma clase produce dos llaves distintas
+ * solo por ese espacio invisible, el sistema cree que son dos ocurrencias
+ * diferentes y duplica el pago al gimnasio (pasó de verdad: ver corrección
+ * del 2026-10-27 en 27 filas de Liquidacion, ~$1.6M duplicados). Normalizar
+ * todo espacio en blanco a un espacio normal hace que la llave sea estable
+ * sin importar el entorno. */
 export function claseKeyForLiquidacion(claseName: string, claseFechaISO: string): string {
   const hora = new Intl.DateTimeFormat("es-CO", {
     timeZone: "America/Bogota",
     hour: "numeric",
     minute: "2-digit",
-  }).format(new Date(claseFechaISO));
+  })
+    .format(new Date(claseFechaISO))
+    .replace(/\s/g, " ");
   return `${claseName} (${hora})`;
 }
 

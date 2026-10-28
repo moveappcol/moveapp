@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { withLock } from "./server-cache";
 import type { PurchaseKind } from "./orders";
@@ -83,6 +84,12 @@ export type Pago = {
    * la app móvil, que no tiene pixel) o el pago es de antes de este campo. */
   fbp: string | null;
   fbc: string | null;
+  /** Token aleatorio que escribe cada intento de claimPagoAprobado — sirve
+   * para desempatar cuando el cobro síncrono y el webhook de Wompi
+   * confirman el mismo pago casi al mismo tiempo (ver esa función). Null
+   * en pagos de antes de este campo, o mientras la columna "ClaimToken"
+   * todavía no exista en Airtable. */
+  claimToken: string | null;
 };
 
 function mapRecordToPago(
@@ -115,6 +122,7 @@ function mapRecordToPago(
     valor: (record.get("Valor") as number) || null,
     fbp: (record.get("Fbp") as string) || null,
     fbc: (record.get("Fbc") as string) || null,
+    claimToken: (record.get("ClaimToken") as string) || null,
   };
 }
 
@@ -202,16 +210,44 @@ export async function findPagoByReferencia(referencia: string): Promise<Pago | n
 /** El cobro síncrono (justo al pagar) y el webhook de Wompi pueden confirmar
  * la MISMA transacción casi al mismo tiempo — cada uno leería el pago
  * todavía en "Pendiente" y los dos acreditarían créditos y activarían la
- * suscripción por separado. Esto serializa: solo quien gana el lock con un
- * pago que de verdad seguía sin aprobar queda a cargo de acreditar y
- * activar/renovar — el otro debe no hacer nada (ver el `credited` que
- * devuelve, o el llamador de este archivo). */
+ * suscripción por separado. withLock serializa esto SOLO dentro de un mismo
+ * proceso de Node — si el cobro síncrono y el webhook caen en procesos
+ * distintos (ej. durante un deploy, con la instancia vieja y la nueva
+ * solapadas unos segundos), cada uno tiene su propio candado en memoria y
+ * los dos pueden leer "Pendiente" y acreditar por separado. Esto fue
+ * exactamente lo que le pasó a Jess Rubio comprando la Prueba UNIQUE
+ * (2026-10-28): un solo cobro real, créditos acreditados dos veces.
+ *
+ * Por eso, además del candado (que sigue sirviendo para no hacer trabajo
+ * duplicado dentro de un mismo proceso), se usa Airtable mismo como árbitro
+ * entre procesos: cada intento escribe su propio ClaimToken aleatorio (no
+ * se puede usar transaccionId para desempatar — las dos llamadas traen el
+ * MISMO id de Wompi) y luego relee el registro. Si lo que quedó guardado es
+ * el token que esta llamada acaba de escribir, esta llamada ganó la
+ * carrera; si quedó el token de la otra llamada (que escribió después),
+ * esta perdió y no debe acreditar nada. */
 export async function claimPagoAprobado(referencia: string, transaccionId: string): Promise<boolean> {
   return withLock(`pago:${referencia}`, async () => {
     const fresh = await findPagoByReferencia(referencia);
     if (!fresh || fresh.estado === "Aprobado") return false;
-    await updatePagoEstado(fresh.id, "Aprobado", transaccionId);
-    return true;
+
+    const base = getAirtableBase();
+    const claimToken = crypto.randomUUID();
+    try {
+      await base(PAGOS_TABLE).update(
+        [{ id: fresh.id, fields: { Estado: "Aprobado", TransaccionId: transaccionId, ClaimToken: claimToken } }],
+        { typecast: true }
+      );
+    } catch {
+      // La columna "ClaimToken" todavía no existe en Airtable — se sigue
+      // aprobando igual que antes (sin el desempate entre procesos)
+      // mientras se crea esa columna, en vez de romper la confirmación de
+      // pagos reales.
+      await updatePagoEstado(fresh.id, "Aprobado", transaccionId);
+      return true;
+    }
+    const after = await findPagoByReferencia(referencia);
+    return after?.claimToken === claimToken;
   });
 }
 

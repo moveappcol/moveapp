@@ -15,6 +15,7 @@ import {
   upsertSubscription,
   markSubscriptionRenewed,
   cancelSubscription,
+  trackPruebaSubscription,
 } from "@/lib/subscriptions";
 import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
 import { sendOpsAlertEmail, sendGiftPurchaseEmail } from "@/lib/email";
@@ -187,7 +188,7 @@ export async function POST(req: NextRequest) {
   // patrón de "mejor esfuerzo" que ya se decidió para TarjetaHash.
   if (pago.tipo === "prueba" && !(await getPruebaByPagoId(pago.id))) {
     const persona = await getUserCreditsByEmail(pago.correo);
-    await crearPrueba({
+    const prueba = await crearPrueba({
       correo: pago.correo,
       telefono: persona?.telefono ?? null,
       tarjetaHash: null,
@@ -198,6 +199,11 @@ export async function POST(req: NextRequest) {
       aceptacionTexto: TEXTO_ACEPTACION_PRUEBA,
       aceptacionIp: null,
       aceptacionUserAgent: null,
+    });
+    await trackPruebaSubscription({
+      correo: pago.correo,
+      paymentSourceId: pago.paymentSourceId ?? 0,
+      fechaFin: prueba.fechaFin,
     });
   }
 

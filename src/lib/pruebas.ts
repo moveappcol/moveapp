@@ -2,6 +2,7 @@ import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { withLock } from "./server-cache";
 import { deductCreditsByEmail } from "./users";
 import { TRIAL_DURATION_DAYS } from "./credits-pricing";
+import { setPruebaSubscriptionEstado } from "./subscriptions";
 
 /**
  * Esquema en Airtable — tabla "Pruebas" (una fila por Prueba UNIQUE de 1
@@ -236,6 +237,7 @@ export async function cancelarPrueba(correo: string): Promise<boolean> {
     await base(PRUEBAS_TABLE).update([{ id: prueba.id, fields: { Estado: "Cancelada" } }], {
       typecast: true,
     });
+    await setPruebaSubscriptionEstado(correo, "Cancelada");
     return true;
   });
 }
@@ -252,6 +254,7 @@ export async function reactivarPrueba(correo: string): Promise<boolean> {
     await base(PRUEBAS_TABLE).update([{ id: prueba.id, fields: { Estado: "Activa" } }], {
       typecast: true,
     });
+    await setPruebaSubscriptionEstado(correo, "Prueba");
     return true;
   });
 }
@@ -305,6 +308,7 @@ export async function marcarCobroFallidoDefinitivo(prueba: Prueba, motivo: strin
     { typecast: true }
   );
   await deductCreditsByEmail(prueba.correo, prueba.creditosOtorgados);
+  await setPruebaSubscriptionEstado(prueba.correo, "Pago fallido");
 }
 
 /** Primer cobro fallido — programa el reintento a las 24h, sin tocar

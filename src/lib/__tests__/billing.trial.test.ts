@@ -29,13 +29,13 @@ vi.mock("@/lib/regalos", () => ({ crearRegalo: vi.fn() }));
 vi.mock("@/lib/pruebas", () => ({
   crearPrueba: vi.fn().mockResolvedValue({ id: "p1", fechaFin: "2026-11-01T00:00:00.000Z" }),
 }));
-vi.mock("@/lib/subscriptions", () => ({ upsertSubscription: vi.fn() }));
+vi.mock("@/lib/subscriptions", () => ({ upsertSubscription: vi.fn(), trackPruebaSubscription: vi.fn() }));
 
 import { chargeWithPaymentSource } from "@/lib/wompi";
 import { claimPagoAprobado } from "@/lib/pagos";
 import { addCreditsByEmail, deductCreditsByEmail } from "@/lib/users";
 import { procesarReferido } from "@/lib/referidos";
-import { upsertSubscription } from "@/lib/subscriptions";
+import { upsertSubscription, trackPruebaSubscription } from "@/lib/subscriptions";
 import { crearPrueba } from "@/lib/pruebas";
 import { chargeTrial, convertirPruebaAStarter } from "@/lib/billing";
 import type { Prueba } from "@/lib/pruebas";
@@ -89,6 +89,12 @@ describe("chargeTrial", () => {
     expect(crearPrueba).toHaveBeenCalledWith(
       expect.objectContaining({ correo: "ana@test.com", creditos: 16 })
     );
+    // Queda visible en "Suscripciones" (Estado "Prueba") para seguimiento,
+    // sin tocar upsertSubscription (eso solo pasa al convertir a Starter).
+    expect(trackPruebaSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ correo: "ana@test.com", paymentSourceId: 42 })
+    );
+    expect(upsertSubscription).not.toHaveBeenCalled();
   });
 });
 

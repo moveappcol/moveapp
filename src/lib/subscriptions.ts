@@ -1,5 +1,6 @@
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { withLock } from "./server-cache";
+import { TRIAL_PLAN } from "./credits-pricing";
 
 /**
  * Esquema en Airtable — tabla "Suscripciones" (una fila por persona con
@@ -14,7 +15,7 @@ import { withLock } from "./server-cache";
  */
 const SUSCRIPCIONES_TABLE = "Suscripciones";
 
-export type SubscriptionEstado = "Activa" | "Cancelada" | "Pago fallido";
+export type SubscriptionEstado = "Activa" | "Cancelada" | "Pago fallido" | "Prueba";
 
 export type Subscription = {
   id: string;
@@ -156,4 +157,51 @@ export async function markSubscriptionFailed(subId: string): Promise<void> {
     [{ id: subId, fields: { Estado: "Pago fallido" } }],
     { typecast: true }
   );
+}
+
+/** Crea (o reutiliza) en "Suscripciones" el renglón de seguimiento de una
+ * Prueba UNIQUE recién comprada, con Estado "Prueba" — nunca "Activa", así
+ * que getDueActiveSubscriptions() jamás la toma y el cron de cobro mensual
+ * no la ve. Solo es para que quede visible en la misma tabla para
+ * seguimiento; cuando la prueba convierte a Starter, convertirPruebaAStarter
+ * (billing.ts) pisa esta misma fila con upsertSubscription normal
+ * (Estado "Activa"). */
+export async function trackPruebaSubscription(params: {
+  correo: string;
+  paymentSourceId: number;
+  fechaFin: string;
+}): Promise<void> {
+  await withLock(`suscripcion:${params.correo.toLowerCase()}`, async () => {
+    const base = getAirtableBase();
+    const existing = await getSubscriptionByEmail(params.correo);
+    const fields = {
+      Correo: params.correo,
+      Plan: TRIAL_PLAN.id,
+      WompiPaymentSourceId: String(params.paymentSourceId),
+      Estado: "Prueba",
+      ProximoCobro: params.fechaFin,
+      PlanSiguiente: "",
+    };
+    if (existing) {
+      await base(SUSCRIPCIONES_TABLE).update([{ id: existing.id, fields }], { typecast: true });
+    } else {
+      await base(SUSCRIPCIONES_TABLE).create([{ fields }], { typecast: true });
+    }
+  });
+}
+
+/** Mueve el Estado del renglón de seguimiento de una prueba (cancelación,
+ * reactivación, cobro fallido definitivo) — nunca toca un renglón que no
+ * sea de una prueba (Plan != TRIAL_PLAN.id), para no arriesgarse a pisar
+ * por error la suscripción real de otra persona. */
+export async function setPruebaSubscriptionEstado(
+  correo: string,
+  estado: "Prueba" | "Cancelada" | "Pago fallido"
+): Promise<void> {
+  const base = getAirtableBase();
+  const existing = await getSubscriptionByEmail(correo);
+  if (!existing || existing.plan !== TRIAL_PLAN.id) return;
+  await base(SUSCRIPCIONES_TABLE).update([{ id: existing.id, fields: { Estado: estado } }], {
+    typecast: true,
+  });
 }

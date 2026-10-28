@@ -5,8 +5,10 @@ vi.mock("@/lib/airtable", () => ({
   getAirtableBase: vi.fn(),
   escapeFormulaValue: (v: string) => v,
 }));
+vi.mock("@/lib/subscriptions", () => ({ setPruebaSubscriptionEstado: vi.fn() }));
 
 import { getAirtableBase } from "@/lib/airtable";
+import { setPruebaSubscriptionEstado } from "@/lib/subscriptions";
 import {
   esElegibleParaPrueba,
   getDuePruebas,
@@ -78,6 +80,7 @@ describe("cancelarPrueba / reactivarPrueba", () => {
       [{ id: "p1", fields: { Estado: "Cancelada" } }],
       expect.anything()
     );
+    expect(setPruebaSubscriptionEstado).toHaveBeenCalledWith("ana@test.com", "Cancelada");
   });
 
   it("no cancela una prueba que ya venció", async () => {
@@ -110,6 +113,7 @@ describe("cancelarPrueba / reactivarPrueba", () => {
       [{ id: "p1", fields: { Estado: "Activa" } }],
       expect.anything()
     );
+    expect(setPruebaSubscriptionEstado).toHaveBeenCalledWith("ana@test.com", "Prueba");
   });
 });
 

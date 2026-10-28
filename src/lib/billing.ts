@@ -16,7 +16,7 @@ import { sendOpsAlertEmail, sendInvoiceEmail, sendGiftPurchaseEmail } from "./em
 import { procesarReferido } from "./referidos";
 import { crearRegalo } from "./regalos";
 import { crearPrueba, type Prueba } from "./pruebas";
-import { upsertSubscription } from "./subscriptions";
+import { upsertSubscription, trackPruebaSubscription } from "./subscriptions";
 import { TRIAL_PLAN } from "./credits-pricing";
 
 const STARTER_PLAN_ID = "plan-starter";
@@ -402,6 +402,11 @@ export async function chargeTrial(params: {
       aceptacionUserAgent: params.aceptacionUserAgent,
     });
     fechaFin = prueba.fechaFin;
+    await trackPruebaSubscription({
+      correo: params.correo,
+      paymentSourceId: params.paymentSourceId,
+      fechaFin: prueba.fechaFin,
+    });
     await facturarCompra({
       correo: params.correo,
       sku: item.id,

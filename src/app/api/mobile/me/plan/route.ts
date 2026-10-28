@@ -12,11 +12,15 @@ export async function GET() {
   }
 
   const subscription = await getSubscriptionByEmail(user.email);
-  if (!subscription) {
+  const plan = subscription ? (CREDIT_PLANS.find((p) => p.id === subscription.plan) ?? null) : null;
+  // Una prueba activa también vive en "Suscripciones" (Estado "Prueba",
+  // solo para seguimiento interno en Airtable — ver trackPruebaSubscription
+  // en subscriptions.ts), pero su plan no está en CREDIT_PLANS: esta
+  // pantalla es "mi plan mensual", así que se trata igual que no tener
+  // suscripción. El estado de la prueba en sí se muestra aparte.
+  if (!subscription || !plan) {
     return NextResponse.json({ hasSubscription: false });
   }
-
-  const plan = CREDIT_PLANS.find((p) => p.id === subscription.plan) ?? null;
   const planSiguiente = subscription.planSiguiente
     ? (CREDIT_PLANS.find((p) => p.id === subscription.planSiguiente) ?? null)
     : null;

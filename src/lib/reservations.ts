@@ -212,48 +212,49 @@ function bogotaCalendarMonthRange(aroundISO: string): { start: Date; end: Date }
 }
 
 /** Rango [inicio, fin) de "un mes" para contar el límite de reservas por
- * gimnasio — para quien tiene un plan mensual real (Suscripcion con Estado
- * "Activa"), es su propio ciclo de facturación (ej. si cobra cada 27, el
- * período corre de 27 a 27, NO de 1 a 1 como el mes calendario: si su plan
- * es del 27 al 27, el 28 ya puede volver a reservar sin esperar al próximo
- * mes calendario). Para quien no tiene un plan mensual real (prueba o
- * créditos sueltos, sin ciclo propio), se sigue usando el mes calendario en
- * hora de Bogotá, como antes. */
-async function reservationPeriodRange(
-  userEmail: string,
+ * gimnasio — el ciclo real de SUS créditos, no el mes calendario ni
+ * específicamente el de un plan. Se ancla en Vencimiento (users.ts), que
+ * addCreditsByEmail siempre pone a 1 mes exacto desde el momento en que de
+ * verdad se le dan créditos "reales": el cobro mensual de un plan, canjear
+ * un regalo, o comprar créditos sueltos — las tres formas usan el mismo
+ * oneMonthFrom, así que Vencimiento ya es el ancla correcta sin tener que
+ * distinguir de dónde vinieron. Así, si su plan era hasta el 28 de octubre
+ * y después canjeó un regalo, su ciclo ya no sigue contando desde el plan
+ * vencido — arranca de nuevo desde el canje del regalo. Solo cae al mes
+ * calendario (en hora de Bogotá) si nunca ha tenido Vencimiento (ej. solo
+ * ha usado la Prueba, que no lo extiende a propósito — ver chargeTrial en
+ * billing.ts). */
+function reservationPeriodRange(
+  vencimientoISO: string | null,
   aroundISO: string
-): Promise<{ start: Date; end: Date }> {
-  const subscription = await getSubscriptionByEmail(userEmail);
-  if (subscription?.estado === "Activa" && subscription.proximoCobro) {
-    const around = new Date(aroundISO).getTime();
-    let end = new Date(subscription.proximoCobro);
-    let start = new Date(end);
-    // setUTCMonth (no setMonth) a propósito: setMonth usa la zona horaria
-    // LOCAL del proceso, que en producción puede no ser UTC ni Bogotá —
-    // esto tiene que dar el mismo resultado sin importar en qué TZ corra
-    // el servidor.
-    start.setUTCMonth(start.getUTCMonth() - 1);
-    // ProximoCobro es el PRÓXIMO cobro, no siempre el borde más cercano a
-    // `aroundISO` — puede estar un poco vencido (el cron de renovación
-    // corre una vez al día) o la clase que se reserva puede caer en un
-    // período futuro o pasado. Se ajusta de a un mes hasta encontrar el
-    // período que de verdad contiene `aroundISO`, con un tope para nunca
-    // quedar en un ciclo infinito si algo viniera mal.
-    for (let i = 0; i < 24 && (around < start.getTime() || around >= end.getTime()); i++) {
-      if (around < start.getTime()) {
-        end = start;
-        start = new Date(end);
-        start.setUTCMonth(start.getUTCMonth() - 1);
-      } else {
-        start = end;
-        end = new Date(start);
-        end.setUTCMonth(end.getUTCMonth() + 1);
-      }
-    }
-    return { start, end };
-  }
+): { start: Date; end: Date } {
+  if (!vencimientoISO) return bogotaCalendarMonthRange(aroundISO);
 
-  return bogotaCalendarMonthRange(aroundISO);
+  const around = new Date(aroundISO).getTime();
+  let end = new Date(vencimientoISO);
+  let start = new Date(end);
+  // setUTCMonth (no setMonth) a propósito: setMonth usa la zona horaria
+  // LOCAL del proceso, que en producción puede no ser UTC ni Bogotá — esto
+  // tiene que dar el mismo resultado sin importar en qué TZ corra el
+  // servidor.
+  start.setUTCMonth(start.getUTCMonth() - 1);
+  // Vencimiento puede estar un poco vencido (si el próximo cobro/canje
+  // todavía no pasó) o la clase que se reserva puede caer en un período
+  // futuro o pasado. Se ajusta de a un mes hasta encontrar el período que
+  // de verdad contiene `aroundISO`, con un tope para nunca quedar en un
+  // ciclo infinito si algo viniera mal.
+  for (let i = 0; i < 24 && (around < start.getTime() || around >= end.getTime()); i++) {
+    if (around < start.getTime()) {
+      end = start;
+      start = new Date(end);
+      start.setUTCMonth(start.getUTCMonth() - 1);
+    } else {
+      start = end;
+      end = new Date(start);
+      end.setUTCMonth(end.getUTCMonth() + 1);
+    }
+  }
+  return { start, end };
 }
 
 /** Cuántas reservas tiene esta persona en este gimnasio, en el período de
@@ -394,7 +395,7 @@ export async function createReservation(params: ReservationParams): Promise<Book
     }
   }
 
-  const period = await reservationPeriodRange(userEmail, fechaISO);
+  const period = reservationPeriodRange(account.vencimiento, fechaISO);
   const monthlyCount = await countMonthlyReservationsAtGym(userName, gimnasioId, period);
   if (monthlyCount >= MAX_MONTHLY_RESERVATIONS_PER_GYM) {
     return {

@@ -198,25 +198,83 @@ function toBogotaMonthKey(iso: string): string {
   return `${year}-${month}`;
 }
 
-/** Cuántas reservas tiene esta persona en este gimnasio, en el mes de la
- * clase que quiere reservar — sin contar las que canceló a tiempo (esas no
- * le "cuentan" un cupo). Se filtra en JS por el mismo motivo que en otros
- * lugares del código: no es confiable filtrar por fecha/link en una fórmula
- * de Airtable. */
+// Colombia no usa horario de verano — Bogotá es UTC-5 todo el año, así que
+// este offset fijo sí es seguro (no como asumir un offset fijo en zonas
+// horarias con DST).
+const BOGOTA_UTC_OFFSET_HOURS = 5;
+
+function bogotaCalendarMonthRange(aroundISO: string): { start: Date; end: Date } {
+  const [year, month] = toBogotaMonthKey(aroundISO).split("-").map(Number);
+  return {
+    start: new Date(Date.UTC(year, month - 1, 1, BOGOTA_UTC_OFFSET_HOURS, 0, 0)),
+    end: new Date(Date.UTC(year, month, 1, BOGOTA_UTC_OFFSET_HOURS, 0, 0)),
+  };
+}
+
+/** Rango [inicio, fin) de "un mes" para contar el límite de reservas por
+ * gimnasio — para quien tiene un plan mensual real (Suscripcion con Estado
+ * "Activa"), es su propio ciclo de facturación (ej. si cobra cada 27, el
+ * período corre de 27 a 27, NO de 1 a 1 como el mes calendario: si su plan
+ * es del 27 al 27, el 28 ya puede volver a reservar sin esperar al próximo
+ * mes calendario). Para quien no tiene un plan mensual real (prueba o
+ * créditos sueltos, sin ciclo propio), se sigue usando el mes calendario en
+ * hora de Bogotá, como antes. */
+async function reservationPeriodRange(
+  userEmail: string,
+  aroundISO: string
+): Promise<{ start: Date; end: Date }> {
+  const subscription = await getSubscriptionByEmail(userEmail);
+  if (subscription?.estado === "Activa" && subscription.proximoCobro) {
+    const around = new Date(aroundISO).getTime();
+    let end = new Date(subscription.proximoCobro);
+    let start = new Date(end);
+    // setUTCMonth (no setMonth) a propósito: setMonth usa la zona horaria
+    // LOCAL del proceso, que en producción puede no ser UTC ni Bogotá —
+    // esto tiene que dar el mismo resultado sin importar en qué TZ corra
+    // el servidor.
+    start.setUTCMonth(start.getUTCMonth() - 1);
+    // ProximoCobro es el PRÓXIMO cobro, no siempre el borde más cercano a
+    // `aroundISO` — puede estar un poco vencido (el cron de renovación
+    // corre una vez al día) o la clase que se reserva puede caer en un
+    // período futuro o pasado. Se ajusta de a un mes hasta encontrar el
+    // período que de verdad contiene `aroundISO`, con un tope para nunca
+    // quedar en un ciclo infinito si algo viniera mal.
+    for (let i = 0; i < 24 && (around < start.getTime() || around >= end.getTime()); i++) {
+      if (around < start.getTime()) {
+        end = start;
+        start = new Date(end);
+        start.setUTCMonth(start.getUTCMonth() - 1);
+      } else {
+        start = end;
+        end = new Date(start);
+        end.setUTCMonth(end.getUTCMonth() + 1);
+      }
+    }
+    return { start, end };
+  }
+
+  return bogotaCalendarMonthRange(aroundISO);
+}
+
+/** Cuántas reservas tiene esta persona en este gimnasio, en el período de
+ * reservas vigente para ella (ver reservationPeriodRange) — sin contar las
+ * que canceló a tiempo (esas no le "cuentan" un cupo). Se filtra en JS por
+ * el mismo motivo que en otros lugares del código: no es confiable filtrar
+ * por fecha/link en una fórmula de Airtable. */
 /** Antes traía TODA la tabla Reservas (select().all() sin filtro) cada vez
  * que CUALQUIER persona intentaba reservar CUALQUIER clase — con la tabla
  * creciendo eso se volvió una de las causas principales de que la cuenta
  * de Airtable se pasara del límite mensual de llamadas (aparte del límite
  * aparte de 5 llamadas/segundo por base, que también se dispara más fácil
  * mientras más llamadas caras como esta hace la app). Ahora Airtable filtra
- * por Usuario+Estado del lado del servidor — el resto (gimnasio, mes) se
- * sigue filtrando en JS porque ARRAYJOIN sobre el campo de link concatena
- * el NOMBRE del gimnasio vinculado, no su id, así que no se puede filtrar
- * por gimnasioId directo en la fórmula. */
+ * por Usuario+Estado del lado del servidor — el resto (gimnasio, período)
+ * se sigue filtrando en JS porque ARRAYJOIN sobre el campo de link
+ * concatena el NOMBRE del gimnasio vinculado, no su id, así que no se puede
+ * filtrar por gimnasioId directo en la fórmula. */
 async function countMonthlyReservationsAtGym(
   userName: string,
   gimnasioId: string,
-  monthKey: string
+  period: { start: Date; end: Date }
 ): Promise<number> {
   const base = getAirtableBase();
   const records = await base("Reservas")
@@ -233,7 +291,9 @@ async function countMonthlyReservationsAtGym(
     if (!gimnasios?.includes(gimnasioId)) return false;
 
     const fecha = r.get("Fecha") as string | undefined;
-    if (!fecha || toBogotaMonthKey(fecha) !== monthKey) return false;
+    if (!fecha) return false;
+    const fechaMs = new Date(fecha).getTime();
+    if (fechaMs < period.start.getTime() || fechaMs >= period.end.getTime()) return false;
 
     return true;
   }).length;
@@ -334,11 +394,8 @@ export async function createReservation(params: ReservationParams): Promise<Book
     }
   }
 
-  const monthlyCount = await countMonthlyReservationsAtGym(
-    userName,
-    gimnasioId,
-    toBogotaMonthKey(fechaISO)
-  );
+  const period = await reservationPeriodRange(userEmail, fechaISO);
+  const monthlyCount = await countMonthlyReservationsAtGym(userName, gimnasioId, period);
   if (monthlyCount >= MAX_MONTHLY_RESERVATIONS_PER_GYM) {
     return {
       ok: false,

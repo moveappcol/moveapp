@@ -279,6 +279,14 @@ function ClaseCard({
                     {t.completarPerfil}
                   </Link>
                 )}
+                {bookState && !bookState.ok && bookState.code === "experiencia_requiere_plan" && (
+                  <Link
+                    href="/mi-suscripcion"
+                    className="w-full font-heading text-sm font-semibold text-move-coral hover:underline"
+                  >
+                    {t.verPlanes}
+                  </Link>
+                )}
               </form>
               {showConfirmBeforeBook && (
                 <ConfirmBeforeBookModal

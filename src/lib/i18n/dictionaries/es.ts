@@ -197,6 +197,7 @@ export const es = {
     reservando: "Reservando…",
     reservar: "Reservar",
     completarPerfil: "Completar perfil",
+    verPlanes: "Ver planes",
     molestiasLabel: "¿Algún dolor o molestia que quieras que el gimnasio tenga en cuenta? (opcional)",
     molestiasPlaceholder: "Ej: dolor de rodilla, embarazo, lesión reciente…",
     confirmarReservaTitulo: "¿Quieres confirmar tu reserva?",

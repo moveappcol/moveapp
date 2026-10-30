@@ -328,8 +328,7 @@ export async function createReservation(params: ReservationParams): Promise<Book
     if (pruebaActiva || subscription?.estado !== "Activa") {
       return {
         ok: false,
-        error:
-          "Las Experiencias son solo para quienes tienen un plan mensual activo — con la prueba o créditos sueltos puedes reservar clases regulares.",
+        error: "El plan que tienes no te permite reservar esta experiencia. Accede a uno de nuestros planes para poder hacerlo.",
         code: "experiencia_requiere_plan",
       };
     }

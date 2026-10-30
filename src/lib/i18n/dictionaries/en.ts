@@ -193,6 +193,7 @@ export const en: Dictionary = {
     reservando: "Booking…",
     reservar: "Book",
     completarPerfil: "Complete profile",
+    verPlanes: "View plans",
     molestiasLabel: "Any pain or discomfort you'd like the gym to know about? (optional)",
     molestiasPlaceholder: "E.g. knee pain, pregnancy, recent injury…",
     confirmarReservaTitulo: "Confirm your booking?",

@@ -6,10 +6,13 @@ import {
   getGymBillingInfo,
   getGyms,
   canAccessGymByGenero,
+  esGimnasioDeExperiencias,
   DEFAULT_BOOKING_CUTOFF_MINUTES,
   reservationsAreOpen,
   reservationsOpenLabel,
 } from "./gyms";
+import { getPruebaActivaByEmail } from "./pruebas";
+import { getSubscriptionByEmail } from "./subscriptions";
 import {
   sendLowRatingAlertEmail,
   sendNewReservationEmail,
@@ -27,7 +30,11 @@ const LOW_RATING_THRESHOLD = 3;
 
 export type BookingResult =
   | { ok: true; reservationId: string; remainingCredits: number }
-  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" };
+  | {
+      ok: false;
+      error: string;
+      code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" | "experiencia_requiere_plan";
+    };
 
 export type CancelResult =
   | { ok: true; refunded: boolean }
@@ -302,6 +309,30 @@ export async function createReservation(params: ReservationParams): Promise<Book
       ok: false,
       error: "Este gimnasio no está disponible para tu perfil.",
     };
+  }
+
+  // Las Experiencias (eventos especiales, cupos limitados — ver
+  // esGimnasioDeExperiencias en gyms.ts) son solo para quien ya es
+  // suscriptor real de un plan mensual: con la Prueba UNIQUE o créditos
+  // sueltos solo se pueden reservar clases regulares. No hay un campo que
+  // marque "estos créditos vienen de sueltos" (es un solo saldo
+  // compartido, ver users.ts) — se infiere por descarte: si no tiene una
+  // Suscripcion con Estado "Activa" (y no es porque está en plena Prueba,
+  // que igual queda bloqueada), sus créditos son de sueltos o de un plan
+  // ya vencido/cancelado.
+  if (gym && esGimnasioDeExperiencias(gym.name)) {
+    const [pruebaActiva, subscription] = await Promise.all([
+      getPruebaActivaByEmail(userEmail),
+      getSubscriptionByEmail(userEmail),
+    ]);
+    if (pruebaActiva || subscription?.estado !== "Activa") {
+      return {
+        ok: false,
+        error:
+          "Las Experiencias son solo para quienes tienen un plan mensual activo — con la prueba o créditos sueltos puedes reservar clases regulares.",
+        code: "experiencia_requiere_plan",
+      };
+    }
   }
 
   const monthlyCount = await countMonthlyReservationsAtGym(

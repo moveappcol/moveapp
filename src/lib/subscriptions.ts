@@ -72,6 +72,13 @@ export async function upsertSubscription(params: {
   /** Ver Cupon.inicioDiferido — si se pasa, el próximo cobro se calcula un
    * mes después de esta fecha en vez de un mes después de hoy. */
   fechaInicio?: string;
+  /** "Activa" por defecto (suscripción real que cobra sola). Un regalo de
+   * plan canjeado (ver canjearRegalo en regalos.ts) pasa "Cancelada" acá —
+   * la persona sí pagó un mes real del plan, así que debe quedar visible en
+   * Suscripciones para seguimiento, pero NUNCA debe cobrarse solo al mes
+   * siguiente (nadie dejó tarjeta guardada para eso, y no fue lo que
+   * compró) — "Cancelada" la deja fuera de getDueActiveSubscriptions. */
+  estado?: SubscriptionEstado;
 }): Promise<void> {
   await withLock(`suscripcion:${params.correo.toLowerCase()}`, async () => {
     const base = getAirtableBase();
@@ -81,7 +88,7 @@ export async function upsertSubscription(params: {
       Correo: params.correo,
       Plan: params.plan,
       WompiPaymentSourceId: String(params.paymentSourceId),
-      Estado: "Activa",
+      Estado: params.estado ?? "Activa",
       ProximoCobro: proximoCobro,
       PlanSiguiente: "",
     };

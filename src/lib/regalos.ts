@@ -4,6 +4,7 @@ import { withLock } from "./server-cache";
 import { addCreditsByEmail } from "./users";
 import { findCatalogItem } from "./orders";
 import { validateCoupon, redeemFreeCouponForEmail } from "./cupones";
+import { getSubscriptionByEmail, upsertSubscription } from "./subscriptions";
 
 /**
  * Esquema en Airtable — tabla "Regalos" (un plan comprado como regalo,
@@ -180,10 +181,27 @@ export async function canjearRegalo(codigo: string, correoDestino: string): Prom
     );
 
     // extendVencimiento: true, sin fechaBase — vencimiento a 1 mes desde
-    // hoy, igual que cualquier plan que empieza a correr ahora. NO toca la
-    // tabla "Suscripciones": un regalo es un crédito único, no una
-    // suscripción recurrente (así se decidió a propósito).
+    // hoy, igual que cualquier plan que empieza a correr ahora.
     await addCreditsByEmail(correoDestino, plan.credits, true);
+
+    // Esta persona sí pagó un mes real de un plan (a diferencia de un
+    // cupón de créditos gratis, que regala UNIQUE sin cobro) — por eso
+    // queda visible en Suscripciones para seguimiento, con Estado
+    // "Cancelada" (nunca "Activa": nadie dejó tarjeta guardada al comprar
+    // el regalo, así que jamás se le puede cobrar el mes siguiente, y
+    // tampoco fue lo que compró quien lo regaló). Si la persona YA tiene
+    // una Suscripcion real "Activa" (compró su propio plan aparte y
+    // además canjeó este regalo), no se toca esa fila — redimir un regalo
+    // nunca debe pisar/cancelar un plan real que sigue cobrando solo.
+    const existingSub = await getSubscriptionByEmail(correoDestino);
+    if (!existingSub || existingSub.estado !== "Activa") {
+      await upsertSubscription({
+        correo: correoDestino,
+        plan: regalo.planId,
+        paymentSourceId: 0,
+        estado: "Cancelada",
+      });
+    }
 
     return { ok: true, credits: plan.credits };
   });

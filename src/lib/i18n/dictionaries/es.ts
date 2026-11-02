@@ -298,6 +298,11 @@ export const es = {
         refunded ? "Cancelada — créditos devueltos." : "Cancelada, sin devolución (menos de 24h).",
       cancelando: "Cancelando…",
       cancelarReserva: "Cancelar reserva",
+      cancelarTardeTitulo: "¿Seguro que quieres cancelar?",
+      cancelarTardeTexto:
+        "Por ser menos de 24 horas antes de la clase, no se te devuelven los créditos.",
+      noCancelar: "No cancelar",
+      siCancelar: "Sí, cancelar",
     },
     rate: {
       gracias: "¡Gracias por calificar la clase!",

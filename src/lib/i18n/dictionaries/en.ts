@@ -294,6 +294,10 @@ export const en: Dictionary = {
         refunded ? "Cancelled — credits refunded." : "Cancelled, no refund (less than 24h).",
       cancelando: "Cancelling…",
       cancelarReserva: "Cancel booking",
+      cancelarTardeTitulo: "Are you sure you want to cancel?",
+      cancelarTardeTexto: "Since it's less than 24 hours before the class, your credits won't be refunded.",
+      noCancelar: "Don't cancel",
+      siCancelar: "Yes, cancel",
     },
     rate: {
       gracias: "Thanks for rating the class!",

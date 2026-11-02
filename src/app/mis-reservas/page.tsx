@@ -86,7 +86,16 @@ export default async function MisReservasPage() {
                   </p>
                 </div>
                 {puedeCancelar(r) && (
-                  <CancelReservationButton reservationId={r.id} locale={locale} />
+                  // fechaISO es la Fecha de la RESERVA (no de la Clase) a
+                  // propósito — es exactamente lo que lee cancelReservation
+                  // del lado del servidor para decidir si hay devolución,
+                  // así nunca puede desincronizarse de la clase (que es
+                  // solo un puntero a su próxima ocurrencia).
+                  <CancelReservationButton
+                    reservationId={r.id}
+                    fechaISO={r.fecha}
+                    locale={locale}
+                  />
                 )}
               </div>
 

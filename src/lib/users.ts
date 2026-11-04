@@ -42,7 +42,7 @@ export type UserCredits = {
  *   - "Perfil completo"               (casilla — true cuando ya llenó todo el formulario)
  *   - Género                          (selección: ver GENEROS en lib/documento.ts — usada para
  *      filtrar gimnasios "solo_mujeres"/"solo_hombres" en la grilla)
- *   - PushToken                       (texto — token de notificaciones push de Expo, se guarda
+ *   - Pushtoken                       (texto — token de notificaciones push de Expo, se guarda
  *      cuando la persona inicia sesión en la app móvil; null/vacío en la web)
  *   - TrackingConsent                 (texto — "denied" solo si denegó el permiso de App Tracking
  *      Transparency en la app; cualquier otro valor o vacío = se asume permitido. Es texto y no
@@ -78,7 +78,7 @@ export async function getUserCreditsByEmail(email: string): Promise<UserCredits 
     tratamientoDatosAceptado: Boolean(record.get("Tratamiento de datos aceptado")),
     marketingAceptado: Boolean(record.get(" Marketing aceptado")),
     perfilCompleto: Boolean(record.get("Perfil completo")),
-    pushToken: (record.get("PushToken") as string) || null,
+    pushToken: (record.get("Pushtoken") as string) || null,
     trackingConsent: (record.get("TrackingConsent") as string) !== "denied",
   };
 }
@@ -116,7 +116,7 @@ export async function saveTrackingConsent(email: string, granted: boolean): Prom
  * Crea el registro en "usuarios" si todavía no existe (puede pasar antes
  * de completar el perfil). */
 export async function savePushToken(email: string, token: string | null): Promise<void> {
-  await upsertUsuarioPorCorreo(email, { PushToken: token ?? "" });
+  await upsertUsuarioPorCorreo(email, { Pushtoken: token ?? "" });
 }
 
 /** Borra la cuenta de la persona: elimina su registro de "usuarios" en

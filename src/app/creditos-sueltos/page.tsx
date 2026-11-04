@@ -8,9 +8,10 @@ import { getLocale } from "@/lib/i18n/locale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /** Compra de créditos sueltos, sin plan — para quien solo quiere probar una
- * clase o experiencia puntual (ver chargeCreditosSueltos en billing.ts).
- * A diferencia de /comprar-creditos/[topupId], no exige ninguna suscripción
- * activa. */
+ * clase puntual (ver chargeCreditosSueltos en billing.ts). A diferencia de
+ * /comprar-creditos/[topupId], no exige ninguna suscripción activa. No
+ * sirven para reservar Experiencias (ver esGimnasioDeExperiencias en
+ * reservations.ts, que exige una Suscripcion Activa real). */
 export default async function CreditosSueltosPage() {
   const { userId } = await auth();
   if (!userId) redirect("/iniciar-sesion");
@@ -26,6 +27,7 @@ export default async function CreditosSueltosPage() {
       <p className="mt-2 font-body text-sm text-move-green/70">
         {t.creditosSueltos.subtitle(formatCOP(PRECIO_CREDITO_SUELTO), MINIMO_CREDITOS_SUELTOS)}
       </p>
+      <p className="mt-1 font-body text-xs text-move-green/50">{t.creditosSueltos.noExperiencias}</p>
 
       <div className="mt-8">
         <BuyCreditosSueltosForm

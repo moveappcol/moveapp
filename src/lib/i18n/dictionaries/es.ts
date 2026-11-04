@@ -114,6 +114,7 @@ export const es = {
       creditosSueltosTitle: "¿Solo quieres probar algo puntual?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Compra créditos sueltos a ${precioPorCredito} cada uno (mínimo ${minimo}), sin necesidad de plan. Vencen al mes de comprarlos.`,
+      creditosSueltosNoExperiencias: "Solo sirven para clases regulares, no para Experiencias.",
       creditosSueltosCta: "Comprar créditos sueltos",
       disclaimer: "Puedes cancelar las clases hasta 24h antes sin costo. Para promover la diversidad de la red, puedes acceder a cada gimnasio un máximo de 3 veces al mes.",
     },
@@ -420,7 +421,8 @@ export const es = {
     creditosSueltos: {
       title: "Créditos sueltos",
       subtitle: (precioPorCredito: string, minimo: number) =>
-        `${precioPorCredito} por crédito, sin plan — ideal para probar una clase o experiencia puntual. Mínimo ${minimo} créditos. Vencen al mes de comprarlos.`,
+        `${precioPorCredito} por crédito, sin plan — ideal para probar una clase puntual. Mínimo ${minimo} créditos. Vencen al mes de comprarlos.`,
+      noExperiencias: "Estos créditos solo sirven para reservar clases regulares — no para Experiencias.",
       cantidadLabel: "¿Cuántos créditos quieres?",
       total: (price: string) => `Total: ${price}`,
       comprarPorPrecio: (price: string) => `Comprar — ${price}`,

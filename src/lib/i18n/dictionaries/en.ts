@@ -111,6 +111,7 @@ export const en: Dictionary = {
       creditosSueltosTitle: "Just want to try something once?",
       creditosSueltosBody: (precioPorCredito: string, minimo: number) =>
         `Buy single credits for ${precioPorCredito} each (${minimo}-credit minimum), no plan needed. They expire a month after you buy them.`,
+      creditosSueltosNoExperiencias: "Only work for regular classes, not for Experiences.",
       creditosSueltosCta: "Buy single credits",
       disclaimer: "You can cancel classes up to 24h in advance at no cost. To promote diversity across the network, you can book a maximum of 3 times per month at each gym.",
     },
@@ -415,7 +416,8 @@ export const en: Dictionary = {
     creditosSueltos: {
       title: "Single credits",
       subtitle: (precioPorCredito: string, minimo: number) =>
-        `${precioPorCredito} per credit, no plan needed — great for trying one class or experience. ${minimo}-credit minimum. They expire a month after you buy them.`,
+        `${precioPorCredito} per credit, no plan needed — great for trying one class. ${minimo}-credit minimum. They expire a month after you buy them.`,
+      noExperiencias: "These credits only work for regular classes — not for Experiences.",
       cantidadLabel: "How many credits do you want?",
       total: (price: string) => `Total: ${price}`,
       comprarPorPrecio: (price: string) => `Buy — ${price}`,

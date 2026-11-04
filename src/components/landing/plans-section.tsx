@@ -118,6 +118,7 @@ export default async function PlansSection() {
           <p className="mt-1 max-w-xl font-body text-sm text-move-green/70">
             {t.creditosSueltosBody(formatCOP(PRECIO_CREDITO_SUELTO), MINIMO_CREDITOS_SUELTOS)}
           </p>
+          <p className="mt-1 font-body text-xs text-move-green/50">{t.creditosSueltosNoExperiencias}</p>
           <Link
             href={userId ? "/creditos-sueltos" : "/crear-cuenta"}
             className="mt-4 inline-block rounded-full bg-move-green px-5 py-2.5 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"

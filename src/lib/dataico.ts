@@ -1,3 +1,4 @@
+import { extractText, getDocumentProxy } from "unpdf";
 import type { TipoDocumento } from "./documento";
 
 /**
@@ -90,7 +91,50 @@ export type CreateInvoiceParams = {
 
 export type CreateInvoiceResult =
   | { ok: true; uuid: string; pdfUrl: string; cufe: string }
-  | { ok: false; error: string };
+  /** `numeroOcupado`: ese número ya existía en Dataico (ej. una factura
+   * hecha a mano desde el panel, que Airtable no conoce) — el llamador
+   * puede reservar el siguiente y reintentar. */
+  | { ok: false; error: string; numeroOcupado?: boolean };
+
+/** Revisa que el PDF que devolvió Dataico sea de verdad la factura que se
+ * acabó de pedir: mismo número y la cédula del comprador. Hace falta
+ * porque, si el número ya estaba usado, Dataico NO da error — responde OK
+ * con la factura vieja que ya tenía ese número (pasó: entre UNQ-24 y
+ * UNQ-34 se guardaron y se mandaron por correo facturas de otras personas,
+ * porque esos números ya se habían usado a mano en el panel). Devuelve
+ * null si todo cuadra, o el motivo si no. */
+async function verificarFacturaDevuelta(
+  pdfUrl: string,
+  numero: number,
+  cedula: string
+): Promise<string | null> {
+  let texto: string;
+  try {
+    const res = await fetch(pdfUrl);
+    if (!res.ok) return `No se pudo descargar el PDF para verificarlo (HTTP ${res.status}).`;
+    const pdf = await getDocumentProxy(new Uint8Array(await res.arrayBuffer()));
+    texto = (await extractText(pdf, { mergePages: true })).text;
+  } catch (err) {
+    return `No se pudo leer el PDF para verificarlo: ${err instanceof Error ? err.message : String(err)}`;
+  }
+
+  const numeroEnPdf = texto.match(new RegExp(`${RESOLUTION_PREFIX}\\s*-\\s*(\\d+)`))?.[1];
+  if (numeroEnPdf !== String(numero)) {
+    return `Dataico devolvió la factura ${RESOLUTION_PREFIX}-${numeroEnPdf ?? "?"} en vez de la ${RESOLUTION_PREFIX}-${numero} — ese número ya estaba usado.`;
+  }
+  if (!texto.replace(/\D/g, " ").split(/\s+/).includes(cedula.replace(/\D/g, ""))) {
+    return `La factura ${RESOLUTION_PREFIX}-${numero} que devolvió Dataico no tiene la cédula del comprador (${cedula}) — es de otra persona; ese número ya estaba usado.`;
+  }
+  return null;
+}
+
+/** Si Dataico rechaza la factura porque el número ya existe (en vez de
+ * devolver la vieja), el mensaje trae el campo "number" o habla de un
+ * consecutivo repetido. */
+function esErrorDeNumeroRepetido(json: unknown): boolean {
+  const texto = JSON.stringify(json ?? {}).toLowerCase();
+  return /"number"|consecutivo|ya existe|already exists|duplicad|duplicate/.test(texto);
+}
 
 /** Crea y envía a la DIAN una factura electrónica por una compra ya
  * cobrada (plan o créditos adicionales). Nunca se debe dejar que un fallo
@@ -202,7 +246,16 @@ export async function createElectronicInvoice(
     return {
       ok: false,
       error: `Dataico respondió ${res.status}: ${JSON.stringify(json ?? {})}`,
+      numeroOcupado: esErrorDeNumeroRepetido(json),
     };
+  }
+
+  // Nunca se devuelve OK sin confirmar que el PDF es el de esta compra —
+  // si no cuadra, no se guarda ni se le manda a nadie.
+  const problema = await verificarFacturaDevuelta(json.pdf_url, params.numero, params.cedula);
+  if (problema) {
+    const numeroOcupado = problema.includes("ya estaba usado");
+    return { ok: false, error: problema, numeroOcupado };
   }
 
   return { ok: true, uuid: json.uuid, pdfUrl: json.pdf_url, cufe: json.cufe };

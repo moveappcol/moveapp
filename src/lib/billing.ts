@@ -23,6 +23,10 @@ const STARTER_PLAN_ID = "plan-starter";
 
 const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 
+/** Cuántos números seguidos se prueban si Dataico dice que ya están usados
+ * antes de rendirse y avisar para facturar manual. */
+const MAX_INTENTOS_NUMERO_FACTURA = 10;
+
 /** Genera la factura electrónica por una compra ya cobrada y acreditada.
  * Nunca deja que un fallo acá se propague — el pago y el abono de
  * créditos ya pasaron; si Dataico falla, se avisa por correo para
@@ -50,21 +54,28 @@ export async function facturarCompra(params: {
       return;
     }
     const pagoId = params.pagoId;
-    const numero = await reserveNextFacturaNumero(pagoId);
     const account = await getUserCreditsByEmail(params.correo);
-    const result = await createElectronicInvoice({
-      numero,
-      sku: params.sku,
-      concepto: params.concepto,
-      totalConIva: params.totalConIva,
-      correo: params.correo,
-      nombre: account?.nombre ?? "",
-      apellido: account?.apellido ?? "",
-      tipoDocumento:
-        account?.tipoDocumento && isTipoDocumento(account.tipoDocumento) ? account.tipoDocumento : null,
-      cedula: account?.cedula ?? "",
-      telefono: account?.telefono ?? null,
-    });
+    const emitir = async () =>
+      createElectronicInvoice({
+        numero: await reserveNextFacturaNumero(pagoId),
+        sku: params.sku,
+        concepto: params.concepto,
+        totalConIva: params.totalConIva,
+        correo: params.correo,
+        nombre: account?.nombre ?? "",
+        apellido: account?.apellido ?? "",
+        tipoDocumento:
+          account?.tipoDocumento && isTipoDocumento(account.tipoDocumento) ? account.tipoDocumento : null,
+        cedula: account?.cedula ?? "",
+        telefono: account?.telefono ?? null,
+      });
+    // Si el número ya estaba usado en Dataico (ej. una factura hecha a mano
+    // en el panel), se reserva el siguiente y se reintenta — reservar de
+    // nuevo da max+1, y el número ocupado ya quedó en este mismo pago.
+    let result = await emitir();
+    for (let intento = 1; !result.ok && result.numeroOcupado && intento < MAX_INTENTOS_NUMERO_FACTURA; intento++) {
+      result = await emitir();
+    }
     if (result.ok) {
       await updatePagoFactura(pagoId, { pdfUrl: result.pdfUrl, cufe: result.cufe });
       try {

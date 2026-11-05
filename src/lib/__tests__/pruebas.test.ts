@@ -17,11 +17,17 @@ import {
   expirarCreditosDePruebasVencidas,
 } from "@/lib/pruebas";
 
-function setBase(tables: { Pagos?: FakeTable; Prueba?: FakeTable; usuarios?: FakeTable }) {
+function setBase(tables: {
+  Pagos?: FakeTable;
+  Prueba?: FakeTable;
+  usuarios?: FakeTable;
+  Suscripciones?: FakeTable;
+}) {
   const full = {
     Pagos: tables.Pagos ?? fakeTable([]),
     Prueba: tables.Prueba ?? fakeTable([]),
     usuarios: tables.usuarios ?? fakeTable([]),
+    Suscripciones: tables.Suscripciones ?? fakeTable([]),
   };
   (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(fakeBase(full));
   return full;
@@ -48,6 +54,33 @@ describe("esElegibleParaPrueba", () => {
     });
 
     const result = await esElegibleParaPrueba("nueva@test.com", "3001234567");
+
+    expect(result.ok).toBe(false);
+  });
+
+  it("bloquea si otra cuenta con el mismo celular ya pagó un plan (correo distinto)", async () => {
+    const { Pagos } = setBase({
+      usuarios: fakeTable([
+        fakeRecord("u1", { Correo: "vieja@test.com" }),
+        fakeRecord("u2", { Correo: "nueva@test.com" }),
+      ]),
+      Pagos: fakeTable([fakeRecord("pago1", { Correo: "vieja@test.com", Estado: "Aprobado" })]),
+    });
+
+    const result = await esElegibleParaPrueba("nueva@test.com", "+57 300 123 4567");
+
+    expect(result.ok).toBe(false);
+    const formula = Pagos.select.mock.calls[0][0].filterByFormula as string;
+    expect(formula).toContain('"vieja@test.com"');
+    expect(formula).toContain('"nueva@test.com"');
+  });
+
+  it("bloquea si la persona ya tuvo una suscripción (aunque no haya pago, ej. regalo)", async () => {
+    setBase({
+      Suscripciones: fakeTable([fakeRecord("s1", { Correo: "ana@test.com", Estado: "Cancelada" })]),
+    });
+
+    const result = await esElegibleParaPrueba("ana@test.com", "3001234567");
 
     expect(result.ok).toBe(false);
   });

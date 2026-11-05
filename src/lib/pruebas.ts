@@ -46,6 +46,7 @@ import { setPruebaSubscriptionEstado } from "./subscriptions";
  *      evita que el cron de vencidos la procese dos veces)
  */
 const PRUEBAS_TABLE = "Prueba";
+const USUARIOS_TABLE = "usuarios";
 
 /** Texto exacto de la casilla legal del checkout (Ley 1480) — se exporta
  * para que la UI y lo que se guarda como evidencia en AceptacionTexto
@@ -147,28 +148,59 @@ export type ElegibilidadPrueba = { ok: true } | { ok: false; error: string };
 
 const MENSAJE_NO_ELEGIBLE = "La prueba es solo para nuevos usuarios. Mira nuestros planes.";
 
-/** Una sola prueba por persona — bloquea si el correo o el teléfono ya
- * tuvieron una prueba antes (aunque sea otra cuenta), o si esa cuenta ya
- * tuvo cualquier pago aprobado antes (plan, suelto, regalo u otra prueba).
- * `tarjetaHash` es una señal secundaria opcional (ver TarjetaHash arriba) —
- * nunca es, por sí sola, la única razón para bloquear si no viene. */
+/** Últimos 10 dígitos del celular, sin espacios, guiones ni "+57" — para
+ * que "317 378 4517" y "+573173784517" cuenten como el mismo número. */
+function normalizarTelefono(telefono: string): string {
+  return telefono.replace(/\D/g, "").slice(-10);
+}
+
+/** Fórmula de Airtable que normaliza un campo de teléfono igual que
+ * normalizarTelefono (el `&""` es porque "Teléfono" puede venir como número). */
+function formulaTelefono(campo: string, telefono: string): string {
+  return `RIGHT(REGEX_REPLACE({${campo}}&"", "[^0-9]", ""), 10) = "${escapeFormulaValue(telefono)}"`;
+}
+
+/** La prueba es solo para personas nuevas, y una sola vez por persona.
+ * Bloquea si esa persona ya tuvo una prueba, un pago aprobado (plan,
+ * suelto, regalo) o una suscripción, buscando no solo por el correo de
+ * esta cuenta sino también por cualquier otra cuenta en "usuarios" con el
+ * mismo celular — si no, bastaba con crear otra cuenta con otro correo
+ * (pasó: alguien canceló su Starter y compró la prueba desde un correo
+ * nuevo con el mismo celular). `tarjetaHash` es una señal secundaria
+ * opcional (ver TarjetaHash arriba) — nunca es, por sí sola, la única
+ * razón para bloquear si no viene. */
 export async function esElegibleParaPrueba(
   correo: string,
   telefono: string | null,
   tarjetaHash?: string | null
 ): Promise<ElegibilidadPrueba> {
   const base = getAirtableBase();
+  const tel = telefono ? normalizarTelefono(telefono) : "";
+
+  const correos = new Set([correo.trim().toLowerCase()]);
+  if (tel) {
+    const mismasPersonas = await base(USUARIOS_TABLE)
+      .select({ filterByFormula: formulaTelefono("Teléfono", tel), fields: ["Correo"] })
+      .all();
+    for (const r of mismasPersonas) {
+      const c = (r.get("Correo") as string | undefined)?.trim().toLowerCase();
+      if (c) correos.add(c);
+    }
+  }
+  const porCorreo = [...correos].map((c) => `LOWER(TRIM({Correo})) = "${escapeFormulaValue(c)}"`);
 
   const pagosPrevios = await base("Pagos")
-    .select({
-      filterByFormula: `AND(LOWER({Correo}) = LOWER("${escapeFormulaValue(correo)}"), {Estado} = "Aprobado")`,
-      maxRecords: 1,
-    })
+    .select({ filterByFormula: `AND(OR(${porCorreo.join(",")}), {Estado} = "Aprobado")`, maxRecords: 1 })
     .all();
   if (pagosPrevios.length > 0) return { ok: false, error: MENSAJE_NO_ELEGIBLE };
 
-  const clausulas = [`LOWER({Correo}) = LOWER("${escapeFormulaValue(correo)}")`];
-  if (telefono) clausulas.push(`{telefono} = "${escapeFormulaValue(telefono)}"`);
+  const suscripcionesPrevias = await base("Suscripciones")
+    .select({ filterByFormula: `OR(${porCorreo.join(",")})`, maxRecords: 1 })
+    .all();
+  if (suscripcionesPrevias.length > 0) return { ok: false, error: MENSAJE_NO_ELEGIBLE };
+
+  const clausulas = [...porCorreo];
+  if (tel) clausulas.push(formulaTelefono("telefono", tel));
   if (tarjetaHash) clausulas.push(`{TarjetaHash} = "${escapeFormulaValue(tarjetaHash)}"`);
 
   const pruebasPrevias = await base(PRUEBAS_TABLE)

@@ -50,6 +50,47 @@ export default defineRailway(() => {
     env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/liquidaciones" },
   });
 
+  // Estos 5 se crearon a mano en el dashboard de Railway (no quedaron
+  // declarados aquí) — se agregan con el mismo nombre y horario que tienen
+  // allá para que el código refleje lo que corre en producción. Sin esto,
+  // un `railway config apply` los BORRARÍA (lo que no está declarado en
+  // este archivo se elimina), incluido el que cobra la conversión de la
+  // Prueba UNIQUE al Starter.
+  const cronConvertirPruebas = service("cron-convertir-pruebas", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 */4 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/convertir-pruebas" },
+  });
+
+  const cronVencerPruebas = service("cron-vencer-pruebas", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 9 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/vencer-pruebas" },
+  });
+
+  const cronRecordatorioPrueba = service("cron-recordatorio-prueba", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 9 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/recordatorio-prueba" },
+  });
+
+  const cronPromoverListaEspera = service("cron-promover-lista-espera", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "*/15 * * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/promover-lista-espera" },
+  });
+
+  const cronReferidosVencidos = service("cron-referidos-vencidos", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 9 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/referidos-vencidos" },
+  });
+
   return project("resourceful-dream", {
     resources: [
       moveWeb,
@@ -57,6 +98,11 @@ export default defineRailway(() => {
       cronReservasFinales,
       cronDespuesClase,
       cronLiquidaciones,
+      cronConvertirPruebas,
+      cronVencerPruebas,
+      cronRecordatorioPrueba,
+      cronPromoverListaEspera,
+      cronReferidosVencidos,
     ],
   });
 });

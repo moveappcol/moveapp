@@ -144,8 +144,8 @@ export async function sendCancellationWindowReminderEmail(params: {
         <li>Si tienes alguna molestia o lesión, cuéntaselo al instructor antes de empezar.</li>
       </ul>
       ${params.mapsUrl ? `<p><a href="${params.mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Cómo llegar</a></p>` : ""}
-      <p>Y si te surge algún imprevisto, no te preocupes: puedes liberar tu cupo desde <a href="https://www.uniqueappcol.com/mis-reservas" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;">Mis reservas</a> o la app, sin que se te descuenten los créditos, hasta el ${escapeHtml(params.limiteCancelacion)}.</p>
-      <p>¡Que la disfrutes mucho!</p>
+      <p><strong>Recuerda que si te salió algún imprevisto, todavía puedes cancelar tu clase sin que se te cobren los créditos hasta 24 horas antes (el ${escapeHtml(params.limiteCancelacion)}), desde <a href="https://www.uniqueappcol.com/mis-reservas" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;">Mis reservas</a> o la app.</strong></p>
+      <p><strong>Acá estamos pendientes para que puedas disfrutar al máximo tu experiencia UNIQUE.</strong></p>
       <p>Equipo UNIQUE</p>
     </div>
   `;

@@ -72,6 +72,7 @@ export type ReservaDetalle = {
   correo: string;
   molestias: string;
   recordatorioEnviado: boolean;
+  recordatorioCancelacionEnviado: boolean;
   correoDespuesClaseEnviado: boolean;
   listaFinalEnviada: boolean;
 };
@@ -92,6 +93,7 @@ function mapReservaRecord(
     correo: ((r.get("Correo") as string) ?? "").trim(),
     molestias: ((r.get("Molestias") as string) ?? "").trim(),
     recordatorioEnviado: Boolean(r.get("Recordatorio enviado")),
+    recordatorioCancelacionEnviado: Boolean(r.get("Recordatorio cancelacion enviado")),
     correoDespuesClaseEnviado: Boolean(r.get("Correo despues clase enviado")),
     listaFinalEnviada: Boolean(r.get("Lista final enviada")),
   };
@@ -153,6 +155,17 @@ export async function markRecordatorioEnviado(reservationId: string): Promise<vo
   });
 }
 
+/** Marca que ya se le mandó el recordatorio de 27h (todavía puedes
+ * cancelar sin costo) a esta reserva. Checkbox "Recordatorio cancelacion
+ * enviado" en Reservas. */
+export async function markRecordatorioCancelacionEnviado(reservationId: string): Promise<void> {
+  const base = getAirtableBase();
+  await base("Reservas").update(
+    [{ id: reservationId, fields: { "Recordatorio cancelacion enviado": true } }],
+    { typecast: true }
+  );
+}
+
 /** Marca que ya se le mandó el correo "AFTER CLASS" a esta reserva — evita
  * reenviarlo si el cron corre varias veces dentro de la ventana. */
 export async function markCorreoDespuesClaseEnviado(reservationId: string): Promise<void> {
@@ -181,7 +194,7 @@ export async function marcarListaFinalEnviada(reservationIds: string[]): Promise
   }
 }
 
-const CANCELLATION_WINDOW_HOURS = 24;
+export const CANCELLATION_WINDOW_HOURS = 24;
 const MAX_MONTHLY_RESERVATIONS_PER_GYM = 3;
 
 /** "Y-M" del mes de una fecha en hora de Bogotá (no la del proceso del

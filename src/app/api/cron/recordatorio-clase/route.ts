@@ -4,8 +4,15 @@ import {
   fetchAllReservasDetalle,
   filterReservationsDetailForClase,
   markRecordatorioEnviado,
+  markRecordatorioCancelacionEnviado,
+  CANCELLATION_WINDOW_HOURS,
 } from "@/lib/reservations";
-import { sendClassReminderEmail, sendOpsAlertEmail } from "@/lib/email";
+import { formatFechaLarga as formatFechaConDia } from "@/lib/dias";
+import {
+  sendClassReminderEmail,
+  sendCancellationWindowReminderEmail,
+  sendOpsAlertEmail,
+} from "@/lib/email";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { sendPushNotification } from "@/lib/push";
 import { getGymById } from "@/lib/gyms";
@@ -30,6 +37,12 @@ const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 // vuelve a ver dentro de la misma ventana.
 const WINDOW_START_MINUTES = 170; // 2h50 antes
 const WINDOW_END_MINUTES = 190; // 3h10 antes
+
+// Recordatorio de cortesía ~27h antes: "todavía puedes cancelar sin que te
+// cobren los créditos hasta 24h antes". Misma lógica de ventana ancha +
+// marca por reserva que el de 3h.
+const CANCELACION_WINDOW_START_MINUTES = 27 * 60 - 10; // 26h50 antes
+const CANCELACION_WINDOW_END_MINUTES = 27 * 60 + 10; // 27h10 antes
 
 function formatFechaLarga(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", {
@@ -60,14 +73,61 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
 
   let sent = 0;
+  let sentCancelacion = 0;
   let skipped = 0;
   let emailFailed = 0;
   const fallos: string[] = [];
+  const fallosCancelacion: string[] = [];
 
   for (const clase of clases) {
     if (!clase.fecha || !clase.gimnasioId) continue;
 
     const minutesUntilClass = (new Date(clase.fecha).getTime() - now) / (1000 * 60);
+
+    if (
+      minutesUntilClass >= CANCELACION_WINDOW_START_MINUTES &&
+      minutesUntilClass <= CANCELACION_WINDOW_END_MINUTES
+    ) {
+      const gym = await getGymById(clase.gimnasioId);
+      const limiteCancelacion = new Date(
+        new Date(clase.fecha).getTime() - CANCELLATION_WINDOW_HOURS * 60 * 60_000
+      ).toISOString();
+      const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
+      const pendientes = reservas.filter(
+        (r) => !r.estado.startsWith("Cancelado") && !r.recordatorioCancelacionEnviado
+      );
+
+      for (const r of pendientes) {
+        if (!r.correo) {
+          skipped += 1;
+          continue;
+        }
+
+        // Se marca ANTES de mandar (al revés que el de 3h): si la marca no
+        // se puede guardar, no se manda — si no, el cron lo reenviaría en
+        // cada corrida de la ventana. Perder este correo de cortesía es
+        // mejor que mandarlo 4 veces.
+        try {
+          await markRecordatorioCancelacionEnviado(r.id);
+          await sendCancellationWindowReminderEmail({
+            userEmail: r.correo,
+            nombre: r.userName,
+            clase: clase.name,
+            fechaLarga: formatFechaConDia(clase.fecha),
+            hora: formatHora(clase.fecha),
+            gimnasio: gym?.name ?? null,
+            limiteCancelacion: `${formatFechaConDia(limiteCancelacion)} a las ${formatHora(limiteCancelacion)}`,
+          });
+          sentCancelacion += 1;
+        } catch (err) {
+          emailFailed += 1;
+          const motivo = err instanceof Error ? err.message : "error desconocido";
+          fallosCancelacion.push(`${r.userName} (${r.correo}) — ${clase.name}: ${motivo}`);
+        }
+      }
+      continue;
+    }
+
     if (minutesUntilClass < WINDOW_START_MINUTES || minutesUntilClass > WINDOW_END_MINUTES) continue;
 
     const gym = await getGymById(clase.gimnasioId);
@@ -121,5 +181,13 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  return NextResponse.json({ processed: clases.length, sent, skipped, emailFailed });
+  if (fallosCancelacion.length > 0) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo mandar el recordatorio de 27h (cancelar sin costo)",
+      detalle: `No se pudo avisar a estas personas que todavía pueden cancelar sin costo hasta 24h antes:\n\n${fallosCancelacion.join("\n")}\n\nSi el error dice que no existe el campo "Recordatorio cancelacion enviado", hay que crear ese checkbox en la tabla Reservas de Airtable.`,
+    });
+  }
+
+  return NextResponse.json({ processed: clases.length, sent, sentCancelacion, skipped, emailFailed });
 }

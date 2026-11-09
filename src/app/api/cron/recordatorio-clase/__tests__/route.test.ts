@@ -20,6 +20,8 @@ vi.mock("@/lib/push", () => ({ sendPushNotification: vi.fn() }));
 vi.mock("@/lib/gyms", () => ({ getGymById: vi.fn().mockResolvedValue(null) }));
 
 import { getAllClasesConFecha } from "@/lib/classes";
+import { getUserCreditsByEmail } from "@/lib/users";
+import { sendPushNotification } from "@/lib/push";
 import { filterReservationsDetailForClase, markRecordatorioCancelacionEnviado } from "@/lib/reservations";
 import {
   sendClassReminderEmail,
@@ -91,6 +93,7 @@ describe("correos de clase — nunca a quien canceló", () => {
   });
 
   it("27h antes: recordatorio de 'aún puedes cancelar sin costo' solo a quien sigue reservado", async () => {
+    (getUserCreditsByEmail as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ pushToken: "token-reservado" });
     // Clase el 11 nov a las 7:00 a. m. Bogotá (12:00 UTC), 27h desde ahora.
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-11-10T09:00:00.000Z"));
@@ -106,6 +109,10 @@ describe("correos de clase — nunca a quien canceló", () => {
     expect(params.userEmail).toBe("reservado@test.com");
     expect(params.limiteCancelacion).toMatch(/10 de noviembre a las 7:00/);
     expect(markRecordatorioCancelacionEnviado).toHaveBeenCalledWith("reservado@test.com");
+    expect(sendPushNotification).toHaveBeenCalledTimes(1);
+    expect(sendPushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "token-reservado", title: "¡Mañana nos vemos! 💚" })
+    );
     // Ese mismo run no manda el recordatorio de 3h.
     expect(sendClassReminderEmail).not.toHaveBeenCalled();
   });

@@ -120,6 +120,13 @@ export async function GET(req: NextRequest) {
             mapsUrl: gym ? buildMapsUrl(gym) : null,
             limiteCancelacion: `${formatFechaConDia(limiteCancelacion)} a las ${formatHora(limiteCancelacion)}`,
           });
+          const persona = await getUserCreditsByEmail(r.correo);
+          await sendPushNotification({
+            to: persona?.pushToken ?? null,
+            title: "¡Mañana nos vemos! 💚",
+            body: `${clase.name} mañana a las ${formatHora(clase.fecha)}. Si te salió algún imprevisto, puedes cancelar sin costo hasta 24h antes.`,
+            data: { type: "recordatorio-27h", claseId: clase.id },
+          });
           sentCancelacion += 1;
         } catch (err) {
           emailFailed += 1;

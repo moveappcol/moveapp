@@ -74,8 +74,10 @@ export async function GET(req: NextRequest) {
     const mapsUrl = gym ? buildMapsUrl(gym) : null;
 
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
+    // Cualquier cancelación — a tiempo o tarde ("Cancelado") — ya no va a
+    // la clase, así que no le llega ni recordatorio ni correo de después.
     const pendientes = reservas.filter(
-      (r) => r.estado !== "Cancelado on time" && !r.recordatorioEnviado
+      (r) => !r.estado.startsWith("Cancelado") && !r.recordatorioEnviado
     );
 
     for (const r of pendientes) {

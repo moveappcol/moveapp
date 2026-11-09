@@ -37,8 +37,10 @@ export async function GET(req: NextRequest) {
     if (minutesSinceEnd < WINDOW_START_MINUTES || minutesSinceEnd > WINDOW_END_MINUTES) continue;
 
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
+    // Cualquier cancelación — a tiempo o tarde ("Cancelado") — ya no va a
+    // la clase, así que no le llega ni recordatorio ni correo de después.
     const pendientes = reservas.filter(
-      (r) => r.estado !== "Cancelado on time" && !r.correoDespuesClaseEnviado
+      (r) => !r.estado.startsWith("Cancelado") && !r.correoDespuesClaseEnviado
     );
 
     for (const r of pendientes) {

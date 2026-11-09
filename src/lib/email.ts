@@ -117,10 +117,10 @@ export async function sendClassReminderEmail(params: {
   });
 }
 
-/** Recordatorio de cortesía ~27h antes de la clase — le avisa a la
- * persona que todavía puede cancelar sin perder créditos hasta 24h antes
- * (ver CANCELLATION_WINDOW_HOURS en reservations.ts), para que si ya no
- * puede ir lo libere a tiempo en vez de perder la clase. */
+/** Correo de bienvenida a la clase ~27h antes — tono de hospitalidad
+ * (te estamos esperando, cómo llegar, qué llevar). Al final, de pasada, le
+ * cuenta que si le sale algo puede liberar el cupo sin costo hasta 24h
+ * antes (ver CANCELLATION_WINDOW_HOURS en reservations.ts). */
 export async function sendCancellationWindowReminderEmail(params: {
   userEmail: string;
   nombre: string;
@@ -128,24 +128,31 @@ export async function sendCancellationWindowReminderEmail(params: {
   fechaLarga: string;
   hora: string;
   gimnasio: string | null;
+  mapsUrl: string | null;
   limiteCancelacion: string;
 }): Promise<void> {
   const html = `
     <div style="font-family: sans-serif;">
       <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
-      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">TU CLASE ES MAÑANA</p>
-      <p>¡Hola, ${escapeHtml(params.nombre)}! Esperamos que estés muy bien.</p>
-      <p>Te recordamos que tienes reservada tu clase de <strong>${escapeHtml(params.clase)}</strong>${params.gimnasio ? ` en <strong>${escapeHtml(params.gimnasio)}</strong>` : ""} el <strong>${escapeHtml(params.fechaLarga)}</strong> a las <strong>${escapeHtml(params.hora)}</strong>.</p>
-      <p>Si te salió algo y ya no puedes ir, todavía puedes cancelar <strong>sin que se te cobren los créditos</strong> hasta el <strong>${escapeHtml(params.limiteCancelacion)}</strong> (24 horas antes de la clase). Después de esa hora, los créditos ya no se devuelven.</p>
-      <p><a href="https://www.uniqueappcol.com/mis-reservas" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver mis reservas</a> — también puedes cancelar desde la app.</p>
-      <p>Y si nos vemos mañana, ¡te esperamos con toda la energía!</p>
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">¡MAÑANA NOS VEMOS!</p>
+      <p>¡Hola, ${escapeHtml(params.nombre)}!</p>
+      <p>Ya casi es tu clase de <strong>${escapeHtml(params.clase)}</strong>${params.gimnasio ? ` en <strong>${escapeHtml(params.gimnasio)}</strong>` : ""} y te estamos esperando. Quedó para el <strong>${escapeHtml(params.fechaLarga)}</strong> a las <strong>${escapeHtml(params.hora)}</strong>.</p>
+      <p style="font-weight:700;color:#063009;margin:20px 0 8px;">Para que la disfrutes al máximo:</p>
+      <ul style="margin:0 0 16px;padding-left:20px;">
+        <li>Llega unos 10 minutos antes para instalarte con calma.</li>
+        <li>Lleva tu botella de agua y ropa cómoda.</li>
+        <li>Si tienes alguna molestia o lesión, cuéntaselo al instructor antes de empezar.</li>
+      </ul>
+      ${params.mapsUrl ? `<p><a href="${params.mapsUrl}" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Cómo llegar</a></p>` : ""}
+      <p>Y si te surge algún imprevisto, no te preocupes: puedes liberar tu cupo desde <a href="https://www.uniqueappcol.com/mis-reservas" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;">Mis reservas</a> o la app, sin que se te descuenten los créditos, hasta el ${escapeHtml(params.limiteCancelacion)}.</p>
+      <p>¡Que la disfrutes mucho!</p>
       <p>Equipo UNIQUE</p>
     </div>
   `;
 
   await sendEmail({
     to: [params.userEmail],
-    subject: "Tu clase es mañana — aún puedes cancelar sin costo",
+    subject: `¡Mañana nos vemos en ${params.clase}! 💚`,
     html,
   });
 }

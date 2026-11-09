@@ -38,8 +38,9 @@ const OWNER_EMAIL = "gerencia@uniqueappcol.com";
 const WINDOW_START_MINUTES = 170; // 2h50 antes
 const WINDOW_END_MINUTES = 190; // 3h10 antes
 
-// Recordatorio de cortesía ~27h antes: "todavía puedes cancelar sin que te
-// cobren los créditos hasta 24h antes". Misma lógica de ventana ancha +
+// Correo de hospitalidad ~27h antes ("mañana nos vemos", cómo llegar, qué
+// llevar y, de pasada, que puede liberar el cupo sin costo hasta 24h
+// antes). Misma lógica de ventana ancha +
 // marca por reserva que el de 3h.
 const CANCELACION_WINDOW_START_MINUTES = 27 * 60 - 10; // 26h50 antes
 const CANCELACION_WINDOW_END_MINUTES = 27 * 60 + 10; // 27h10 antes
@@ -116,6 +117,7 @@ export async function GET(req: NextRequest) {
             fechaLarga: formatFechaConDia(clase.fecha),
             hora: formatHora(clase.fecha),
             gimnasio: gym?.name ?? null,
+            mapsUrl: gym ? buildMapsUrl(gym) : null,
             limiteCancelacion: `${formatFechaConDia(limiteCancelacion)} a las ${formatHora(limiteCancelacion)}`,
           });
           sentCancelacion += 1;

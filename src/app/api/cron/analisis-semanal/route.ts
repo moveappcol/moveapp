@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     if (!gym) continue;
 
     const reservas = filterReservationsDetailForClase(todasLasReservas, clase.id, clase.fecha);
-    const confirmadas = reservas.filter((r) => r.estado !== "Cancelado on time").length;
+    const confirmadas = reservas.filter((r) => !r.estado.startsWith("Cancelado")).length;
     const cupos = clase.cuposTotales;
 
     filas.push({

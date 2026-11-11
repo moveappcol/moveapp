@@ -338,10 +338,9 @@ async function countMonthlyReservationsAtGym(
  * (ver TipoClase en classes.ts), no de cada persona que la reserva.
  */
 /** Requisitos para entrar a una lista de espera — los mismos de reservar
- * (ver createReservation) que dependen de la persona y no del cupo —
+ * (ver createReservation) que dependen de la persona y no del cupo:
  * créditos suficientes para esa clase, cédula registrada, acceso al gimnasio
- * por género — y además un plan activo (suscripción o Prueba UNIQUE; para
- * Experiencias, solo suscripción).
+ * por género y, si es una Experiencia, suscripción mensual activa.
  * Sin esto, cualquiera recién registrado y sin comprar nada podía meterse a
  * la fila (el gimnasio la veía en su panel y le llegaba el correo), aunque
  * después nunca se le iba a poder concretar la reserva al tocarle el turno. */
@@ -354,7 +353,7 @@ export async function validarEntradaListaEspera(params: {
   | {
       ok: false;
       error: string;
-      code?: "perfil_incompleto" | "sin_creditos" | "experiencia_requiere_plan" | "requiere_plan";
+      code?: "perfil_incompleto" | "sin_creditos" | "experiencia_requiere_plan";
     }
 > {
   const [account, gym] = await Promise.all([
@@ -380,28 +379,22 @@ export async function validarEntradaListaEspera(params: {
   if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
     return { ok: false, error: "Este gimnasio no está disponible para tu perfil." };
   }
-  // La lista de espera es solo para quien tiene un plan: suscripción mensual
-  // activa o la Prueba UNIQUE en curso — con créditos sueltos no. Para
-  // Experiencias, además, la Prueba tampoco alcanza (igual que al reservar).
-  const [pruebaActiva, subscription] = await Promise.all([
-    getPruebaActivaByEmail(params.userEmail),
-    getSubscriptionByEmail(params.userEmail),
-  ]);
-  const planActivo = subscription?.estado === "Activa";
+  // Clases regulares: basta con tener créditos suficientes (sean de un plan,
+  // de la Prueba o sueltos). Experiencias: solo con suscripción mensual
+  // activa — ni la Prueba ni los créditos sueltos alcanzan, igual que al
+  // reservar.
   if (gym && esGimnasioDeExperiencias(gym.name)) {
-    if (pruebaActiva || !planActivo) {
+    const [pruebaActiva, subscription] = await Promise.all([
+      getPruebaActivaByEmail(params.userEmail),
+      getSubscriptionByEmail(params.userEmail),
+    ]);
+    if (pruebaActiva || subscription?.estado !== "Activa") {
       return {
         ok: false,
         error: "El plan que tienes no te permite reservar esta experiencia. Accede a uno de nuestros planes para poder hacerlo.",
         code: "experiencia_requiere_plan",
       };
     }
-  } else if (!planActivo && !pruebaActiva) {
-    return {
-      ok: false,
-      error: "La lista de espera es solo para personas con un plan activo. Accede a uno de nuestros planes para poder unirte.",
-      code: "requiere_plan",
-    };
   }
   return { ok: true };
 }

@@ -102,11 +102,19 @@ describe("validarEntradaListaEspera — mismos requisitos que reservar", () => {
     expect(r).toEqual({ ok: true });
   });
 
-  it("bloquea a quien tiene créditos pero no tiene plan (ej. créditos sueltos)", async () => {
+  it("deja entrar a clases regulares con créditos aunque no tenga plan (créditos sueltos)", async () => {
     (getUserCreditsByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(fakeAccount());
     (getSubscriptionByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     const r = await validarEntradaListaEspera(params);
-    expect(r).toMatchObject({ ok: false, code: "requiere_plan" });
+    expect(r).toEqual({ ok: true });
+  });
+
+  it("bloquea Experiencias con la Prueba UNIQUE", async () => {
+    (getUserCreditsByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(fakeAccount());
+    (getGymById as ReturnType<typeof vi.fn>).mockResolvedValue({ name: "Experiencias", genero: null });
+    (getPruebaActivaByEmail as ReturnType<typeof vi.fn>).mockResolvedValue({ id: "p1" });
+    const r = await validarEntradaListaEspera(params);
+    expect(r).toMatchObject({ ok: false, code: "experiencia_requiere_plan" });
   });
 
   it("deja entrar con la Prueba UNIQUE activa a clases regulares", async () => {

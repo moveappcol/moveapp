@@ -27,7 +27,7 @@ export type JoinWaitlistResult =
   | {
       ok: false;
       error: string;
-      code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" | "experiencia_requiere_plan" | "requiere_plan";
+      code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" | "experiencia_requiere_plan";
     };
 
 export type WaitlistEntry = {

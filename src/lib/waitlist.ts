@@ -24,7 +24,11 @@ const OWNER_EMAIL = "gerencia@uniqueappcol.com";
  */
 export type JoinWaitlistResult =
   | { ok: true; posicion: number }
-  | { ok: false; error: string; code?: "perfil_incompleto" | "ya_reservada" };
+  | {
+      ok: false;
+      error: string;
+      code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" | "experiencia_requiere_plan";
+    };
 
 export type WaitlistEntry = {
   id: string;

@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getWaitlistStatus, joinWaitlist, leaveWaitlist } from "@/lib/waitlist";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
-import { getUserCreditsByEmail } from "@/lib/users";
-import { getActiveReservationClaseIds } from "@/lib/reservations";
-import { getClaseById } from "@/lib/classes";
-import { getGymById, canAccessGymByGenero } from "@/lib/gyms";
+import { getActiveReservationClaseIds, validarEntradaListaEspera } from "@/lib/reservations";
+import { getClaseById, precioEfectivo } from "@/lib/classes";
 
 export async function GET(req: NextRequest) {
   let user;
@@ -39,27 +37,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Falta la clase." }, { status: 400 });
   }
 
-  // Mismo requisito que reservar directo: sin cédula registrada, nunca se
-  // podría concretar la reserva si le toca el turno — mejor no dejarla
-  // "esperando" un cupo que nunca va a poder tomar.
-  const account = await getUserCreditsByEmail(user.email);
-  if (!account?.cedula) {
-    return NextResponse.json(
-      { ok: false, error: "Completa tu perfil (cédula) antes de unirte a la lista de espera." },
-      { status: 400 }
-    );
-  }
-
   const clase = await getClaseById(claseId);
   if (!clase) {
     return NextResponse.json({ ok: false, error: "Esta clase ya no está disponible." }, { status: 404 });
   }
-  const gym = clase.gimnasioId ? await getGymById(clase.gimnasioId) : null;
-  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
-    return NextResponse.json(
-      { ok: false, error: "Este gimnasio no está disponible para tu perfil." },
-      { status: 400 }
-    );
+
+  // Mismos requisitos que reservar directo (créditos, cédula, género, plan
+  // para Experiencias) — si no, nunca se podría concretar la reserva al
+  // tocarle el turno.
+  const elegible = await validarEntradaListaEspera({
+    userEmail: user.email,
+    gimnasioId: clase.gimnasioId ?? "",
+    claseCredits: precioEfectivo(clase),
+  });
+  if (!elegible.ok) {
+    return NextResponse.json(elegible, { status: 400 });
   }
 
   const yaReservada = (await getActiveReservationClaseIds(user.email)).has(claseId);

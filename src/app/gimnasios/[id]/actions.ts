@@ -3,9 +3,12 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { getClaseById, precioEfectivo } from "@/lib/classes";
-import { createReservation, getActiveReservationClaseIds, type BookingResult } from "@/lib/reservations";
-import { getUserCreditsByEmail } from "@/lib/users";
-import { getGymById, canAccessGymByGenero } from "@/lib/gyms";
+import {
+  createReservation,
+  getActiveReservationClaseIds,
+  validarEntradaListaEspera,
+  type BookingResult,
+} from "@/lib/reservations";
 import { joinWaitlist, leaveWaitlist, type JoinWaitlistResult } from "@/lib/waitlist";
 
 export async function bookClass(
@@ -78,21 +81,20 @@ export async function joinWaitlistAction(
     return { ok: false, error: "Tu cuenta no tiene un correo asociado." };
   }
 
-  // Mismo requisito que reservar directo: sin cédula registrada, nunca se
-  // podría concretar la reserva si le toca el turno.
-  const account = await getUserCreditsByEmail(email);
-  if (!account?.cedula) {
-    return {
-      ok: false,
-      error: "Completa tu perfil (cédula) antes de unirte a la lista de espera.",
-      code: "perfil_incompleto",
-    };
+  const clase = await getClaseById(claseId);
+  if (!clase) {
+    return { ok: false, error: "Esta clase ya no está disponible." };
   }
 
-  const gym = await getGymById(gimnasioId);
-  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
-    return { ok: false, error: "Este gimnasio no está disponible para tu perfil." };
-  }
+  // Mismos requisitos que reservar directo (créditos, cédula, género, plan
+  // para Experiencias) — si no, nunca se podría concretar la reserva al
+  // tocarle el turno.
+  const elegible = await validarEntradaListaEspera({
+    userEmail: email,
+    gimnasioId,
+    claseCredits: precioEfectivo(clase),
+  });
+  if (!elegible.ok) return elegible;
 
   const yaReservada = (await getActiveReservationClaseIds(email)).has(claseId);
   if (yaReservada) {

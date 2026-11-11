@@ -337,6 +337,60 @@ async function countMonthlyReservationsAtGym(
  * vivía por reserva — ya no se lee: el Tipo A/B es del cupo de la clase
  * (ver TipoClase en classes.ts), no de cada persona que la reserva.
  */
+/** Requisitos para entrar a una lista de espera — los mismos de reservar
+ * (ver createReservation) que dependen de la persona y no del cupo: tener
+ * cuenta con créditos suficientes para esa clase, cédula registrada, acceso
+ * al gimnasio por género y, si es una Experiencia, un plan mensual activo.
+ * Sin esto, cualquiera recién registrado y sin comprar nada podía meterse a
+ * la fila (el gimnasio la veía en su panel y le llegaba el correo), aunque
+ * después nunca se le iba a poder concretar la reserva al tocarle el turno. */
+export async function validarEntradaListaEspera(params: {
+  userEmail: string;
+  gimnasioId: string;
+  claseCredits: number;
+}): Promise<
+  | { ok: true }
+  | { ok: false; error: string; code?: "perfil_incompleto" | "sin_creditos" | "experiencia_requiere_plan" }
+> {
+  const [account, gym] = await Promise.all([
+    getUserCreditsByEmail(params.userEmail),
+    getGymById(params.gimnasioId),
+  ]);
+
+  if (!account || account.credits < params.claseCredits) {
+    const tienes = account?.credits ?? 0;
+    return {
+      ok: false,
+      error: `Para unirte a la lista de espera necesitas créditos suficientes: tienes ${tienes} y esta clase vale ${params.claseCredits}.`,
+      code: "sin_creditos",
+    };
+  }
+  if (!account.cedula) {
+    return {
+      ok: false,
+      error: "Completa tu perfil (cédula) antes de unirte a la lista de espera.",
+      code: "perfil_incompleto",
+    };
+  }
+  if (gym && !canAccessGymByGenero(gym.genero, account.genero)) {
+    return { ok: false, error: "Este gimnasio no está disponible para tu perfil." };
+  }
+  if (gym && esGimnasioDeExperiencias(gym.name)) {
+    const [pruebaActiva, subscription] = await Promise.all([
+      getPruebaActivaByEmail(params.userEmail),
+      getSubscriptionByEmail(params.userEmail),
+    ]);
+    if (pruebaActiva || subscription?.estado !== "Activa") {
+      return {
+        ok: false,
+        error: "El plan que tienes no te permite reservar esta experiencia. Accede a uno de nuestros planes para poder hacerlo.",
+        code: "experiencia_requiere_plan",
+      };
+    }
+  }
+  return { ok: true };
+}
+
 export async function createReservation(params: ReservationParams): Promise<BookingResult> {
   const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO, molestias } = params;
 

@@ -178,7 +178,14 @@ type BloqueDetalle = { marcador: string; numeros: OcurrenciaNumeros; texto: stri
 /** Separa el Detalle de una fila de quincena en sus bloques por ocurrencia
  * — cada bloque empieza con una línea "[[...]]" seguida de una línea JSON
  * con sus números. Un bloque que no se pueda leer (formato viejo o
- * corrupto) se ignora para la suma pero no revienta el parseo del resto. */
+ * corrupto) se ignora para la suma pero no revienta el parseo del resto.
+ *
+ * El marcador se normaliza (todo espacio en blanco → espacio normal, igual
+ * que claseKeyForLiquidacion) y se deja UN solo bloque por ocurrencia
+ * (gana el último, que es la versión más reciente): hay filas con bloques
+ * viejos guardados con NBSP ("a.\xa0m.") y, como antes se comparaba el
+ * marcador tal cual, la misma clase se volvía a sumar como si fuera otra —
+ * en el corte del 27 de octubre eso infló Balance de 16 a 25 reservas. */
 function parseBloques(detalle: string): BloqueDetalle[] {
   if (!detalle.trim()) return [];
   const partes = detalle
@@ -186,19 +193,29 @@ function parseBloques(detalle: string): BloqueDetalle[] {
     .map((p) => p.trim())
     .filter(Boolean);
 
-  const bloques: BloqueDetalle[] = [];
+  const porMarcador = new Map<string, BloqueDetalle>();
   for (const parte of partes) {
     const lineas = parte.split("\n");
-    const marcador = lineas[0];
-    if (!marcador.startsWith("[[")) continue;
+    if (!lineas[0].startsWith("[[")) continue;
+    const marcador = lineas[0].replace(/\s/g, " ");
     try {
       const numeros = JSON.parse(lineas[1]) as OcurrenciaNumeros;
-      bloques.push({ marcador, numeros, texto: parte });
+      // Map conserva la posición de la primera aparición y se queda con el
+      // contenido de la última.
+      porMarcador.set(marcador, { marcador, numeros, texto: parte });
     } catch {
       continue;
     }
   }
-  return bloques;
+  return [...porMarcador.values()];
+}
+
+/** Quita los bloques duplicados de un Detalle ya guardado y devuelve el
+ * Detalle limpio con sus totales recalculados — para corregir filas viejas
+ * que quedaron infladas (ver parseBloques). */
+export function deduplicarDetalle(detalle: string): { detalle: string; numeros: OcurrenciaNumeros } {
+  const bloques = parseBloques(detalle);
+  return { detalle: bloques.map((b) => b.texto).join("\n\n"), numeros: sumarNumeros(bloques) };
 }
 
 function sumarNumeros(bloques: BloqueDetalle[]): OcurrenciaNumeros {

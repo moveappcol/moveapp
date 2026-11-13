@@ -293,14 +293,17 @@ async function countMonthlyReservationsAtGym(
   const base = getAirtableBase();
   const records = await base("Reservas")
     .select({
-      // TRIM() porque el valor real en Airtable trae un espacio al final
-      // ("Cancelado on time "), como en otros campos de selección de esta
-      // base — el código original lo manejaba con .trim() en JS después de
-      // traer todo; acá hay que pedírselo a la fórmula, si no compara mal.
-      filterByFormula: `AND({Usuario} = "${escapeFormulaValue(userName)}", TRIM({Estado}) != "Cancelado on time")`,
+      // Ninguna cancelación cuenta para el límite — ni a tiempo ni tarde
+      // ("Cancelado on time " trae un espacio al final en Airtable, por
+      // eso LEFT/TRIM). Si la persona no fue, no gastó una de sus 3
+      // reservas del ciclo en ese gimnasio. Se filtra también abajo en JS.
+      filterByFormula: `AND({Usuario} = "${escapeFormulaValue(userName)}", LEFT(TRIM({Estado}&""), 9) != "Cancelado")`,
     })
     .all();
   return records.filter((r) => {
+    const estado = ((r.get("Estado") as string | undefined) ?? "").trim();
+    if (estado.startsWith("Cancelado")) return false;
+
     const gimnasios = r.get("Gimnasios") as string[] | undefined;
     if (!gimnasios?.includes(gimnasioId)) return false;
 

@@ -129,6 +129,11 @@ describe("Límite de 3 reservas — por ciclo de créditos (Vencimiento), no por
   });
 
   it("sin Vencimiento (solo Prueba, nunca créditos reales), sigue usando el mes calendario", async () => {
+    // Fecha fija a comienzo de mes: con "hoy" real, desde el día ~13 las
+    // reservas de +12..+18 días caían en el mes siguiente y el test fallaba
+    // según el día en que corriera.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-02T15:00:00.000Z"));
     (getGymById as ReturnType<typeof vi.fn>).mockResolvedValue(gym);
     (getUserCreditsByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(fakeAccount(null));
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
@@ -151,8 +156,38 @@ describe("Límite de 3 reservas — por ciclo de créditos (Vencimiento), no por
       claseCredits: 5,
       fechaISO: daysFromNow(18),
     });
+    vi.useRealTimers();
 
     expect(result.ok).toBe(false);
+  });
+
+  it("ninguna cancelación (a tiempo ni tarde) cuenta para el límite — si no fue, no cuenta", async () => {
+    (getGymById as ReturnType<typeof vi.fn>).mockResolvedValue(gym);
+    (getUserCreditsByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(
+      fakeAccount(daysFromNow(29).slice(0, 10))
+    );
+    (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      fakeBase({
+        // Caso Jessica: 2 que sí fue + 1 cancelada tarde + 1 a tiempo -> lleva 2, puede una más.
+        Reservas: fakeTable([
+          reserva(daysFromNow(-0.5)),
+          reserva(daysFromNow(1), "Cancelado"),
+          reserva(daysFromNow(2), "Cancelado on time "),
+          reserva(daysFromNow(3)),
+        ]),
+      })
+    );
+
+    const result = await createReservation({
+      userEmail: "ana@test.com",
+      userName: "Ana",
+      claseId: "clase1",
+      gimnasioId: "gym1",
+      claseCredits: 5,
+      fechaISO: daysFromNow(10),
+    });
+
+    expect(result.ok).toBe(true);
   });
 
   it("si el plan venció y después canjeó un regalo, el ciclo arranca desde el canje — no cuenta lo de cuando tenía plan", async () => {

@@ -31,3 +31,60 @@ export async function marcarReporteQuincenalEnviado(periodoKey: string): Promise
     typecast: true,
   });
 }
+
+const MESES = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Mes y último día del mes ANTERIOR al dado — hace falta porque el
+ * periodo "28 al fin de mes" de un mes se paga el 13 del mes SIGUIENTE
+ * (ver computeFechaDePago en liquidaciones.ts), así que el día 13 hay que
+ * revisar un periodo que pertenece al mes que ya pasó. */
+function previousMonthParts(year: number, month: number): { year: number; month: number; lastDay: number } {
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
+  return { year: prevYear, month: prevMonth, lastDay: prevLastDay };
+}
+
+export type PeriodoReporte = { desde: string; hasta: string; periodo: string; key: string };
+
+/** Qué periodos del reporte quincenal tocan "hoy" (día/mes/año de Bogotá).
+ * Coinciden con los cortes de pago de Liquidacion (ver computeFechaDePago):
+ *   - Corte del 13: clases del 28 del mes anterior al 13 de este mes. Es UN
+ *     solo pago, así que va en UN solo reporte — antes se partía en "28 al
+ *     fin de mes" y "1 al 13", y el 13 de noviembre de 2026 a cada gimnasio
+ *     le llegaron dos correos para el mismo corte.
+ *   - Corte del 27: clases del 14 al 27.
+ * Cada periodo sigue "pendiente" desde su día de corte hasta que quede
+ * marcado como enviado (ver reporteQuincenalYaEnviado), para reintentarse
+ * solo si el día exacto falla. */
+export function periodosDeReporte(year: number, month: number, day: number): PeriodoReporte[] {
+  const periodos: PeriodoReporte[] = [];
+  if (day >= 13) {
+    const prev = previousMonthParts(year, month);
+    const mismoAño = prev.year === year;
+    periodos.push({
+      desde: `${prev.year}-${pad(prev.month)}-28`,
+      hasta: `${year}-${pad(month)}-13`,
+      periodo: mismoAño
+        ? `28 de ${MESES[prev.month - 1]} al 13 de ${MESES[month - 1]} de ${year}`
+        : `28 de ${MESES[prev.month - 1]} de ${prev.year} al 13 de ${MESES[month - 1]} de ${year}`,
+      key: `${prev.year}-${pad(prev.month)}-28_${year}-${pad(month)}-13`,
+    });
+  }
+  if (day >= 27) {
+    periodos.push({
+      desde: `${year}-${pad(month)}-14`,
+      hasta: `${year}-${pad(month)}-27`,
+      periodo: `14 al 27 de ${MESES[month - 1]} de ${year}`,
+      key: `${year}-${pad(month)}-14_${year}-${pad(month)}-27`,
+    });
+  }
+  return periodos;
+}

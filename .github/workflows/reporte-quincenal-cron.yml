@@ -2,7 +2,7 @@ name: Reporte quincenal de reservas por gimnasio
 
 on:
   schedule:
-    - cron: "0 13 * * *" # 8am America/Bogota (UTC-5) — el endpoint decide si hoy toca reporte (día 14 o fin de mes)
+    - cron: "0 13 * * *" # 8am America/Bogota (UTC-5) — el endpoint decide si hoy toca reporte (cortes del 13 y del 27)
   workflow_dispatch: {}
 
 jobs:

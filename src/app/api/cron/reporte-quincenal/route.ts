@@ -4,7 +4,11 @@ import { getGymBillingInfo } from "@/lib/gyms";
 import { fetchAllReservasDetalle } from "@/lib/reservations";
 import { toBogotaDateString } from "@/lib/liquidaciones";
 import { sendReservasTotalesPeriodoEmail, sendFormPagosEmail, sendOpsAlertEmail } from "@/lib/email";
-import { reporteQuincenalYaEnviado, marcarReporteQuincenalEnviado } from "@/lib/reportes-quincenales";
+import {
+  reporteQuincenalYaEnviado,
+  marcarReporteQuincenalEnviado,
+  periodosDeReporte,
+} from "@/lib/reportes-quincenales";
 import {
   buildReservasTotalesPeriodoPdf,
   buildFormPagosPdf,
@@ -14,15 +18,6 @@ import {
 } from "@/lib/pdf";
 
 const OWNER_EMAIL = "gerencia@uniqueappcol.com";
-
-const MESES = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
 
 /** Día, mes y año de "hoy" en hora de Bogotá (no la del proceso del
  * servidor, que en producción puede no ser America/Bogota). */
@@ -221,19 +216,8 @@ async function procesarPeriodo(desde: string, hasta: string, periodo: string): P
   return { periodo, gyms: gyms.length, sentToGyms, formPagosSent, emailFailed };
 }
 
-/** Mes y último día del mes ANTERIOR al dado — hace falta porque el
- * periodo "28 al fin de mes" de un mes se paga el 13 del mes SIGUIENTE
- * (ver computeFechaDePago en liquidaciones.ts), así que el día 13 hay que
- * revisar un periodo que pertenece al mes que ya pasó. */
-function previousMonthParts(year: number, month: number): { year: number; month: number; lastDay: number } {
-  const prevMonth = month === 1 ? 12 : month - 1;
-  const prevYear = month === 1 ? year - 1 : year;
-  const prevLastDay = new Date(prevYear, prevMonth, 0).getDate();
-  return { year: prevYear, month: prevMonth, lastDay: prevLastDay };
-}
-
-/** Corre a diario (el workflow dispara todos los días). Los tres periodos
- * (1–13, 14–27, 28–fin de mes) calzan exactamente con los cortes de pago
+/** Corre a diario (el workflow dispara todos los días). Los dos periodos
+ * (28 del mes anterior–13, y 14–27) calzan exactamente con los cortes de pago
  * reales de Liquidacion (ver computeFechaDePago: 1–13 se paga el 13, 14–27
  * se paga el 27, 28–fin de mes se paga el 13 del mes siguiente) — antes
  * este cron usaba 1–14/15–fin de mes, un corte propio que no coincidía con
@@ -259,32 +243,7 @@ export async function GET(req: NextRequest) {
 
   const { year, month, day } = bogotaTodayParts();
 
-  type Periodo = { desde: string; hasta: string; periodo: string; key: string };
-  const periodos: Periodo[] = [];
-
-  if (day >= 13) {
-    const prev = previousMonthParts(year, month);
-    periodos.push({
-      desde: `${prev.year}-${pad(prev.month)}-28`,
-      hasta: `${prev.year}-${pad(prev.month)}-${pad(prev.lastDay)}`,
-      periodo: `28 al ${prev.lastDay} de ${MESES[prev.month - 1]} de ${prev.year}`,
-      key: `${prev.year}-${pad(prev.month)}-28_${prev.year}-${pad(prev.month)}-${pad(prev.lastDay)}`,
-    });
-    periodos.push({
-      desde: `${year}-${pad(month)}-01`,
-      hasta: `${year}-${pad(month)}-13`,
-      periodo: `1 al 13 de ${MESES[month - 1]} de ${year}`,
-      key: `${year}-${pad(month)}-01_${year}-${pad(month)}-13`,
-    });
-  }
-  if (day >= 27) {
-    periodos.push({
-      desde: `${year}-${pad(month)}-14`,
-      hasta: `${year}-${pad(month)}-27`,
-      periodo: `14 al 27 de ${MESES[month - 1]} de ${year}`,
-      key: `${year}-${pad(month)}-14_${year}-${pad(month)}-27`,
-    });
-  }
+  const periodos = periodosDeReporte(year, month, day);
 
   const resultados: PeriodoResultado[] = [];
 

@@ -91,6 +91,16 @@ export default defineRailway(() => {
     env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/referidos-vencidos" },
   });
 
+  // El cobro mensual de suscripciones seguía en GitHub Actions, que se
+  // saltó días: la renovación del 15 oct de una suscripción salió el 27 oct.
+  // 8am Bogotá, igual que el workflow (que queda solo como respaldo manual).
+  const cronBilling = service("cron-billing", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 13 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/billing" },
+  });
+
   return project("resourceful-dream", {
     resources: [
       moveWeb,
@@ -103,6 +113,7 @@ export default defineRailway(() => {
       cronRecordatorioPrueba,
       cronPromoverListaEspera,
       cronReferidosVencidos,
+      cronBilling,
     ],
   });
 });

@@ -135,9 +135,12 @@ export async function getDueActiveSubscriptions(): Promise<Subscription[]> {
     .filter((sub) => sub.proximoCobro && sub.proximoCobro <= today);
 }
 
-/** Renovación exitosa: aplica el cambio de plan pendiente (si había),
- * avanza ProximoCobro un mes desde la fecha que tocaba (no desde hoy, para
- * que el día de cobro no vaya derivando por retrasos del cron). */
+/** Renovación exitosa: aplica el cambio de plan pendiente (si había) y
+ * avanza ProximoCobro un mes desde HOY — la misma fecha desde la que
+ * addCreditsByEmail corre el Vencimiento de los créditos. Antes se avanzaba
+ * desde la fecha que tocaba: si el cron cobraba tarde (pasó el 27 oct con
+ * un cobro del 15), los créditos vencían el 27 nov pero el siguiente cobro
+ * quedaba el 15 nov, 12 días antes de que se acabara lo que ya pagó. */
 export async function markSubscriptionRenewed(sub: Subscription): Promise<void> {
   const base = getAirtableBase();
   const plan = sub.planSiguiente || sub.plan;
@@ -148,7 +151,7 @@ export async function markSubscriptionRenewed(sub: Subscription): Promise<void> 
         fields: {
           Plan: plan,
           PlanSiguiente: "",
-          ProximoCobro: oneMonthFrom(sub.proximoCobro ?? new Date().toISOString()),
+          ProximoCobro: oneMonthFrom(new Date().toISOString()),
         },
       },
     ],

@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { esES, enUS } from "@clerk/localizations";
 import { poppins, inter } from "@/lib/fonts";
 import Header from "@/components/layout/header";
+import BlackFridayBanner from "@/components/layout/black-friday-banner";
 import Footer from "@/components/layout/footer";
 import WhatsappButton from "@/components/layout/whatsapp-button";
 import MetaPixel from "@/components/analytics/meta-pixel";
@@ -83,6 +84,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <CouponCapture />
           </Suspense>
+          <BlackFridayBanner />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

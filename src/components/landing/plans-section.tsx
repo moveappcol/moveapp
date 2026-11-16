@@ -6,6 +6,8 @@ import {
   ahorroPorcentaje,
   PRECIO_CREDITO_SUELTO,
   MINIMO_CREDITOS_SUELTOS,
+  bonoBlackFridayPorcentaje,
+  creditosCompraPlan,
 } from "@/lib/credits-pricing";
 import { validateCoupon, DEFAULT_COUPON_CODE } from "@/lib/cupones";
 import CreditCalculator from "./credit-calculator";
@@ -54,9 +56,21 @@ export default async function PlansSection() {
               <p className="font-heading text-sm font-semibold uppercase tracking-wide text-move-coral">
                 {plan.name}
               </p>
-              <p className="mt-1 font-heading text-lg font-semibold text-move-green">
-                {plan.label}
-              </p>
+              {bonoBlackFridayPorcentaje(plan.id) > 0 ? (
+                <div className="mt-1 flex flex-wrap items-baseline gap-2">
+                  <p className="font-body text-base text-move-green/40 line-through">{plan.label}</p>
+                  <p className="font-heading text-lg font-semibold text-move-green">
+                    {creditosCompraPlan(plan)} créditos
+                  </p>
+                  <span className="rounded-full bg-move-green px-2 py-0.5 font-heading text-xs font-bold text-move-lime">
+                    Black Friday +{bonoBlackFridayPorcentaje(plan.id)}%
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-1 font-heading text-lg font-semibold text-move-green">
+                  {plan.label}
+                </p>
+              )}
               {descuentoPorcentaje ? (
                 <div className="mt-2 flex flex-wrap items-baseline gap-2">
                   <p className="font-body text-lg text-move-green/40 line-through">

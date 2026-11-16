@@ -17,7 +17,7 @@ import { procesarReferido } from "./referidos";
 import { crearRegalo } from "./regalos";
 import { crearPrueba, type Prueba } from "./pruebas";
 import { upsertSubscription, trackPruebaSubscription } from "./subscriptions";
-import { TRIAL_PLAN } from "./credits-pricing";
+import { TRIAL_PLAN, CREDIT_PLANS, creditosCompraPlan } from "./credits-pricing";
 
 const STARTER_PLAN_ID = "plan-starter";
 
@@ -192,11 +192,17 @@ export async function chargeSubscriptionPlan(params: {
    * — nunca confiar en que sea válido, se revisa todo de nuevo en
    * procesarReferido antes de dar ningún crédito. */
   codigoReferido?: string | null;
+  /** true solo en la compra de un plan nuevo (web y app) — nunca en la
+   * renovación del cron. Durante Black Friday suma los créditos extra
+   * (ver creditosCompraPlan); fuera de esas fechas no cambia nada. */
+  compraNueva?: boolean;
 }): Promise<ChargeResult> {
   const item = findCatalogItem("plan", params.planId);
   if (!item) return { ok: false, error: "Plan desconocido." };
 
   const precio = params.descuento ? Math.round(item.price * (1 - params.descuento)) : item.price;
+  const plan = CREDIT_PLANS.find((p) => p.id === params.planId);
+  const creditos = params.compraNueva && plan ? creditosCompraPlan(plan) : item.credits;
 
   const reference = buildReference("plan", params.planId, params.ownerRef);
   const pagoId = await createPendingPago({
@@ -204,7 +210,7 @@ export async function chargeSubscriptionPlan(params: {
     correo: params.correo,
     tipo: "plan",
     item: params.planId,
-    creditos: item.credits,
+    creditos,
     fbp: params.fbp,
     fbc: params.fbc,
     valor: precio,
@@ -242,7 +248,7 @@ export async function chargeSubscriptionPlan(params: {
   // a cargo de acreditar, para no hacerlo dos veces.
   const credited = await claimPagoAprobado(reference, tx.id);
   if (credited) {
-    await addCreditsByEmail(params.correo, item.credits, true, params.fechaInicio);
+    await addCreditsByEmail(params.correo, creditos, true, params.fechaInicio);
     await facturarCompra({
       correo: params.correo,
       sku: item.id,
@@ -254,7 +260,7 @@ export async function chargeSubscriptionPlan(params: {
       await procesarReferido({ correoReferido: params.correo, codigo: params.codigoReferido, pagoId });
     }
   }
-  return { ok: true, transactionId: tx.id, credits: item.credits, credited };
+  return { ok: true, transactionId: tx.id, credits: creditos, credited };
 }
 
 /** Compra de créditos sueltos (ver precioCreditosSueltos en

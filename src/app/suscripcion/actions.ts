@@ -170,6 +170,7 @@ export async function subscribeToPlan(
     fbp,
     fbc,
     codigoReferido,
+    compraNueva: true,
   });
 
   if (!result.ok) return result;

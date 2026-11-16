@@ -12,6 +12,34 @@ export const CREDIT_PLANS: CreditPackage[] = [
   { id: "plan-volume", name: "Volume", label: "100 créditos", credits: 100, price: 569_900 },
 ];
 
+/** Black Friday 2026: viernes 20 y sábado 21 de noviembre, hora Colombia.
+ * Quien compra un plan nuevo esos días recibe créditos extra SOLO en ese
+ * primer cobro — las renovaciones (cron) cobran y acreditan lo normal, y a
+ * quien ya está suscrito y se renueva esos días no le aplica. El mismo
+ * precio, más créditos. */
+export const BLACK_FRIDAY = {
+  inicio: new Date("2026-11-20T00:00:00-05:00"),
+  fin: new Date("2026-11-22T00:00:00-05:00"),
+  bonoPorPlan: { "plan-starter": 0.2, "plan-balance": 0.15, "plan-volume": 0.15 } as Record<string, number>,
+};
+
+export function esBlackFriday(ahora: Date = new Date()): boolean {
+  return ahora >= BLACK_FRIDAY.inicio && ahora < BLACK_FRIDAY.fin;
+}
+
+/** % de créditos extra de un plan durante Black Friday (0 fuera de esas
+ * fechas). Ej. 20 para Starter. */
+export function bonoBlackFridayPorcentaje(planId: string, ahora: Date = new Date()): number {
+  if (!esBlackFriday(ahora)) return 0;
+  return Math.round((BLACK_FRIDAY.bonoPorPlan[planId] ?? 0) * 100);
+}
+
+/** Créditos que da la compra de un plan nuevo hoy: los del plan más el bono
+ * de Black Friday si aplica (Starter 32→38, Balance 64→74, Volume 100→115). */
+export function creditosCompraPlan(plan: CreditPackage, ahora: Date = new Date()): number {
+  return Math.round(plan.credits * (1 + bonoBlackFridayPorcentaje(plan.id, ahora) / 100));
+}
+
 export const CREDIT_TOPUPS: CreditPackage[] = [
   { id: "topup-5", label: "5 créditos", credits: 5, price: 39_900 },
   { id: "topup-10", label: "10 créditos", credits: 10, price: 74_900 },

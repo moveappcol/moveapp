@@ -101,6 +101,7 @@ export async function POST(req: Request) {
     paymentSourceId: paymentSource.id,
     ownerRef: user.userId,
     fechaInicio,
+    compraNueva: true,
   });
 
   if (!result.ok) {

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { findCatalogItem } from "@/lib/orders";
-import { ahorroPorcentaje, formatCOP } from "@/lib/credits-pricing";
+import { ahorroPorcentaje, formatCOP, CREDIT_PLANS, bonoBlackFridayPorcentaje, creditosCompraPlan } from "@/lib/credits-pricing";
 import { fetchAcceptanceTokens, wompiPublicKey } from "@/lib/wompi";
 import { requireCompleteProfileIfSignedIn } from "@/lib/perfil";
 import { getSubscriptionByEmail } from "@/lib/subscriptions";
@@ -81,6 +81,15 @@ export default async function SuscribirsePage({
         {t.subscribe.sinPermanencia}
       </p>
       <p className="mt-2 font-body text-xs text-move-green/50">{t.subscribe.limiteMensual}</p>
+      {bonoBlackFridayPorcentaje(plan.id) > 0 && (
+        <p className="mt-4 rounded-2xl bg-move-green px-4 py-3 font-heading text-sm font-semibold text-white">
+          🖤 Black Friday: este mes recibes{" "}
+          <span className="text-move-lime">
+            {creditosCompraPlan(CREDIT_PLANS.find((p) => p.id === plan.id) ?? plan)} créditos
+          </span>{" "}
+          en vez de {plan.credits} (+{bonoBlackFridayPorcentaje(plan.id)}%). Desde la siguiente renovación vuelve a {plan.credits}.
+        </p>
+      )}
 
       <div className="mt-8">
         <SubscribeForm

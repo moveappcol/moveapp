@@ -28,7 +28,9 @@ const APP_SCHEME = "uniqueapp://";
  * -- un solo clic en "Instalar" y listo. En iPhone, Apple no expone ninguna
  * API para disparar "Agregar a pantalla de inicio" desde código: ahí no
  * queda otra que mandar a la guía de pasos manuales. */
-export default function InstallAppButton({ label }: { label: string }) {
+/** sobreVerde: el hero de Black Friday tiene fondo verde, donde el botón
+ * verde de siempre desaparece — ahí va en coral. */
+export default function InstallAppButton({ label, sobreVerde = false }: { label: string; sobreVerde?: boolean }) {
   const router = useRouter();
   // El servidor no tiene matchMedia — ahí simplemente asumimos "no
   // instalado" (el botón se muestra) y, si el cliente ya lo tenía
@@ -120,7 +122,9 @@ export default function InstallAppButton({ label }: { label: string }) {
     <button
       type="button"
       onClick={handleClick}
-      className="inline-flex items-center gap-2 rounded-full bg-move-green px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+      className={`inline-flex items-center gap-2 rounded-full px-6 py-3 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 ${
+        sobreVerde ? "bg-move-coral" : "bg-move-green"
+      }`}
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-white stroke-[2.2]">
         <path d="M12 3v13" strokeLinecap="round" />

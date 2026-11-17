@@ -8,7 +8,7 @@ import { validateCoupon, redeemFreeCouponForEmail } from "./cupones";
 import { getSubscriptionByEmail, upsertSubscription } from "./subscriptions";
 
 /**
- * Esquema en Airtable — tabla "Regalos" (un plan comprado como regalo,
+ * Esquema en Airtable — tabla "Regalosnavidad" (un plan comprado como regalo,
  * canjeable una vez por quien reciba el código):
  *   - Codigo             (texto, único — el código que se canjea)
  *   - Plan               (texto — id del catálogo, ej. "plan-starter")
@@ -31,12 +31,13 @@ import { getSubscriptionByEmail, upsertSubscription } from "./subscriptions";
  *   - Tipo               (selección: "Virtual" | "Física")
  *   - Para / DeParte     (texto — lo que va escrito en la tarjeta)
  *   - Ciudad / Direccion / Celular (texto — solo las físicas, para el envío)
- *   - EstadoEnvio        (selección: "Por enviar" | "Enviada" — solo físicas)
+ *   - EstadoEnvio        (selección: vacío = por enviar | "Enviado" — solo
+ *      físicas; gerencia lo marca a mano al entregarla)
  * Mientras el pago no se aprueba, la fila existe con Estado "Pendiente de
  * pago" y sin Codigo (ver prepararRegalo) — así los datos de la tarjeta
  * quedan guardados aunque el pago lo confirme el webhook más tarde.
  */
-const REGALOS_TABLE = "Regalos";
+const REGALOS_TABLE = "Regalosnavidad";
 const MESES_VALIDEZ = 6;
 
 export type Regalo = {
@@ -120,10 +121,18 @@ export function fechaLargaRegalo(fechaISO: string): string {
   });
 }
 
+/** Suma meses a una fecha YYYY-MM-DD en UTC puro — con la hora local del
+ * servidor, "2026-11-17" + 6 meses daba "2027-05-16". */
 function addMonthsISO(dateISO: string, months: number): string {
-  const d = new Date(dateISO);
-  d.setMonth(d.getMonth() + months);
+  const d = new Date(`${dateISO.slice(0, 10)}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + months);
   return d.toISOString().slice(0, 10);
+}
+
+/** Hoy en Colombia (YYYY-MM-DD): después de las 7pm, la fecha UTC ya es
+ * mañana y el regalo quedaba comprado "un día después". */
+function hoyBogota(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: "America/Bogota" });
 }
 
 /** Al empezar el pago de una tarjeta de regalo: guarda de una vez lo que
@@ -157,7 +166,6 @@ export async function prepararRegalo(params: {
                 Ciudad: params.datos.envio.ciudad,
                 Direccion: params.datos.envio.direccion,
                 Celular: params.datos.envio.celular,
-                EstadoEnvio: "Por enviar",
               }
             : {}),
         },
@@ -214,7 +222,7 @@ export async function crearRegalo(params: {
   const opciones = parseRegaloItemId(params.itemId);
   if (!opciones) throw new Error(`Regalo desconocido: ${params.itemId}`);
   const base = getAirtableBase();
-  const fechaCompra = new Date().toISOString().slice(0, 10);
+  const fechaCompra = hoyBogota();
   const fechaLimite = addMonthsISO(fechaCompra, MESES_VALIDEZ);
   const preparado = await findRegaloByPagoId(params.pagoId);
 
@@ -269,7 +277,7 @@ export async function canjearRegalo(codigo: string, correoDestino: string): Prom
   return withLock(`regalo:${codigo.toUpperCase()}`, async () => {
     const regalo = await findRegaloByCodigo(codigo);
     if (!regalo) {
-      // No es un código de regalo (tabla "Regalos") — puede ser un cupón de
+      // No es un código de regalo (tabla "Regalosnavidad") — puede ser un cupón de
       // créditos gratis (tabla "Cupones", ej. UNIQUE24) canjeado desde esta
       // misma entrada ("¿Te regalaron un plan? Canjéalo aquí").
       const cupon = await validateCoupon(codigo);
@@ -283,7 +291,7 @@ export async function canjearRegalo(codigo: string, correoDestino: string): Prom
       return { ok: false, error: "Este código ya fue canjeado." };
     }
 
-    const hoy = new Date().toISOString().slice(0, 10);
+    const hoy = hoyBogota();
     if (regalo.estado === "Vencido" || regalo.fechaLimite < hoy) {
       if (regalo.estado !== "Vencido") await marcarVencido(regalo.id);
       return { ok: false, error: "Este código ya venció y no se puede canjear." };
@@ -353,7 +361,7 @@ async function marcarVencido(id: string): Promise<void> {
  * fecha de Airtable. */
 export async function entregarMesesDeRegalos(): Promise<{ entregados: number; fallidos: string[] }> {
   const base = getAirtableBase();
-  const hoy = new Date().toISOString().slice(0, 10);
+  const hoy = hoyBogota();
   const records = await base(REGALOS_TABLE).select({ filterByFormula: `{Estado} = "Activado"` }).all();
   const pendientes = records
     .map(mapRecordToRegalo)

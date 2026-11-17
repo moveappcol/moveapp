@@ -586,7 +586,7 @@ export async function completarRegaloAprobado(params: {
         `Comprador: ${params.nombre} — ${params.correo}`,
         `Total pagado: ${formatCOP(params.totalConIva)} (incluye envío)`,
         "",
-        'Cuando la entregues, cambia "EstadoEnvio" a "Enviada" en la tabla Regalos de Airtable.',
+        'Cuando la entregues, cambia "EstadoEnvio" a "Enviado" en la tabla Regalosnavidad de Airtable.',
       ].join("\n"),
     }).catch(() => {});
   }

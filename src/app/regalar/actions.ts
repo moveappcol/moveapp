@@ -21,7 +21,7 @@ import {
  * el nombre y correo vienen directo del formulario (ver GiftForm). El plan,
  * los meses y si es física viajan en el itemId (buildRegaloItemId), así el
  * webhook reconstruye el precio solo desde la referencia; lo que va escrito
- * en la tarjeta y el envío quedan guardados en "Regalos" antes de pagar
+ * en la tarjeta y el envío quedan guardados en "Regalosnavidad" antes de pagar
  * (prepararRegalo), porque el webhook no recibe nada del formulario. */
 export async function startGiftCheckout(formData: FormData): Promise<void> {
   const planId = String(formData.get("planId") ?? "");

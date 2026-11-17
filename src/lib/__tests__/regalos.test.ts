@@ -40,7 +40,7 @@ describe("canjearRegalo — visibilidad en Suscripciones", () => {
 
   it("un regalo de plan pagado queda en Suscripciones como Cancelada si no tenía plan real", async () => {
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      fakeBase({ Regalos: fakeTable([regaloRecord()]) })
+      fakeBase({ Regalosnavidad: fakeTable([regaloRecord()]) })
     );
     (getSubscriptionByEmail as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
@@ -54,7 +54,7 @@ describe("canjearRegalo — visibilidad en Suscripciones", () => {
 
   it("no toca Suscripciones si la persona ya tiene un plan real Activa (no la cancela sin querer)", async () => {
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      fakeBase({ Regalos: fakeTable([regaloRecord()]) })
+      fakeBase({ Regalosnavidad: fakeTable([regaloRecord()]) })
     );
     (getSubscriptionByEmail as ReturnType<typeof vi.fn>).mockResolvedValue({
       estado: "Activa",
@@ -69,7 +69,7 @@ describe("canjearRegalo — visibilidad en Suscripciones", () => {
 
   it("un cupón de créditos gratis (no pagado) nunca toca Suscripciones", async () => {
     (getAirtableBase as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      fakeBase({ Regalos: fakeTable([]) })
+      fakeBase({ Regalosnavidad: fakeTable([]) })
     );
     (validateCoupon as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,

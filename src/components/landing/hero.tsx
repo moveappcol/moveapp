@@ -8,7 +8,6 @@ import { Globo, Bolsa } from "./black-friday-decor";
 import {
   FondoNavidad,
   CajaRegalo,
-  Mono,
   PALETAS_REGALO,
 } from "./navidad-decor";
 
@@ -147,9 +146,8 @@ export default async function Hero() {
         </div>
 
         {navidad ? (
-          // Mismo cuadro coral del logo de siempre, envuelto como regalo:
-          // moño arriba, cinta de Navidad, sello para regalar y pilas de
-          // regalos en las esquinas.
+          // El cuadro coral del logo queda igual que siempre; la Navidad va
+          // alrededor: pilas de regalos con moño a sus pies.
           <div className="relative w-full max-w-md justify-self-center md:justify-self-end">
             <div className="relative aspect-square w-full overflow-hidden rounded-[2.5rem] bg-move-coral">
               <Image
@@ -160,16 +158,8 @@ export default async function Hero() {
                 className="object-contain p-10"
                 priority
               />
-              <div className="absolute -left-24 top-10 w-[24rem] -rotate-45 bg-move-green py-2.5 text-center font-heading text-xl font-extrabold uppercase tracking-widest text-white shadow-lg">
-                Feliz Navidad
-              </div>
-              <div className="absolute bottom-6 right-6 flex h-28 w-28 rotate-12 flex-col items-center justify-center rounded-full bg-move-lime text-center font-heading leading-none text-move-green shadow-xl">
-                <span className="text-3xl">🎁</span>
-                <span className="mt-1 text-[11px] font-bold uppercase">Regala</span>
-                <span className="text-sm font-extrabold uppercase">UNIQUE</span>
-              </div>
+              <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-move-lime" />
             </div>
-            <Mono className="absolute -top-12 left-1/2 z-20 h-24 w-36 -translate-x-1/2" color="#D4FF3F" />
             <div className="absolute -bottom-8 -left-8 z-20 flex items-end">
               <CajaRegalo className="h-24 w-24 -rotate-6" colores={PALETAS_REGALO[3]} />
               <CajaRegalo className="-ml-5 h-16 w-16 rotate-3" colores={PALETAS_REGALO[2]} />

@@ -29,7 +29,7 @@ export default function RegalarPage({ planInicial, error }: { planInicial: strin
               )}
             </h1>
             <p className="mt-4 max-w-md font-body text-lg text-white/75">
-              Uno, dos o tres meses de clases en los mejores gimnasios y experiencias wellness.
+              Uno, dos o tres meses de clases en los mejores gimnasios y experiencias wellness. Salir de la zona de confort te puede traer experiencias inolvidables.
             </p>
           </div>
 

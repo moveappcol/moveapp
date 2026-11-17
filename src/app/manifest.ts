@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "UNIQUE — Entrena en los mejores gimnasios",
     short_name: "UNIQUE",
     description:
-      "Un solo plan de créditos para acceder a cycling, boxing, yoga y más en los gimnasios y estudios afiliados a UNIQUE.",
+      "Vive las mejores experiencias con un solo plan: boxing, Hyrox, pilates, yoga y experiencias wellness en los gimnasios y estudios afiliados a UNIQUE.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

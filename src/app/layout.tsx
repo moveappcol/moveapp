@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "UNIQUE — Entrena en los mejores gimnasios y estudios",
   description:
-    "Un solo plan de créditos para acceder a cycling, boxing, yoga y más en los gimnasios y estudios afiliados a UNIQUE.",
+    "Vive las mejores experiencias con un solo plan: boxing, Hyrox, pilates, yoga y experiencias wellness en los gimnasios y estudios afiliados a UNIQUE.",
   // Para que "Agregar a pantalla de inicio" en iPhone/Android use el ícono
   // real de UNIQUE y abra en modo pantalla completa (sin la barra de
   // Safari/Chrome), en vez de un acceso directo genérico.

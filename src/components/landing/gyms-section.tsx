@@ -34,7 +34,7 @@ export default async function GymsSection() {
             </span>
             <p className="mt-4 max-w-md font-body text-sm text-move-green/60">{t.comingSoonBody}</p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {["Boxing", "Indoor Cycling", "Pilates", "Funcional"].map((activity) => (
+              {["Boxing", "Hyrox", "Pilates", "Funcional"].map((activity) => (
                 <span
                   key={activity}
                   className="rounded-full border border-move-green/15 bg-white px-4 py-2 font-heading text-xs font-medium text-move-green/70"

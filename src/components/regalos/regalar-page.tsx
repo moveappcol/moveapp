@@ -1,6 +1,6 @@
 import { esNavidad } from "@/lib/credits-pricing";
 import { FondoNavidad, CajaRegalo, Mono, PALETAS_REGALO } from "@/components/landing/navidad-decor";
-import { TarjetaFrente, TarjetaInterior } from "./tarjeta-regalo";
+import Image from "next/image";
 import GiftForm from "./gift-form";
 
 /** Página de la tarjeta de regalo (/regalar y /regalar/[planId]). En
@@ -42,8 +42,26 @@ export default function RegalarPage({ planInicial, error }: { planInicial: strin
                 <CajaRegalo className="absolute -bottom-6 -right-6 z-20 h-20 w-20 rotate-6" colores={PALETAS_REGALO[2]} />
               </>
             )}
-            <TarjetaFrente className="relative z-0 w-[62%] -rotate-3" />
-            <TarjetaInterior codigo="XXXX-XXXX" className="relative z-10 -mt-[14%] ml-auto w-[78%] rotate-2" />
+            {/* Fotos reales de la tarjeta impresa */}
+            <Image
+              src="/regalos/tarjeta-sobre.jpg"
+              alt="Tarjeta de regalo UNIQUE con su sobre"
+              width={2640}
+              height={1756}
+              sizes="(min-width: 768px) 448px, 92vw"
+              quality={90}
+              priority
+              className="relative z-0 w-full rounded-2xl shadow-2xl"
+            />
+            <Image
+              src="/regalos/tarjeta-interior.jpg"
+              alt="Interior de la tarjeta de regalo UNIQUE, con el código"
+              width={2140}
+              height={1448}
+              sizes="(min-width: 768px) 260px, 55vw"
+              quality={90}
+              className="relative z-10 -mt-[22%] ml-auto w-[58%] rotate-3 rounded-xl border-4 border-white shadow-2xl"
+            />
           </div>
         </div>
       </section>

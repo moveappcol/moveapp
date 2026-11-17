@@ -28,7 +28,7 @@ export default async function Hero() {
   // 20 y 21 de nov: el hero se viste de Black Friday (fondo verde, globos,
   // sello de créditos extra) — vuelve solo a la normalidad después.
   const bf = esBlackFriday();
-  // 23 nov – 31 dic: el hero se viste de Navidad (regalos, moños, esferas)
+  // 22 nov – 31 dic: el hero se viste de Navidad (regalos, moños, esferas)
   // y empuja la tarjeta de regalo. Fondo verde igual que en Black Friday.
   const navidad = !bf && esNavidad();
   const oscuro = bf || navidad;

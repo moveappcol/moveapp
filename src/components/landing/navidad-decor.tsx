@@ -1,4 +1,4 @@
-/** Decoración de Navidad (23 nov – 31 dic): cajas de regalo con moño,
+/** Decoración de Navidad (22 nov – 31 dic): cajas de regalo con moño,
  * esferas, estrellas y copos, en SVG para que se vean nítidos a cualquier
  * tamaño. Sin <defs>/ids compartidos: con varios en la página, un id dentro
  * de un elemento oculto en móvil deja a los demás sin relleno. */

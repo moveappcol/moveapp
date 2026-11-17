@@ -42,25 +42,25 @@ export default function RegalarPage({ planInicial, error }: { planInicial: strin
                 <CajaRegalo className="absolute -bottom-6 -right-6 z-20 h-20 w-20 rotate-6" colores={PALETAS_REGALO[2]} />
               </>
             )}
-            {/* Fotos reales de la tarjeta impresa */}
+            {/* Fotos reales de la tarjeta impresa, recortadas sin fondo */}
             <Image
-              src="/regalos/tarjeta-sobre.jpg"
-              alt="Tarjeta de regalo UNIQUE con su sobre"
-              width={2640}
-              height={1756}
-              sizes="(min-width: 768px) 448px, 92vw"
-              quality={90}
+              src="/regalos/tarjeta-frente.png"
+              alt="Tarjeta de regalo UNIQUE"
+              width={2611}
+              height={1840}
+              sizes="(min-width: 768px) 340px, 75vw"
+              quality={92}
               priority
-              className="relative z-0 w-full rounded-2xl shadow-2xl"
+              className="relative z-0 w-[76%] -rotate-3 drop-shadow-[0_30px_35px_rgba(0,0,0,0.45)]"
             />
             <Image
-              src="/regalos/tarjeta-interior.jpg"
-              alt="Interior de la tarjeta de regalo UNIQUE, con el código"
-              width={2140}
-              height={1448}
-              sizes="(min-width: 768px) 260px, 55vw"
-              quality={90}
-              className="relative z-10 -mt-[22%] ml-auto w-[58%] rotate-3 rounded-xl border-4 border-white shadow-2xl"
+              src="/regalos/tarjeta-interior.png"
+              alt="Interior de la tarjeta de regalo UNIQUE"
+              width={2722}
+              height={1935}
+              sizes="(min-width: 768px) 300px, 68vw"
+              quality={92}
+              className="relative z-10 -mt-[22%] ml-auto w-[68%] rotate-3 drop-shadow-[0_30px_35px_rgba(0,0,0,0.45)]"
             />
           </div>
         </div>

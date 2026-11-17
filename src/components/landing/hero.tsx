@@ -8,8 +8,10 @@ import { Globo, Bolsa } from "./black-friday-decor";
 import {
   FondoNavidad,
   CajaRegalo,
+  Mono,
   PALETAS_REGALO,
 } from "./navidad-decor";
+import { TarjetaFrente } from "@/components/regalos/tarjeta-regalo";
 
 export default async function Hero() {
   const locale = await getLocale();
@@ -146,29 +148,33 @@ export default async function Hero() {
         </div>
 
         {navidad ? (
-          // El cuadro coral del logo queda igual que siempre; la Navidad va
-          // alrededor: pilas de regalos con moño a sus pies.
-          <div className="relative w-full max-w-md justify-self-center md:justify-self-end">
-            <div className="relative aspect-square w-full overflow-hidden rounded-[2.5rem] bg-move-coral">
-              <Image
-                src="/brand/unique-logo-source.png"
-                alt="UNIQUE"
-                fill
-                sizes="(min-width: 768px) 28rem, 90vw"
-                className="object-contain p-10"
-                priority
+          <div className="relative mx-auto w-full max-w-md py-8 md:justify-self-end">
+            <Mono className="absolute -top-2 left-1/2 z-20 h-20 w-28 -translate-x-1/2" />
+            <TarjetaFrente className="relative z-10 rotate-[-4deg]" />
+            <div className="absolute -bottom-4 -left-6 z-20 flex items-end">
+              <CajaRegalo
+                className="h-24 w-24 -rotate-6"
+                colores={PALETAS_REGALO[0]}
               />
-              <div className="absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-move-lime" />
+              <CajaRegalo
+                className="-ml-5 h-16 w-16 rotate-3"
+                colores={PALETAS_REGALO[2]}
+              />
             </div>
-            <div className="absolute -bottom-8 -left-8 z-20 flex items-end">
-              <CajaRegalo className="h-24 w-24 -rotate-6" colores={PALETAS_REGALO[3]} />
-              <CajaRegalo className="-ml-5 h-16 w-16 rotate-3" colores={PALETAS_REGALO[2]} />
+            <div className="absolute -bottom-6 -right-4 z-20 flex items-end">
+              <CajaRegalo
+                className="h-16 w-16 -rotate-3"
+                colores={PALETAS_REGALO[4]}
+              />
+              <CajaRegalo
+                className="-ml-4 h-28 w-28 rotate-6"
+                colores={PALETAS_REGALO[1]}
+              />
             </div>
-            <div className="absolute -bottom-8 -right-6 z-20 flex items-end">
-              <CajaRegalo className="h-16 w-16 -rotate-3" colores={PALETAS_REGALO[4]} />
-              <CajaRegalo className="-ml-4 h-24 w-24 rotate-6" colores={PALETAS_REGALO[1]} />
-            </div>
-            <CajaRegalo className="absolute -right-10 top-10 z-20 hidden h-20 w-20 rotate-12 sm:block" colores={PALETAS_REGALO[2]} />
+            <CajaRegalo
+              className="absolute -right-8 top-0 z-0 h-20 w-20 rotate-12"
+              colores={PALETAS_REGALO[3]}
+            />
           </div>
         ) : (
           <div className="relative aspect-square w-full max-w-md justify-self-center overflow-hidden rounded-[2.5rem] bg-move-coral md:justify-self-end">

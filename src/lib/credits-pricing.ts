@@ -40,10 +40,10 @@ export function creditosCompraPlan(plan: CreditPackage, ahora: Date = new Date()
   return Math.round(plan.credits * (1 + bonoBlackFridayPorcentaje(plan.id, ahora) / 100));
 }
 
-/** Temporada de Navidad 2026: del lunes 23 de nov al 31 de dic (hora
+/** Temporada de Navidad 2026: del domingo 22 de nov (apenas termina Black Friday) al 31 de dic (hora
  * Colombia). La web se viste de Navidad y empuja las tarjetas de regalo. */
 export const NAVIDAD = {
-  inicio: new Date("2026-11-23T00:00:00-05:00"),
+  inicio: new Date("2026-11-22T00:00:00-05:00"),
   fin: new Date("2027-01-01T00:00:00-05:00"),
 };
 

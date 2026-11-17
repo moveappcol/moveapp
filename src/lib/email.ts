@@ -817,6 +817,9 @@ export async function sendGiftPurchaseEmail(params: {
   codigo: string;
   fechaLimiteLabel: string;
   voucherUrl: string;
+  /** Tarjeta física: en vez de "imprímelo", se le cuenta que se la
+   * llevamos. */
+  envioFisico?: { para: string; direccion: string } | null;
 }): Promise<void> {
   const html = giftEmailHtml({
     saludo: `¡Hola ${params.compradorNombre}! Gracias por regalar un plan UNIQUE`,
@@ -825,7 +828,9 @@ export async function sendGiftPurchaseEmail(params: {
     fechaLimiteLabel: params.fechaLimiteLabel,
     ctaLabel: "Ver mi regalo",
     ctaUrl: params.voucherUrl,
-    nota: "Desde ahí puedes imprimirlo o mandárselo directo por correo a quien se lo vas a regalar.",
+    nota: params.envioFisico
+      ? `Le llevaremos la tarjeta física a ${params.envioFisico.para} (${params.envioFisico.direccion}, Bogotá) y te escribiremos para coordinar la entrega. Este es el mismo código que va en la tarjeta.`
+      : "Desde ahí puedes imprimirlo o mandárselo directo por correo a quien se lo vas a regalar.",
   });
 
   await sendEmail({

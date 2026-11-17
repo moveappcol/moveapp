@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { findRegaloByCodigo } from "@/lib/regalos";
 import { findCatalogItem } from "@/lib/orders";
 import VoucherCard from "@/components/regalos/voucher-card";
+import { TarjetaInterior } from "@/components/regalos/tarjeta-regalo";
 
 export default async function VoucherPage({
   params,
@@ -17,9 +18,15 @@ export default async function VoucherPage({
   return (
     <section className="bg-move-green px-4 py-16 sm:px-6 print:bg-white">
       <div className="mx-auto max-w-md">
+        <TarjetaInterior
+          codigo={regalo.codigo}
+          para={regalo.para || null}
+          deParte={regalo.deParte || null}
+          className="mb-10 print:hidden"
+        />
         <VoucherCard
         codigo={regalo.codigo}
-        planLabel={plan?.name ?? plan?.label ?? regalo.planId}
+        planLabel={`${plan?.name ?? regalo.planId} · ${regalo.meses === 1 ? "1 mes" : `${regalo.meses} meses`}`}
         fechaLimiteLabel={new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
           timeZone: "America/Bogota",
           day: "numeric",

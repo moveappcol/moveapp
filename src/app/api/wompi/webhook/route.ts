@@ -17,9 +17,8 @@ import {
   cancelSubscription,
   trackPruebaSubscription,
 } from "@/lib/subscriptions";
-import { facturarCompra, anularFacturaPorReversion } from "@/lib/billing";
-import { sendOpsAlertEmail, sendGiftPurchaseEmail } from "@/lib/email";
-import { crearRegalo } from "@/lib/regalos";
+import { facturarCompra, anularFacturaPorReversion, completarRegaloAprobado } from "@/lib/billing";
+import { sendOpsAlertEmail } from "@/lib/email";
 import { procesarReferido } from "@/lib/referidos";
 import {
   getPruebaById,
@@ -122,42 +121,13 @@ export async function POST(req: NextRequest) {
     // regalos.ts) se le dan los créditos a esa persona. Tampoco se activa
     // ninguna suscripción acá: es un crédito único, a propósito (ver
     // canjearRegalo, que llama a addCreditsByEmail sin tocar Suscripciones).
-    const regalo = await crearRegalo({
-      planId: item.id,
-      compradoPorCorreo: pago.correo,
-      compradoPorNombre: pago.nombre ?? pago.correo,
-      pagoId: pago.id,
-    });
-    await facturarCompra({
+    await completarRegaloAprobado({
+      itemId: item.id,
       correo: pago.correo,
-      sku: item.id,
-      concepto: `Regalo UNIQUE — Plan ${item.name ?? item.label}`,
-      totalConIva: montoEsperado,
+      nombre: pago.nombre ?? pago.correo,
       pagoId: pago.id,
+      totalConIva: montoEsperado,
     });
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-    try {
-      await sendGiftPurchaseEmail({
-        compradorEmail: pago.correo,
-        compradorNombre: pago.nombre ?? "",
-        planLabel: item.name ?? item.label,
-        codigo: regalo.codigo,
-        fechaLimiteLabel: new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
-          timeZone: "America/Bogota",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        }),
-        voucherUrl: `${siteUrl}/regalar/voucher/${regalo.codigo}`,
-      });
-    } catch (err) {
-      const motivo = err instanceof Error ? err.message : "error desconocido";
-      await sendOpsAlertEmail({
-        ownerEmail: OWNER_EMAIL,
-        asunto: "No se pudo enviar el correo de un regalo comprado",
-        detalle: `Código: ${regalo.codigo}\nComprador: ${pago.correo}\nMotivo: ${motivo}\n\nEl regalo sí quedó creado — toca reenviarle el código manual mientras se revisa qué pasó.`,
-      });
-    }
     const compradorPersona = await getUserCreditsByEmail(pago.correo);
     await sendMetaPurchaseEvent({
       eventId: tx.id,

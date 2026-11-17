@@ -1,0 +1,20 @@
+# Entrega cada mes los créditos de las tarjetas de regalo de 2 y 3 meses.
+# Lo normal es que lo dispare el servicio cron-regalos-mensuales en Railway
+# (5am Bogotá); este horario de GitHub queda de respaldo por si ese servicio
+# todavía no existe o falla — correrlo dos veces no entrega doble, porque
+# la primera corrida ya movió ProximaEntrega al mes siguiente.
+name: Regalos mensuales
+
+on:
+  schedule:
+    - cron: "0 15 * * *" # 10am America/Bogota
+  workflow_dispatch: {}
+
+jobs:
+  entregar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger regalos-mensuales cron
+        run: |
+          curl -sf --max-time 60 --retry 2 --retry-delay 10 --retry-max-time 180 -X GET "https://www.uniqueappcol.com/api/cron/regalos-mensuales" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

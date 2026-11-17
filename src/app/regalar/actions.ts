@@ -6,37 +6,68 @@ import {
   wompiPublicKey,
   WOMPI_CHECKOUT_URL,
 } from "@/lib/wompi";
-import { buildReference, findCatalogItem } from "@/lib/orders";
+import { buildReference, buildRegaloItemId, findCatalogItem } from "@/lib/orders";
 import { createPendingPago } from "@/lib/pagos";
 import { sendGiftCodeToRecipientEmail } from "@/lib/email";
-import { findRegaloByCodigo } from "@/lib/regalos";
+import {
+  findRegaloByCodigo,
+  prepararRegalo,
+  validarDatosTarjetaRegalo,
+  type DatosTarjetaRegalo,
+} from "@/lib/regalos";
 
 /** A propósito SIN auth() — comprar un regalo no requiere cuenta ni sesión,
- * el nombre y correo vienen directo del formulario (ver /regalar/[planId]).
- * `planId` va pre-atado con .bind() en el <form action>, así que solo
- * recibe FormData como argumento real, igual que bookClass en gimnasios. */
-export async function startGiftCheckout(planId: string, formData: FormData): Promise<void> {
-  const item = findCatalogItem("regalo", planId);
-  if (!item) redirect("/#planes");
+ * el nombre y correo vienen directo del formulario (ver GiftForm). El plan,
+ * los meses y si es física viajan en el itemId (buildRegaloItemId), así el
+ * webhook reconstruye el precio solo desde la referencia; lo que va escrito
+ * en la tarjeta y el envío quedan guardados en "Regalos" antes de pagar
+ * (prepararRegalo), porque el webhook no recibe nada del formulario. */
+export async function startGiftCheckout(formData: FormData): Promise<void> {
+  const planId = String(formData.get("planId") ?? "");
+  const meses = Number(formData.get("meses") ?? 1);
+  const fisica = formData.get("tipo") === "fisica";
+  const itemId = buildRegaloItemId({ planId, meses, fisica });
+  const item = findCatalogItem("regalo", itemId);
+  if (!item) redirect("/regalar");
+
+  const volver = (error: string) => redirect(`/regalar/${planId}?error=${encodeURIComponent(error)}`);
 
   const nombreLimpio = String(formData.get("nombre") ?? "").trim();
   const correoLimpio = String(formData.get("correo") ?? "").trim().toLowerCase();
-  if (!nombreLimpio || !correoLimpio.includes("@")) {
-    redirect(`/regalar/${planId}?error=datos`);
-  }
+  if (!nombreLimpio || !correoLimpio.includes("@")) volver("Revisa tu nombre y correo antes de continuar.");
 
-  const reference = buildReference("regalo", planId, "guest");
-  const amountInCents = item.price * 100;
+  const validados = validarDatosTarjetaRegalo(
+    {
+      para: formData.get("para"),
+      deParte: formData.get("deParte"),
+      ciudad: formData.get("ciudad"),
+      direccion: formData.get("direccion"),
+      celular: formData.get("celular"),
+    },
+    fisica
+  );
+  if (!validados.ok) volver(validados.error);
+  const datos = (validados as { ok: true; datos: DatosTarjetaRegalo }).datos;
+
+  const reference = buildReference("regalo", itemId, "guest");
+  const amountInCents = item!.price * 100;
   const signature = buildIntegritySignature(reference, amountInCents, "COP");
 
-  await createPendingPago({
+  const pagoId = await createPendingPago({
     referencia: reference,
     correo: correoLimpio,
     nombre: nombreLimpio,
     tipo: "regalo",
-    item: planId,
-    creditos: item.credits,
-    valor: item.price,
+    item: itemId,
+    creditos: item!.credits,
+    valor: item!.price,
+  });
+  await prepararRegalo({
+    itemId,
+    compradoPorCorreo: correoLimpio,
+    compradoPorNombre: nombreLimpio,
+    pagoId,
+    datos,
   });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -79,8 +110,8 @@ export async function enviarRegaloADestinatario(
   try {
     await sendGiftCodeToRecipientEmail({
       destinatarioEmail: correo,
-      compradorNombre: regalo.compradoPorNombre || "Alguien especial",
-      planLabel: plan?.name ?? plan?.label ?? regalo.planId,
+      compradorNombre: regalo.deParte || regalo.compradoPorNombre || "Alguien especial",
+      planLabel: `${plan?.name ?? regalo.planId} · ${regalo.meses === 1 ? "1 mes" : `${regalo.meses} meses`}`,
       codigo: regalo.codigo,
       fechaLimiteLabel: new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
         timeZone: "America/Bogota",

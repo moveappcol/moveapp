@@ -5,6 +5,8 @@ import {
   TRIAL_PLAN,
   precioCreditosSueltos,
   MINIMO_CREDITOS_SUELTOS,
+  MESES_REGALO,
+  PRECIO_ENVIO_REGALO_FISICO,
   type CreditPackage,
 } from "./credits-pricing";
 
@@ -39,9 +41,47 @@ function findSueltoItem(itemId: string): CreditPackage | null {
   };
 }
 
+/** El itemId de un regalo codifica el plan, los meses y si es física:
+ * "plan-starter" (1 mes, virtual — así eran todos antes), "plan-balance-m3",
+ * "plan-volume-m2-fisica". Igual que "suelto-<n>", el precio sale de acá
+ * mismo y el webhook lo reconstruye solo desde la referencia. */
+const REGALO_ID_PATTERN = /^(plan-[a-z]+)(?:-m([123]))?(-fisica)?$/;
+
+export type OpcionesRegalo = { planId: string; meses: number; fisica: boolean };
+
+export function buildRegaloItemId({ planId, meses, fisica }: OpcionesRegalo): string {
+  return `${planId}${meses > 1 ? `-m${meses}` : ""}${fisica ? "-fisica" : ""}`;
+}
+
+export function parseRegaloItemId(itemId: string): OpcionesRegalo | null {
+  const match = REGALO_ID_PATTERN.exec(itemId);
+  if (!match) return null;
+  const meses = match[2] ? Number(match[2]) : 1;
+  if (!(MESES_REGALO as readonly number[]).includes(meses)) return null;
+  if (!CREDIT_PLANS.some((p) => p.id === match[1])) return null;
+  return { planId: match[1], meses, fisica: Boolean(match[3]) };
+}
+
+/** `credits` es lo que recibe quien lo canjea CADA mes (los del plan);
+ * `price` es el total: plan × meses + envío si es física. */
+function findRegaloItem(itemId: string): CreditPackage | null {
+  const opciones = parseRegaloItemId(itemId);
+  if (!opciones) return null;
+  const plan = CREDIT_PLANS.find((p) => p.id === opciones.planId)!;
+  const meses = opciones.meses === 1 ? "1 mes" : `${opciones.meses} meses`;
+  return {
+    id: itemId,
+    name: plan.name,
+    label: `${plan.name} · ${meses}${opciones.fisica ? " · tarjeta física" : ""}`,
+    credits: plan.credits,
+    price: plan.price * opciones.meses + (opciones.fisica ? PRECIO_ENVIO_REGALO_FISICO : 0),
+  };
+}
+
 export function findCatalogItem(kind: PurchaseKind, itemId: string): CreditPackage | null {
   if (kind === "suelto") return findSueltoItem(itemId);
   if (kind === "prueba") return itemId === TRIAL_PLAN.id ? TRIAL_PLAN : null;
+  if (kind === "regalo") return findRegaloItem(itemId);
   const catalog = kind === "topup" ? CREDIT_TOPUPS : CREDIT_PLANS;
   return catalog.find((item) => item.id === itemId) ?? null;
 }

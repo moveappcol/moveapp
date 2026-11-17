@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchFreshAcceptanceTokens, createPaymentSource } from "@/lib/wompi";
 import { chargeGiftPlan } from "@/lib/billing";
+import { buildRegaloItemId, findCatalogItem } from "@/lib/orders";
+import { validarDatosTarjetaRegalo } from "@/lib/regalos";
 import { requireMobileUser, MobileAuthError, mobileAuthErrorResponse } from "@/lib/mobile-auth";
 
 /** Comprar un plan como regalo desde la app — a diferencia de la web (que
@@ -25,6 +27,19 @@ export async function POST(req: Request) {
   if (!planId || !cardToken) {
     return NextResponse.json({ ok: false, error: "Falta el plan o el token de la tarjeta." }, { status: 400 });
   }
+  // Versiones viejas de la app solo mandan planId: 1 mes, virtual, y la
+  // tarjeta dice "de parte de" quien compra.
+  const meses = Number(body?.meses ?? 1);
+  const fisica = body?.fisica === true;
+  const itemId = buildRegaloItemId({ planId, meses, fisica });
+  if (!findCatalogItem("regalo", itemId)) {
+    return NextResponse.json({ ok: false, error: "Ese regalo no existe." }, { status: 400 });
+  }
+  const validados = validarDatosTarjetaRegalo(
+    { para: body?.para ?? "Alguien especial", deParte: body?.deParte ?? user.userName, ...body?.envio },
+    fisica
+  );
+  if (!validados.ok) return NextResponse.json(validados, { status: 400 });
 
   const tokens = await fetchFreshAcceptanceTokens();
 
@@ -44,7 +59,8 @@ export async function POST(req: Request) {
   const result = await chargeGiftPlan({
     correo: user.email,
     nombre: user.userName,
-    planId,
+    itemId,
+    datos: validados.datos,
     paymentSourceId: paymentSource.id,
     ownerRef: user.userId,
   });

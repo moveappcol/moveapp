@@ -101,6 +101,14 @@ export default defineRailway(() => {
     env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/billing" },
   });
 
+  // Entrega cada mes los créditos de las tarjetas de regalo de 2 y 3 meses.
+  const cronRegalosMensuales = service("cron-regalos-mensuales", {
+    source: cronSource,
+    build: cronBuild,
+    deploy: { cronSchedule: "0 10 * * *", restartPolicyType: "NEVER" },
+    env: { CRON_SECRET: moveWeb.env.CRON_SECRET, CRON_PATH: "/api/cron/regalos-mensuales" },
+  });
+
   return project("resourceful-dream", {
     resources: [
       moveWeb,
@@ -114,6 +122,7 @@ export default defineRailway(() => {
       cronPromoverListaEspera,
       cronReferidosVencidos,
       cronBilling,
+      cronRegalosMensuales,
     ],
   });
 });

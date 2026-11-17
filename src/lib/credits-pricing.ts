@@ -40,6 +40,24 @@ export function creditosCompraPlan(plan: CreditPackage, ahora: Date = new Date()
   return Math.round(plan.credits * (1 + bonoBlackFridayPorcentaje(plan.id, ahora) / 100));
 }
 
+/** Temporada de Navidad 2026: del lunes 23 de nov al 31 de dic (hora
+ * Colombia). La web se viste de Navidad y empuja las tarjetas de regalo. */
+export const NAVIDAD = {
+  inicio: new Date("2026-11-23T00:00:00-05:00"),
+  fin: new Date("2027-01-01T00:00:00-05:00"),
+};
+
+export function esNavidad(ahora: Date = new Date()): boolean {
+  return ahora >= NAVIDAD.inicio && ahora < NAVIDAD.fin;
+}
+
+/** Tarjeta de regalo: se regalan de 1 a 3 meses de cualquier plan (precio
+ * del plan × meses). Si la quieren física se suma el envío — solo dentro
+ * de Bogotá. */
+export const MESES_REGALO = [1, 2, 3] as const;
+export const PRECIO_ENVIO_REGALO_FISICO = 10_000;
+export const CIUDAD_REGALO_FISICO = "Bogotá";
+
 export const CREDIT_TOPUPS: CreditPackage[] = [
   { id: "topup-5", label: "5 créditos", credits: 5, price: 39_900 },
   { id: "topup-10", label: "10 créditos", credits: 10, price: 74_900 },

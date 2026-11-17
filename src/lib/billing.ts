@@ -14,10 +14,10 @@ import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl
 import { isTipoDocumento } from "./documento";
 import { sendOpsAlertEmail, sendInvoiceEmail, sendGiftPurchaseEmail } from "./email";
 import { procesarReferido } from "./referidos";
-import { crearRegalo } from "./regalos";
+import { crearRegalo, prepararRegalo, type Regalo, type DatosTarjetaRegalo } from "./regalos";
 import { crearPrueba, type Prueba } from "./pruebas";
 import { upsertSubscription, trackPruebaSubscription } from "./subscriptions";
-import { TRIAL_PLAN, CREDIT_PLANS, creditosCompraPlan } from "./credits-pricing";
+import { TRIAL_PLAN, CREDIT_PLANS, creditosCompraPlan, formatCOP } from "./credits-pricing";
 
 const STARTER_PLAN_ID = "plan-starter";
 
@@ -511,34 +511,123 @@ export type GiftChargeResult =
   | { ok: true; transactionId: string; codigo: string | null; credited: boolean }
   | { ok: false; error: string; pending?: boolean };
 
-/** Cobra un plan como regalo (sin dueño todavía) contra una fuente de pago
- * guardada — equivalente tokenizado del flujo web de /regalar, que en vez
- * de esto redirige al checkout alojado de Wompi (la web no tiene cómo
+/** Todo lo que pasa cuando el pago de una tarjeta de regalo queda aprobado
+ * — lo comparten el cobro tokenizado de la app (chargeGiftPlan) y el
+ * webhook de Wompi (checkout web), para que no se desincronicen: genera el
+ * código, factura, le manda el código al comprador y, si es física, avisa
+ * a gerencia con los datos del envío. */
+export async function completarRegaloAprobado(params: {
+  itemId: string;
+  correo: string;
+  nombre: string;
+  pagoId: string;
+  totalConIva: number;
+}): Promise<Regalo> {
+  const item = findCatalogItem("regalo", params.itemId);
+  if (!item) throw new Error(`Regalo desconocido: ${params.itemId}`);
+
+  const regalo = await crearRegalo({
+    itemId: params.itemId,
+    compradoPorCorreo: params.correo,
+    compradoPorNombre: params.nombre,
+    pagoId: params.pagoId,
+  });
+
+  await facturarCompra({
+    correo: params.correo,
+    sku: item.id,
+    concepto: `Regalo UNIQUE — Plan ${item.label}`,
+    totalConIva: params.totalConIva,
+    pagoId: params.pagoId,
+  });
+
+  const fechaLimiteLabel = new Date(`${regalo.fechaLimite}T00:00:00`).toLocaleDateString("es-CO", {
+    timeZone: "America/Bogota",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const fisica = regalo.tipo === "Física";
+  try {
+    await sendGiftPurchaseEmail({
+      compradorEmail: params.correo,
+      compradorNombre: params.nombre,
+      planLabel: item.label,
+      codigo: regalo.codigo,
+      fechaLimiteLabel,
+      voucherUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/regalar/voucher/${regalo.codigo}`,
+      envioFisico: fisica ? { para: regalo.para || "quien lo recibe", direccion: regalo.direccion } : null,
+    });
+  } catch (err) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: "No se pudo enviar el correo del regalo",
+      detalle: `Comprador: ${params.correo}\nCódigo: ${regalo.codigo}\n\nEl regalo sí se generó bien, solo falló el aviso por correo.\n\nError: ${err instanceof Error ? err.message : String(err)}`,
+    }).catch(() => {});
+  }
+
+  if (fisica) {
+    await sendOpsAlertEmail({
+      ownerEmail: OWNER_EMAIL,
+      asunto: `🎁 Tarjeta de regalo física por enviar — ${regalo.codigo}`,
+      detalle: [
+        `Plan: ${item.label}`,
+        `Código (va en la tarjeta): ${regalo.codigo}`,
+        `Para: ${regalo.para}`,
+        `De parte de: ${regalo.deParte}`,
+        "",
+        `Ciudad: ${regalo.ciudad}`,
+        `Dirección: ${regalo.direccion}`,
+        `Celular: ${regalo.celular}`,
+        "",
+        `Comprador: ${params.nombre} — ${params.correo}`,
+        `Total pagado: ${formatCOP(params.totalConIva)} (incluye envío)`,
+        "",
+        'Cuando la entregues, cambia "EstadoEnvio" a "Enviada" en la tabla Regalos de Airtable.',
+      ].join("\n"),
+    }).catch(() => {});
+  }
+
+  return regalo;
+}
+
+/** Cobra una tarjeta de regalo (sin dueño todavía) contra una fuente de
+ * pago guardada — equivalente tokenizado del flujo web de /regalar, que en
+ * vez de esto redirige al checkout alojado de Wompi (la web no tiene cómo
  * tokenizar tarjeta nativo). No acredita nada al comprador ni toca
- * "Suscripciones" — solo genera el código canjeable (crearRegalo), igual
- * que la rama "regalo" del webhook de Wompi (ver api/wompi/webhook), con la
- * que coexiste sin pisarse gracias a claimPagoAprobado (la primera de las
- * dos que gane la carrera es la que de verdad genera el código). */
+ * "Suscripciones" — solo genera el código canjeable, igual que la rama
+ * "regalo" del webhook de Wompi, con la que coexiste sin pisarse gracias a
+ * claimPagoAprobado (la primera de las dos que gane la carrera es la que de
+ * verdad genera el código). `itemId` codifica plan, meses y si es física
+ * (ver buildRegaloItemId). */
 export async function chargeGiftPlan(params: {
   correo: string;
   nombre: string;
-  planId: string;
+  itemId: string;
+  datos: DatosTarjetaRegalo;
   paymentSourceId: number;
   ownerRef: string;
 }): Promise<GiftChargeResult> {
-  const item = findCatalogItem("regalo", params.planId);
+  const item = findCatalogItem("regalo", params.itemId);
   if (!item) return { ok: false, error: "Plan desconocido." };
 
-  const reference = buildReference("regalo", params.planId, params.ownerRef);
+  const reference = buildReference("regalo", params.itemId, params.ownerRef);
   const pagoId = await createPendingPago({
     referencia: reference,
     correo: params.correo,
     nombre: params.nombre,
     tipo: "regalo",
-    item: params.planId,
+    item: params.itemId,
     creditos: item.credits,
     valor: item.price,
     paymentSourceId: params.paymentSourceId,
+  });
+  await prepararRegalo({
+    itemId: params.itemId,
+    compradoPorCorreo: params.correo,
+    compradoPorNombre: params.nombre,
+    pagoId,
+    datos: params.datos,
   });
 
   let tx;
@@ -567,44 +656,14 @@ export async function chargeGiftPlan(params: {
   const credited = await claimPagoAprobado(reference, tx.id);
   let codigo: string | null = null;
   if (credited) {
-    const regalo = await crearRegalo({
-      planId: item.id,
-      compradoPorCorreo: params.correo,
-      compradoPorNombre: params.nombre,
+    const regalo = await completarRegaloAprobado({
+      itemId: params.itemId,
+      correo: params.correo,
+      nombre: params.nombre,
       pagoId,
+      totalConIva: item.price,
     });
     codigo = regalo.codigo;
-
-    await facturarCompra({
-      correo: params.correo,
-      sku: item.id,
-      concepto: `Regalo UNIQUE — Plan ${item.name ?? item.label}`,
-      totalConIva: item.price,
-      pagoId,
-    });
-
-    const fechaLimiteLabel = new Date(`${regalo.fechaLimite}T00:00:00`).toLocaleDateString("es-CO", {
-      timeZone: "America/Bogota",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    try {
-      await sendGiftPurchaseEmail({
-        compradorEmail: params.correo,
-        compradorNombre: params.nombre,
-        planLabel: item.label,
-        codigo: regalo.codigo,
-        fechaLimiteLabel,
-        voucherUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/regalar/voucher/${regalo.codigo}`,
-      });
-    } catch (err) {
-      await sendOpsAlertEmail({
-        ownerEmail: OWNER_EMAIL,
-        asunto: "No se pudo enviar el correo del regalo",
-        detalle: `Comprador: ${params.correo}\nCódigo: ${regalo.codigo}\n\nEl regalo sí se generó bien, solo falló el aviso por correo.\n\nError: ${err instanceof Error ? err.message : String(err)}`,
-      }).catch(() => {});
-    }
   }
 
   return { ok: true, transactionId: tx.id, codigo, credited };

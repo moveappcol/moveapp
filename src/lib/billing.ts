@@ -14,7 +14,13 @@ import { createElectronicInvoice, createCreditNote, extractInvoiceUuidFromPdfUrl
 import { isTipoDocumento } from "./documento";
 import { sendOpsAlertEmail, sendInvoiceEmail, sendGiftPurchaseEmail } from "./email";
 import { procesarReferido } from "./referidos";
-import { crearRegalo, prepararRegalo, type Regalo, type DatosTarjetaRegalo } from "./regalos";
+import {
+  crearRegalo,
+  prepararRegalo,
+  fechaLargaRegalo,
+  type Regalo,
+  type DatosTarjetaRegalo,
+} from "./regalos";
 import { crearPrueba, type Prueba } from "./pruebas";
 import { upsertSubscription, trackPruebaSubscription } from "./subscriptions";
 import { TRIAL_PLAN, CREDIT_PLANS, creditosCompraPlan, formatCOP } from "./credits-pricing";
@@ -541,12 +547,8 @@ export async function completarRegaloAprobado(params: {
     pagoId: params.pagoId,
   });
 
-  const fechaLimiteLabel = new Date(`${regalo.fechaLimite}T00:00:00`).toLocaleDateString("es-CO", {
-    timeZone: "America/Bogota",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const fechaLimiteLabel = fechaLargaRegalo(regalo.fechaLimite);
+  const fechaCompraLabel = fechaLargaRegalo(regalo.fechaCompra);
   const fisica = regalo.tipo === "Física";
   try {
     await sendGiftPurchaseEmail({
@@ -554,6 +556,7 @@ export async function completarRegaloAprobado(params: {
       compradorNombre: params.nombre,
       planLabel: item.label,
       codigo: regalo.codigo,
+      fechaCompraLabel,
       fechaLimiteLabel,
       voucherUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/regalar/voucher/${regalo.codigo}`,
       envioFisico: fisica ? { para: regalo.para || "quien lo recibe", direccion: regalo.direccion } : null,

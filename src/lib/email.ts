@@ -746,6 +746,7 @@ function giftEmailHtml(params: {
   saludo: string;
   codigo: string;
   planLabel: string;
+  fechaCompraLabel: string;
   fechaLimiteLabel: string;
   ctaLabel: string;
   ctaUrl: string;
@@ -767,7 +768,8 @@ function giftEmailHtml(params: {
             <p style="margin:10px 0 0;font-size:36px;font-weight:800;letter-spacing:6px;color:#ffffff;">${escapeHtml(params.codigo)}</p>
             <p style="margin:10px 0 0;font-size:14px;color:#ffffff;opacity:0.6;">Plan ${escapeHtml(params.planLabel)}</p>
             <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#ffffff;opacity:0.85;">
-              Válido por 6 meses desde la compra: hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong>
+              Comprado el <strong>${escapeHtml(params.fechaCompraLabel)}</strong><br />
+              Válido hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong> (6 meses desde la compra)
             </p>
           </td>
         </tr>
@@ -815,6 +817,7 @@ export async function sendGiftPurchaseEmail(params: {
   compradorNombre: string;
   planLabel: string;
   codigo: string;
+  fechaCompraLabel: string;
   fechaLimiteLabel: string;
   voucherUrl: string;
   /** Tarjeta física: en vez de "imprímelo", se le cuenta que se la
@@ -825,6 +828,7 @@ export async function sendGiftPurchaseEmail(params: {
     saludo: `¡Hola ${params.compradorNombre}! Gracias por regalar un plan UNIQUE`,
     codigo: params.codigo,
     planLabel: params.planLabel,
+    fechaCompraLabel: params.fechaCompraLabel,
     fechaLimiteLabel: params.fechaLimiteLabel,
     ctaLabel: "Ver mi regalo",
     ctaUrl: params.voucherUrl,
@@ -848,6 +852,7 @@ export async function sendGiftCodeToRecipientEmail(params: {
   compradorNombre: string;
   planLabel: string;
   codigo: string;
+  fechaCompraLabel: string;
   fechaLimiteLabel: string;
   canjearUrl: string;
 }): Promise<void> {
@@ -855,6 +860,7 @@ export async function sendGiftCodeToRecipientEmail(params: {
     saludo: `¡${params.compradorNombre} te regaló un plan UNIQUE!`,
     codigo: params.codigo,
     planLabel: params.planLabel,
+    fechaCompraLabel: params.fechaCompraLabel,
     fechaLimiteLabel: params.fechaLimiteLabel,
     ctaLabel: "Activar mi regalo",
     ctaUrl: params.canjearUrl,

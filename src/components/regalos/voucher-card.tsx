@@ -6,11 +6,13 @@ import { enviarRegaloADestinatario, type EnviarRegaloResult } from "@/app/regala
 export default function VoucherCard({
   codigo,
   planLabel,
+  fechaCompraLabel,
   fechaLimiteLabel,
   yaCanjeado,
 }: {
   codigo: string;
   planLabel: string;
+  fechaCompraLabel: string;
   fechaLimiteLabel: string;
   yaCanjeado: boolean;
 }) {
@@ -45,7 +47,11 @@ export default function VoucherCard({
             Este código ya fue canjeado.
           </p>
         ) : (
-          <p className="mt-3 font-body text-sm text-white/85">Válido por 6 meses desde la compra: hasta el {fechaLimiteLabel}</p>
+          <p className="mt-3 font-body text-sm text-white/85">
+            Comprado el {fechaCompraLabel}
+            <br />
+            Válido hasta el <strong>{fechaLimiteLabel}</strong> (6 meses desde la compra)
+          </p>
         )}
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +81,9 @@ export default function VoucherCard({
           </p>
         ) : (
           <p className="mt-3 font-body text-base text-white/60">
-            Válido por 6 meses desde la compra: hasta el {fechaLimiteLabel}
+            Comprado el {fechaCompraLabel}
+            <br />
+            Válido hasta el <strong>{fechaLimiteLabel}</strong> (6 meses desde la compra)
           </p>
         )}
       </div>

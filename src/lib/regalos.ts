@@ -108,6 +108,18 @@ function generarCodigo(): string {
   return `${codigo.slice(0, 4)}-${codigo.slice(4)}`;
 }
 
+/** "17 de noviembre de 2026" para una fecha YYYY-MM-DD de Airtable. Se ancla
+ * al mediodía de Bogotá: `new Date("2026-11-17")` es medianoche UTC, que en
+ * Colombia todavía es el día anterior. */
+export function fechaLargaRegalo(fechaISO: string): string {
+  return new Date(`${fechaISO.slice(0, 10)}T12:00:00-05:00`).toLocaleDateString("es-CO", {
+    timeZone: "America/Bogota",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 function addMonthsISO(dateISO: string, months: number): string {
   const d = new Date(dateISO);
   d.setMonth(d.getMonth() + months);

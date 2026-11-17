@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { findRegaloByCodigo } from "@/lib/regalos";
+import { findRegaloByCodigo, fechaLargaRegalo } from "@/lib/regalos";
 import { findCatalogItem } from "@/lib/orders";
 import VoucherCard from "@/components/regalos/voucher-card";
 
@@ -20,12 +20,8 @@ export default async function VoucherPage({
         <VoucherCard
         codigo={regalo.codigo}
         planLabel={`${plan?.name ?? regalo.planId} · ${regalo.meses === 1 ? "1 mes" : `${regalo.meses} meses`}`}
-        fechaLimiteLabel={new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
-          timeZone: "America/Bogota",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })}
+        fechaCompraLabel={fechaLargaRegalo(regalo.fechaCompra)}
+        fechaLimiteLabel={fechaLargaRegalo(regalo.fechaLimite)}
         yaCanjeado={regalo.estado === "Activado"}
         />
       </div>

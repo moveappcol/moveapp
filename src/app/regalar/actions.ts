@@ -11,6 +11,7 @@ import { createPendingPago } from "@/lib/pagos";
 import { sendGiftCodeToRecipientEmail } from "@/lib/email";
 import {
   findRegaloByCodigo,
+  fechaLargaRegalo,
   prepararRegalo,
   validarDatosTarjetaRegalo,
   type DatosTarjetaRegalo,
@@ -113,12 +114,8 @@ export async function enviarRegaloADestinatario(
       compradorNombre: regalo.deParte || regalo.compradoPorNombre || "Alguien especial",
       planLabel: `${plan?.name ?? regalo.planId} · ${regalo.meses === 1 ? "1 mes" : `${regalo.meses} meses`}`,
       codigo: regalo.codigo,
-      fechaLimiteLabel: new Date(regalo.fechaLimite).toLocaleDateString("es-CO", {
-        timeZone: "America/Bogota",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
+      fechaCompraLabel: fechaLargaRegalo(regalo.fechaCompra),
+      fechaLimiteLabel: fechaLargaRegalo(regalo.fechaLimite),
       canjearUrl: `${siteUrl}/canjear?codigo=${regalo.codigo}`,
     });
     return { ok: true };

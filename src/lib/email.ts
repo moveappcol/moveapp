@@ -767,7 +767,7 @@ function giftEmailHtml(params: {
             <p style="margin:10px 0 0;font-size:36px;font-weight:800;letter-spacing:6px;color:#ffffff;">${escapeHtml(params.codigo)}</p>
             <p style="margin:10px 0 0;font-size:14px;color:#ffffff;opacity:0.6;">Plan ${escapeHtml(params.planLabel)}</p>
             <p style="margin:18px 0 0;font-size:14px;line-height:1.6;color:#ffffff;opacity:0.85;">
-              Válido hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong>
+              Válido por 6 meses desde la compra: hasta el <strong>${escapeHtml(params.fechaLimiteLabel)}</strong>
             </p>
           </td>
         </tr>

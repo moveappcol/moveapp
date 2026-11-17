@@ -45,7 +45,7 @@ export default function VoucherCard({
             Este código ya fue canjeado.
           </p>
         ) : (
-          <p className="mt-3 font-body text-sm text-white/85">Válido hasta el {fechaLimiteLabel}</p>
+          <p className="mt-3 font-body text-sm text-white/85">Válido por 6 meses desde la compra: hasta el {fechaLimiteLabel}</p>
         )}
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +75,7 @@ export default function VoucherCard({
           </p>
         ) : (
           <p className="mt-3 font-body text-base text-white/60">
-            Válido hasta el {fechaLimiteLabel}
+            Válido por 6 meses desde la compra: hasta el {fechaLimiteLabel}
           </p>
         )}
       </div>

@@ -172,6 +172,10 @@ export default function GiftForm({ planInicial, error }: { planInicial: string; 
         </div>
       </div>
 
+      <p className="rounded-2xl border border-move-coral/30 bg-move-coral/5 px-4 py-3 text-center font-heading text-sm font-semibold text-move-green">
+        ⏳ El regalo es válido por 6 meses desde el día de la compra.
+      </p>
+
       {error && <p className="font-body text-sm text-move-coral">{error}</p>}
 
       <button
@@ -181,7 +185,7 @@ export default function GiftForm({ planInicial, error }: { planInicial: string; 
         Pagar {formatCOP(total)}
       </button>
       <p className="text-center font-body text-xs text-move-green/50">
-        Quien lo reciba tiene 3 meses para activarlo, desde la app o en uniqueappcol.com/canjear.
+        Quien lo reciba lo activa desde la app o en uniqueappcol.com/canjear, dentro de esos 6 meses.
       </p>
     </form>
   );

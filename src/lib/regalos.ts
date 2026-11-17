@@ -17,7 +17,7 @@ import { getSubscriptionByEmail, upsertSubscription } from "./subscriptions";
  *   - PagoId             (texto — id del registro en "Pagos", para trazar
  *      la compra real)
  *   - FechaCompra        (fecha)
- *   - FechaLimite         (fecha — 3 meses después de la compra; pasada esa
+ *   - FechaLimite         (fecha — 6 meses después de la compra; pasada esa
  *      fecha el código ya no se puede canjear, y la plata queda perdida, no
  *      se reembolsa automático)
  *   - Estado               (selección: "Sin activar" | "Activado" | "Vencido")
@@ -37,7 +37,7 @@ import { getSubscriptionByEmail, upsertSubscription } from "./subscriptions";
  * quedan guardados aunque el pago lo confirme el webhook más tarde.
  */
 const REGALOS_TABLE = "Regalos";
-const MESES_VALIDEZ = 3;
+const MESES_VALIDEZ = 6;
 
 export type Regalo = {
   id: string;

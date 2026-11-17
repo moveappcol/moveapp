@@ -29,8 +29,7 @@ export default function RegalarPage({ planInicial, error }: { planInicial: strin
               )}
             </h1>
             <p className="mt-4 max-w-md font-body text-lg text-white/75">
-              Uno, dos o tres meses de clases en los mejores gimnasios y experiencias wellness. Virtual al correo, o
-              física en una tarjeta que llevamos hasta su puerta en Bogotá.
+              Uno, dos o tres meses de clases en los mejores gimnasios y experiencias wellness.
             </p>
           </div>
 

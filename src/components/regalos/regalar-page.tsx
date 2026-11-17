@@ -42,26 +42,35 @@ export default function RegalarPage({ planInicial, error }: { planInicial: strin
                 <CajaRegalo className="absolute -bottom-6 -right-6 z-20 h-20 w-20 rotate-6" colores={PALETAS_REGALO[2]} />
               </>
             )}
-            {/* Fotos reales de la tarjeta impresa, recortadas sin fondo */}
-            <Image
-              src="/regalos/tarjeta-frente.png"
-              alt="Tarjeta de regalo UNIQUE"
-              width={2611}
-              height={1840}
-              sizes="(min-width: 768px) 340px, 75vw"
-              quality={92}
-              priority
-              className="relative z-0 w-[76%] -rotate-3 drop-shadow-[0_30px_35px_rgba(0,0,0,0.45)]"
-            />
-            <Image
-              src="/regalos/tarjeta-interior.png"
-              alt="Interior de la tarjeta de regalo UNIQUE"
-              width={2722}
-              height={1935}
-              sizes="(min-width: 768px) 300px, 68vw"
-              quality={92}
-              className="relative z-10 -mt-[22%] ml-auto w-[68%] rotate-3 drop-shadow-[0_30px_35px_rgba(0,0,0,0.45)]"
-            />
+            {/* La tarjeta tal cual está diseñada en Canva (exportada en alta
+                resolución): el frente doblado y, encima, el interior abierto. */}
+            <div className="relative z-0 w-[78%] -rotate-3 overflow-hidden rounded-md shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)] ring-1 ring-white/20">
+              <Image
+                src="/regalos/tarjeta-frente-hd.png"
+                alt="Tarjeta de regalo UNIQUE"
+                width={1697}
+                height={1200}
+                sizes="(min-width: 768px) 350px, 72vw"
+                quality={95}
+                priority
+                className="w-full"
+              />
+              {/* borde coral del interior asomando, como en la tarjeta real */}
+              <div className="absolute inset-x-0 bottom-0 h-[4%] bg-move-coral" />
+            </div>
+            <div className="relative z-10 -mt-[14%] ml-auto w-[40%] rotate-[5deg] overflow-hidden rounded-md shadow-[0_35px_60px_-15px_rgba(0,0,0,0.6)]">
+              <Image
+                src="/regalos/tarjeta-interior-hd.png"
+                alt="Interior de la tarjeta de regalo UNIQUE"
+                width={1697}
+                height={2400}
+                sizes="(min-width: 768px) 190px, 40vw"
+                quality={95}
+                className="w-full"
+              />
+              {/* sombra suave del doblez en la mitad */}
+              <div className="absolute inset-x-0 top-1/2 h-[10%] -translate-y-1/2 bg-gradient-to-b from-transparent via-black/10 to-transparent" />
+            </div>
           </div>
         </div>
       </section>

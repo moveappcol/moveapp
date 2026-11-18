@@ -26,7 +26,8 @@ function reserva(id: string, fecha: string, gimnasio: string, clase: string, est
   return fakeRecord(id, { Correo: CORREO, Fecha: fecha, Gimnasios: [gimnasio], Clase: [clase], Estado: estado });
 }
 
-function montar({ reservas = [], referidos = [], rondas = [] as ReturnType<typeof fakeRecord>[] } = {}) {
+type Fila = ReturnType<typeof fakeRecord>;
+function montar({ reservas = [] as Fila[], referidos = [] as Fila[], rondas = [] as Fila[] } = {}) {
   const tablas = {
     Reservas: fakeTable(reservas),
     Referidos: fakeTable(referidos),

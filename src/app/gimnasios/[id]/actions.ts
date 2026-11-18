@@ -46,6 +46,7 @@ export async function bookClass(
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || email;
 
   const molestias = String(formData.get("molestias") ?? "").trim();
+  const usarPaseGratis = formData.get("usarPaseGratis") === "on";
 
   const result = await createReservation({
     userEmail: email,
@@ -55,6 +56,7 @@ export async function bookClass(
     claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
     molestias: molestias || undefined,
+    usarPaseGratis,
   });
 
   if (result.ok) {

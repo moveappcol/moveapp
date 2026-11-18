@@ -52,12 +52,14 @@ function ConfirmModal({
 function ConfirmBeforeBookModal({
   claseName,
   credits,
+  conPaseGratis = false,
   onCancel,
   onConfirm,
   t,
 }: {
   claseName: string;
   credits: number;
+  conPaseGratis?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
   t: T;
@@ -67,7 +69,7 @@ function ConfirmBeforeBookModal({
       <div className="w-full max-w-sm rounded-2xl bg-white p-7 text-center shadow-xl">
         <p className="font-heading text-lg font-bold text-move-green">{t.confirmarReservaTitulo}</p>
         <p className="mt-1 font-body text-sm text-move-green/70">
-          {t.confirmarReservaTexto(claseName, credits)}
+          {conPaseGratis ? `Vas a reservar ${claseName} con tu clase gratis del challenge 🎁 — no se descuentan créditos.` : t.confirmarReservaTexto(claseName, credits)}
         </p>
         <div className="mt-5 flex gap-3">
           <button
@@ -123,6 +125,7 @@ function ClaseCard({
   reservasAbrenLabel,
   highlighted,
   fechaCompleta,
+  paseGratisVence,
 }: {
   clase: Clase;
   gimnasioId: string;
@@ -141,6 +144,10 @@ function ClaseCard({
    * implícito (no vive dentro de la ventana de 7 días), así que hay que
    * mostrar el día completo en vez de asumir que ya se sabe cuál es. */
   fechaCompleta?: boolean;
+  /** Si tiene un pase de clase gratis del Challenge vigente (y este no es
+   * el gimnasio de Experiencias): su fecha de vencimiento, para ofrecerle
+   * reservar con él. */
+  paseGratisVence?: string | null;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -157,6 +164,7 @@ function ClaseCard({
   const [dismissed, setDismissed] = useState(false);
   const justBooked = bookState?.ok && !dismissed;
   const [showConfirmBeforeBook, setShowConfirmBeforeBook] = useState(false);
+  const [usandoPase, setUsandoPase] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   return (
@@ -260,10 +268,21 @@ function ClaseCard({
                     className="mt-1 w-full rounded-xl border border-move-green/20 px-3 py-2 font-body text-sm text-move-green outline-none focus:border-move-coral"
                   />
                 </label>
+                {paseGratisVence && (
+                  <label className="flex w-full cursor-pointer items-center gap-2 rounded-xl border border-move-coral/40 bg-move-coral/5 px-3 py-2 font-heading text-sm font-semibold text-move-green">
+                    <input type="checkbox" name="usarPaseGratis" defaultChecked className="h-4 w-4 accent-move-coral" />
+                    🎁 Usar mi clase gratis del challenge
+                    <span className="font-body text-xs font-normal text-move-green/60">(vence el {paseGratisVence})</span>
+                  </label>
+                )}
                 <button
                   type="button"
                   disabled={isBooking}
-                  onClick={() => setShowConfirmBeforeBook(true)}
+                  onClick={() => {
+                    const casilla = formRef.current?.querySelector<HTMLInputElement>('input[name="usarPaseGratis"]');
+                    setUsandoPase(Boolean(casilla?.checked));
+                    setShowConfirmBeforeBook(true);
+                  }}
                   className="rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   {isBooking ? t.reservando : t.reservar}
@@ -292,6 +311,7 @@ function ClaseCard({
                 <ConfirmBeforeBookModal
                   claseName={clase.name}
                   credits={precioEfectivo(clase)}
+                  conPaseGratis={usandoPase}
                   onCancel={() => setShowConfirmBeforeBook(false)}
                   onConfirm={() => {
                     setShowConfirmBeforeBook(false);
@@ -327,6 +347,7 @@ export default function ClassList({
   reservasAbrenLabel,
   targetClaseId,
   modoPlano,
+  paseGratisVence,
 }: {
   gimnasioId: string;
   classes: Clase[];
@@ -348,6 +369,9 @@ export default function ClassList({
    * próximas sesiones como cajitas en una grilla, para que se puedan
    * reservar con semanas de anticipación. */
   modoPlano?: boolean;
+  /** Fecha (texto) de vencimiento del pase de clase gratis vigente, si
+   * tiene — ver ClaseCard. */
+  paseGratisVence?: string | null;
 }) {
   // No se recibe `t` como prop porque este componente es la primera
   // frontera cliente — algunas claves de dict.gimnasio son funciones
@@ -407,6 +431,7 @@ export default function ClassList({
             reservasAbrenLabel={reservasAbrenLabel}
             highlighted={clase.id === targetClaseId}
             fechaCompleta
+            paseGratisVence={paseGratisVence}
           />
         ))}
       </ul>
@@ -468,6 +493,7 @@ export default function ClassList({
                 reservasAbiertas={reservasAbiertas}
                 reservasAbrenLabel={reservasAbrenLabel}
                 highlighted={clase.id === targetClaseId}
+                paseGratisVence={paseGratisVence}
               />
             ))}
           </ul>

@@ -1,3 +1,4 @@
+import { getPaseDisponible, marcarPaseUsado, devolverPaseDeReserva } from "./challenge";
 import { getAirtableBase, escapeFormulaValue } from "./airtable";
 import { getUserCreditsByEmail, deductCredits, addCredits } from "./users";
 import { getClaseById, precioEfectivo, invalidateClasesCupos, getAllClasesDeTodosLosGimnasios } from "./classes";
@@ -33,7 +34,12 @@ export type BookingResult =
   | {
       ok: false;
       error: string;
-      code?: "perfil_incompleto" | "ya_reservada" | "sin_creditos" | "experiencia_requiere_plan";
+      code?:
+        | "perfil_incompleto"
+        | "ya_reservada"
+        | "sin_creditos"
+        | "experiencia_requiere_plan"
+        | "sin_pase_gratis";
     };
 
 export type CancelResult =
@@ -51,6 +57,9 @@ export type ReservationParams = {
    * el gimnasio tenga en cuenta para esa clase. Va tal cual en el PDF de
    * "reservas finales" que recibe el gimnasio (ver pdf.tsx). */
   molestias?: string;
+  /** Reservar con el pase de clase gratis del Challenge (ver challenge.ts):
+   * no descuenta créditos ni pide tenerlos; no aplica a Experiencias. */
+  usarPaseGratis?: boolean;
 };
 
 export type Reservation = {
@@ -403,7 +412,7 @@ export async function validarEntradaListaEspera(params: {
 }
 
 export async function createReservation(params: ReservationParams): Promise<BookingResult> {
-  const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO, molestias } = params;
+  const { userEmail, userName, claseId, gimnasioId, claseCredits, fechaISO, molestias, usarPaseGratis } = params;
 
   if (!reservationsAreOpen()) {
     return {
@@ -429,7 +438,17 @@ export async function createReservation(params: ReservationParams): Promise<Book
       error: "No encontramos un plan de créditos activo para tu cuenta todavía.",
     };
   }
-  if (account.credits < claseCredits) {
+  // Con el pase de clase gratis no hace falta tener créditos — pero sí
+  // tener un pase vigente, y no sirve para Experiencias.
+  const pase = usarPaseGratis ? await getPaseDisponible(userEmail) : null;
+  if (usarPaseGratis) {
+    if (!pase) {
+      return { ok: false, error: "No tienes una clase gratis disponible.", code: "sin_pase_gratis" };
+    }
+    if (gym && esGimnasioDeExperiencias(gym.name)) {
+      return { ok: false, error: "La clase gratis del challenge no aplica para Experiencias." };
+    }
+  } else if (account.credits < claseCredits) {
     return {
       ok: false,
       error: `No tienes créditos suficientes: te quedan ${account.credits} y esta clase vale ${claseCredits}.`,
@@ -503,11 +522,17 @@ export async function createReservation(params: ReservationParams): Promise<Book
         Cedula: account.cedula,
         Correo: userEmail,
         Molestias: molestias?.trim() || "",
+        ...(pase ? { PaseGratis: true } : {}),
       },
     },
   ]);
 
-  const remainingCredits = await deductCredits(account.recordId, claseCredits);
+  let remainingCredits = account.credits;
+  if (pase) {
+    await marcarPaseUsado(pase.id, created[0].id);
+  } else {
+    remainingCredits = await deductCredits(account.recordId, claseCredits);
+  }
   invalidateClasesCupos();
 
   // Si esta persona ya estaba en la lista de espera de esta misma clase y
@@ -529,7 +554,7 @@ export async function createReservation(params: ReservationParams): Promise<Book
     userEmail,
     gimnasio: gym?.name ?? gimnasioId,
     fechaISO,
-    creditos: claseCredits,
+    creditos: pase ? 0 : claseCredits,
     creditosRestantes: remainingCredits,
   }).catch(() => {});
 
@@ -657,7 +682,11 @@ export async function cancelReservation(params: {
     { typecast: true }
   );
 
-  if (onTime) {
+  // Reserva hecha con el pase de clase gratis: no se devuelven créditos
+  // (no se cobraron); si canceló a tiempo, se le devuelve el pase.
+  if (record.get("PaseGratis")) {
+    if (onTime) await devolverPaseDeReserva(params.reservationId);
+  } else if (onTime) {
     await addCredits(account.recordId, clase.credits);
   }
   invalidateClasesCupos();

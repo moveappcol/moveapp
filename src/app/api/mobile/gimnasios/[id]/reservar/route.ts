@@ -21,6 +21,7 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const claseId = body?.claseId as string | undefined;
   const molestias = (body?.molestias as string | undefined)?.trim();
+  const usarPaseGratis = body?.usarPaseGratis === true;
   if (!claseId) {
     return NextResponse.json({ ok: false, error: "Falta la clase." }, { status: 400 });
   }
@@ -47,6 +48,7 @@ export async function POST(
     claseCredits: precioEfectivo(clase),
     fechaISO: clase.fecha,
     molestias: molestias || undefined,
+    usarPaseGratis,
   });
 
   if (result.ok) {

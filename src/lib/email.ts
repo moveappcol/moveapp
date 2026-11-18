@@ -157,6 +157,48 @@ export async function sendCancellationWindowReminderEmail(params: {
   });
 }
 
+/** Challenge UNIQUE: completó los 4 retos y se ganó un pase de clase
+ * gratis (ver challenge.ts). Va además del push, porque la mayoría de la
+ * gente no tiene las notificaciones del celular activadas. */
+export async function sendChallengeGanasteEmail(params: {
+  userEmail: string;
+  nombre: string;
+  venceLabel: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">🎁 ¡GANASTE UNA CLASE GRATIS!</p>
+      <p>¡Hola, ${escapeHtml(params.nombre)}!</p>
+      <p>Completaste los 4 retos de tu <strong>Challenge UNIQUE</strong>: fuiste a 3 gimnasios distintos, probaste 3 disciplinas, viviste una experiencia wellness e invitaste a alguien a UNIQUE. ¡Qué nivel!</p>
+      <p>Te ganaste <strong>una clase gratis en el gimnasio que quieras</strong>, sin gastar tus créditos. Al reservar, elige <strong>"Usar mi clase gratis"</strong>.</p>
+      <p style="font-weight:700;color:#063009;">⏳ Tienes hasta el ${escapeHtml(params.venceLabel)} para usarla.</p>
+      <p>Y tu challenge ya volvió a empezar: todo lo que hagas desde hoy cuenta para tu próxima clase gratis 🔁</p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.userEmail], subject: "🎁 ¡Ganaste una clase gratis en UNIQUE!", html });
+}
+
+/** Challenge UNIQUE: a su pase de clase gratis le quedan 2 días. */
+export async function sendPaseGratisPorVencerEmail(params: {
+  userEmail: string;
+  nombre: string;
+  venceLabel: string;
+}): Promise<void> {
+  const html = `
+    <div style="font-family: sans-serif;">
+      <p style="text-align:center;font-size:28px;font-weight:800;color:#063009;margin:0 0 24px;">UNIQUE</p>
+      <p style="font-size:18px;font-weight:800;color:#ff4f3f;margin:0 0 20px;">⏳ TU CLASE GRATIS ESTÁ POR VENCER</p>
+      <p>¡Hola, ${escapeHtml(params.nombre)}!</p>
+      <p>Tu clase gratis del Challenge UNIQUE vence el <strong>${escapeHtml(params.venceLabel)}</strong>. Reserva la clase que quieras y elige <strong>"Usar mi clase gratis"</strong> para no perderla.</p>
+      <p><a href="https://www.uniqueappcol.com/#gimnasios" target="_blank" rel="noopener noreferrer" style="color:#ff4f3f;font-weight:700;">Ver clases</a></p>
+      <p>Equipo UNIQUE</p>
+    </div>
+  `;
+  await sendEmail({ to: [params.userEmail], subject: "⏳ Tu clase gratis de UNIQUE vence pronto", html });
+}
+
 /** Correo "AFTER CLASS" — se manda a la persona apenas termina su clase,
  * invitándola (sin obligar) a calificarla desde "Mis reservas". */
 export async function sendAfterClassEmail(params: { userEmail: string }): Promise<void> {

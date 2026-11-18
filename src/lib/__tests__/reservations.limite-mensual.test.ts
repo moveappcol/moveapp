@@ -42,6 +42,7 @@ vi.mock("@/lib/waitlist", () => ({
   getAllWaitingEntries: vi.fn(),
 }));
 vi.mock("@/lib/push", () => ({ sendPushNotification: vi.fn() }));
+vi.mock("@/lib/challenge", () => ({ getPaseDisponible: vi.fn(), marcarPaseUsado: vi.fn(), devolverPaseDeReserva: vi.fn() }));
 vi.mock("@/lib/notificaciones", () => ({ crearNotificacion: vi.fn().mockResolvedValue(undefined) }));
 
 import { getAirtableBase } from "@/lib/airtable";

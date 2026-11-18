@@ -11,6 +11,7 @@ import {
 import { getClassesForGym } from "@/lib/classes";
 import { getWaitlistStatus } from "@/lib/waitlist";
 import { getActiveReservationClaseIds } from "@/lib/reservations";
+import { getPaseDisponible, fechaLargaChallenge } from "@/lib/challenge";
 import { getUserCreditsByEmail } from "@/lib/users";
 import { getParqueaderosForGym } from "@/lib/parqueaderos";
 import ClassList, { type WaitlistStatusMap } from "@/components/gym/class-list";
@@ -58,6 +59,7 @@ export default async function GymPage({
 
   const waitlistStatus: WaitlistStatusMap = {};
   let reservedClaseIds: Set<string> = new Set();
+  let paseGratisVence: string | null = null;
   const { userId } = await auth();
   if (userId) {
     const user = await currentUser();
@@ -66,6 +68,10 @@ export default async function GymPage({
       const account = await getUserCreditsByEmail(email);
       if (!canAccessGymByGenero(gym.genero, account?.genero ?? null)) notFound();
       reservedClaseIds = await getActiveReservationClaseIds(email);
+      if (!esGimnasioDeExperiencias(gym.name)) {
+        const pase = await getPaseDisponible(email);
+        paseGratisVence = pase ? fechaLargaChallenge(pase.fechaVence) : null;
+      }
       // El estado de lista de espera se precalcula tanto para clases llenas
       // como para las marcadas "Próximamente" (ahí los cupos no importan —
       // siempre muestran el botón de "Avísame", ver proximamente en Clase).
@@ -137,6 +143,7 @@ export default async function GymPage({
           reservasAbrenLabel={reservasAbrenLabel}
           targetClaseId={targetClaseId}
           modoPlano={esGimnasioDeExperiencias(gym.name)}
+          paseGratisVence={paseGratisVence}
         />
       </div>
 

@@ -6,6 +6,7 @@ import { buyCreditosSueltos } from "@/app/pagos/actions";
 import { checkPagoStatus } from "@/app/suscripcion/actions";
 import { formatCOP, precioCreditosSueltos, MINIMO_CREDITOS_SUELTOS } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
+import { MetodoPagoToggle, NequiFields, tokenizarNequi, type MetodoPago } from "./metodo-pago";
 import ApprovedModal from "./approved-modal";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
@@ -45,6 +46,9 @@ export default function BuyCreditosSueltosForm({
   const [cvc, setCvc] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [metodo, setMetodo] = useState<MetodoPago>("tarjeta");
+  const [telefonoNequi, setTelefonoNequi] = useState("");
+  const [esperandoNequi, setEsperandoNequi] = useState(false);
 
   function ajustarCantidad(delta: number) {
     setCantidad((prev) => Math.max(MINIMO_CREDITOS_SUELTOS, prev + delta));
@@ -63,28 +67,39 @@ export default function BuyCreditosSueltosForm({
         return;
       }
 
-      const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${publicKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          number: number.replace(/\s+/g, ""),
-          cvc,
-          exp_month: expMonth,
-          exp_year: expYear,
-          card_holder: cardHolder,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json?.data?.id) {
-        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
-        return;
+      let tokenId: string;
+      if (metodo === "nequi") {
+        const nequi = await tokenizarNequi(publicKey, telefonoNequi, setEsperandoNequi);
+        if (!nequi.ok) {
+          setError(nequi.error);
+          return;
+        }
+        tokenId = nequi.token;
+      } else {
+        const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${publicKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            number: number.replace(/\s+/g, ""),
+            cvc,
+            exp_month: expMonth,
+            exp_year: expYear,
+            card_holder: cardHolder,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json?.data?.id) {
+          setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
+          return;
+        }
+        tokenId = json.data.id;
       }
 
       startTransition(async () => {
-        const result = await buyCreditosSueltos(cantidad, json.data.id);
+        const result = await buyCreditosSueltos(cantidad, tokenId);
         if (!result.ok) {
           if (result.pending && result.reference) {
             setPending(true);
@@ -170,6 +185,21 @@ export default function BuyCreditosSueltosForm({
         </div>
       </label>
 
+      <MetodoPagoToggle metodo={metodo} setMetodo={setMetodo} />
+
+      {metodo === "nequi" ? (
+        <NequiFields
+          telefono={telefonoNequi}
+          setTelefono={setTelefonoNequi}
+          esperando={esperandoNequi}
+          ayuda="Te llegará una solicitud a tu app de Nequi para autorizar este pago. Acéptala para terminar."
+          accepted={accepted}
+          setAccepted={setAccepted}
+          permalinkAcceptance={permalinkAcceptance}
+          permalinkPersonalAuth={permalinkPersonalAuth}
+          t={t.cardFields}
+        />
+      ) : (
       <CardFields
         number={number}
         setNumber={setNumber}
@@ -187,6 +217,7 @@ export default function BuyCreditosSueltosForm({
         permalinkPersonalAuth={permalinkPersonalAuth}
         t={t.cardFields}
       />
+      )}
 
       {error && <p className="font-body text-sm text-move-coral">{error}</p>}
 

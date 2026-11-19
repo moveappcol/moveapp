@@ -6,6 +6,7 @@ import { buyTrial } from "@/app/prueba/actions";
 import { checkPagoStatus } from "@/app/suscripcion/actions";
 import { formatCOP, TRIAL_PLAN } from "@/lib/credits-pricing";
 import CardFields from "./card-fields";
+import { MetodoPagoToggle, NequiFields, tokenizarNequi, type MetodoPago } from "./metodo-pago";
 import ApprovedModal from "./approved-modal";
 import TrialStartTracker from "@/components/analytics/trial-start-tracker";
 import { getDictionary } from "@/lib/i18n/dictionaries";
@@ -47,6 +48,9 @@ export default function TrialCheckoutForm({
   const [cvc, setCvc] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [metodo, setMetodo] = useState<MetodoPago>("tarjeta");
+  const [telefonoNequi, setTelefonoNequi] = useState("");
+  const [esperandoNequi, setEsperandoNequi] = useState(false);
   // Casilla legal de cobro automático (Ley 1480) — SIN marcar por defecto,
   // separada de la de términos de Wompi que ya trae CardFields.
   const [aceptaCobroAutomatico, setAceptaCobroAutomatico] = useState(false);
@@ -69,43 +73,58 @@ export default function TrialCheckoutForm({
         return;
       }
 
-      const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${publicKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          number: number.replace(/\s+/g, ""),
-          cvc,
-          exp_month: expMonth,
-          exp_year: expYear,
-          card_holder: cardHolder,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json?.data?.id) {
-        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
-        return;
-      }
+      let tokenId: string;
+      // Huella para no repetir la prueba con el mismo medio de pago: con
+      // tarjeta, bin + últimos 4; con Nequi, el celular (ver hashTarjeta).
+      let tarjetaParaHuella: { bin: string | null; lastFour: string | null; expMonth: string; expYear: string };
+      if (metodo === "nequi") {
+        const nequi = await tokenizarNequi(publicKey, telefonoNequi, setEsperandoNequi);
+        if (!nequi.ok) {
+          setError(nequi.error);
+          return;
+        }
+        tokenId = nequi.token;
+        tarjetaParaHuella = { bin: "NEQUI", lastFour: nequi.telefono, expMonth: "", expYear: "" };
+      } else {
+        const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${publicKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            number: number.replace(/\s+/g, ""),
+            cvc,
+            exp_month: expMonth,
+            exp_year: expYear,
+            card_holder: cardHolder,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json?.data?.id) {
+          setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
+          return;
+        }
 
-      // Wompi suele devolver el bin/últimos 4/vencimiento en la tokenización
-      // (no documentado de forma consistente) — se lee de forma defensiva,
-      // sin bloquear si no vienen (ver hashTarjeta en prueba/actions.ts).
-      const cardData = json.data?.card ?? json.data;
-      const tarjeta = {
-        bin: cardData?.bin ?? null,
-        lastFour: cardData?.last_four ?? null,
-        expMonth: cardData?.exp_month ?? expMonth,
-        expYear: cardData?.exp_year ?? expYear,
-      };
+        // Wompi suele devolver el bin/últimos 4/vencimiento en la tokenización
+        // (no documentado de forma consistente) — se lee de forma defensiva,
+        // sin bloquear si no vienen (ver hashTarjeta en prueba/actions.ts).
+        const cardData = json.data?.card ?? json.data;
+        tarjetaParaHuella = {
+          bin: cardData?.bin ?? null,
+          lastFour: cardData?.last_four ?? null,
+          expMonth: cardData?.exp_month ?? expMonth,
+          expYear: cardData?.exp_year ?? expYear,
+        };
+        tokenId = json.data.id;
+      }
 
       startTransition(async () => {
         const result = await buyTrial({
-          cardToken: json.data.id,
+          cardToken: tokenId,
           aceptado: aceptaCobroAutomatico,
           codigoReferido: codigoReferido.trim() || undefined,
-          tarjeta,
+          tarjeta: tarjetaParaHuella,
         });
         if (!result.ok) {
           if (result.pending && result.reference) {
@@ -179,6 +198,21 @@ export default function TrialCheckoutForm({
         {t.trial.resumenPago(formatCOP(TRIAL_PLAN.price), fechaFinEstimada)}
       </p>
 
+      <MetodoPagoToggle metodo={metodo} setMetodo={setMetodo} />
+
+      {metodo === "nequi" ? (
+        <NequiFields
+          telefono={telefonoNequi}
+          setTelefono={setTelefonoNequi}
+          esperando={esperandoNequi}
+          ayuda="Te llegará una solicitud a tu app de Nequi: autoriza el pago de la prueba y, si no la cancelas, el del plan Starter cada mes."
+          accepted={accepted}
+          setAccepted={setAccepted}
+          permalinkAcceptance={permalinkAcceptance}
+          permalinkPersonalAuth={permalinkPersonalAuth}
+          t={t.cardFields}
+        />
+      ) : (
       <CardFields
         number={number}
         setNumber={setNumber}
@@ -196,6 +230,7 @@ export default function TrialCheckoutForm({
         permalinkPersonalAuth={permalinkPersonalAuth}
         t={t.cardFields}
       />
+      )}
 
       <label className="block">
         <span className="font-heading text-sm font-medium text-move-green">{t.trial.codigoReferidoLabel}</span>

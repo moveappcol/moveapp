@@ -39,7 +39,7 @@ const CHALLENGE_TABLE = "Challenge";
 const PASES_TABLE = "PasesClaseGratis";
 
 /** Lo que pase antes del lanzamiento no cuenta — todos arrancan parejos. */
-export const CHALLENGE_LANZAMIENTO = new Date("2026-11-24T00:00:00-05:00");
+export const CHALLENGE_LANZAMIENTO = new Date("2026-11-18T00:00:00-05:00");
 /** Si deja de pagar, el progreso se congela; pasados estos días desde que
  * se le vencen los créditos, se reinicia en cero. */
 const DIAS_GRACIA_REINICIO = 5;

@@ -147,8 +147,12 @@ export async function fetchFreshAcceptanceTokens(): Promise<AcceptanceTokens> {
 
 export type WompiPaymentSource = { id: number; status: string };
 
-/** Guarda una tarjeta tokenizada como "fuente de pago" reutilizable, para
- * poder cobrarla luego sin que la persona esté presente (suscripción). */
+/** Guarda una tarjeta tokenizada — o una cuenta Nequi ya aprobada — como
+ * "fuente de pago" reutilizable, para poder cobrarla luego sin que la
+ * persona esté presente (suscripción). El token de Nequi empieza por
+ * "nequi_" (sale de POST /tokens/nequi y la persona lo aprueba en su app de
+ * Nequi); el de tarjeta, por "tok_". `cardToken` recibe cualquiera de los
+ * dos: así ningún llamador tiene que cambiar para aceptar Nequi. */
 export async function createPaymentSource(params: {
   cardToken: string;
   customerEmail: string;
@@ -162,7 +166,7 @@ export async function createPaymentSource(params: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      type: "CARD",
+      type: esTokenNequi(params.cardToken) ? "NEQUI" : "CARD",
       token: params.cardToken,
       customer_email: params.customerEmail,
       acceptance_token: params.acceptanceToken,
@@ -171,9 +175,32 @@ export async function createPaymentSource(params: {
   });
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(json?.error?.messages ? JSON.stringify(json.error.messages) : "No pudimos guardar la tarjeta.");
+    throw new Error(
+      json?.error?.messages
+        ? JSON.stringify(json.error.messages)
+        : esTokenNequi(params.cardToken)
+          ? "No pudimos guardar tu cuenta Nequi."
+          : "No pudimos guardar la tarjeta."
+    );
   }
   return { id: json.data.id, status: json.data.status };
+}
+
+export function esTokenNequi(token: string): boolean {
+  return token.startsWith("nequi_");
+}
+
+/** CARD o NEQUI — hace falta al cobrar: a una fuente Nequi no se le manda
+ * `payment_method` (las cuotas son solo de tarjeta). Se cachea por id (el
+ * tipo de una fuente de pago nunca cambia). */
+async function tipoFuenteDePago(paymentSourceId: number): Promise<string> {
+  return cached(`wompi:paymentSourceType:${paymentSourceId}`, 24 * 60 * 60 * 1000, async () => {
+    const res = await fetch(`${wompiApiBase()}/payment_sources/${paymentSourceId}`, {
+      headers: { Authorization: `Bearer ${wompiPrivateKey()}` },
+    });
+    const json = await res.json().catch(() => null);
+    return (json?.data?.type as string | undefined) ?? "CARD";
+  });
 }
 
 /** Cobra una fuente de pago guardada, server-to-server, sin que la persona
@@ -195,6 +222,7 @@ export async function chargeWithPaymentSource(params: {
   reference: string;
 }): Promise<WompiTransaction> {
   const signature = buildIntegritySignature(params.reference, params.amountInCents, "COP");
+  const esNequi = (await tipoFuenteDePago(params.paymentSourceId)) === "NEQUI";
   const res = await fetch(`${wompiApiBase()}/transactions`, {
     method: "POST",
     headers: {
@@ -206,7 +234,7 @@ export async function chargeWithPaymentSource(params: {
       currency: "COP",
       customer_email: params.customerEmail,
       payment_source_id: params.paymentSourceId,
-      payment_method: { installments: 1 },
+      ...(esNequi ? {} : { payment_method: { installments: 1 } }),
       reference: params.reference,
       signature,
     }),

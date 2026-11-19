@@ -90,6 +90,11 @@ export default function SubscribeForm({
   const [cvc, setCvc] = useState("");
   const [cardHolder, setCardHolder] = useState("");
   const [accepted, setAccepted] = useState(false);
+  // Medio de pago para el cobro mensual: tarjeta o Nequi (los dos únicos
+  // que Wompi deja guardar como fuente de pago recurrente).
+  const [metodo, setMetodo] = useState<"tarjeta" | "nequi">("tarjeta");
+  const [telefonoNequi, setTelefonoNequi] = useState("");
+  const [esperandoNequi, setEsperandoNequi] = useState(false);
 
   const [couponInput, setCouponInput] = useState(initialCouponCode ?? "");
   const [couponCode, setCouponCode] = useState<string | null>(null);
@@ -174,6 +179,71 @@ export default function SubscribeForm({
     });
   }
 
+  async function tokenizarTarjeta(): Promise<string | null> {
+    const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${publicKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        number: number.replace(/\s+/g, ""),
+        cvc,
+        exp_month: expMonth,
+        exp_year: expYear,
+        card_holder: cardHolder,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok || !json?.data?.id) {
+      setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
+      return null;
+    }
+    return json.data.id as string;
+  }
+
+  /** Nequi: se le manda a la persona una solicitud de suscripción a su app
+   * de Nequi; cuando la acepta, el token pasa de PENDING a APPROVED y ya se
+   * puede guardar como fuente de pago (y cobrarle cada mes sin que tenga
+   * que hacer nada). Se espera hasta ~3 minutos a que la acepte. */
+  async function tokenizarNequi(): Promise<string | null> {
+    const telefono = telefonoNequi.replace(/\D/g, "");
+    if (telefono.length !== 10) {
+      setError("Escribe el número de celular de tu cuenta Nequi (10 dígitos).");
+      return null;
+    }
+    const res = await fetch(`${wompiApiBase(publicKey)}/tokens/nequi`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${publicKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ phone_number: telefono }),
+    });
+    const json = await res.json();
+    const token = json?.data?.id as string | undefined;
+    if (!res.ok || !token) {
+      setError(json?.error?.messages ? JSON.stringify(json.error.messages) : "No pudimos conectar con Nequi. Revisa el número.");
+      return null;
+    }
+    setEsperandoNequi(true);
+    try {
+      for (let intento = 0; intento < 60; intento++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const estadoRes = await fetch(`${wompiApiBase(publicKey)}/tokens/nequi/${token}`, {
+          headers: { Authorization: `Bearer ${publicKey}` },
+        });
+        const estado = (await estadoRes.json().catch(() => null))?.data?.status as string | undefined;
+        if (estado === "APPROVED") return token;
+        if (estado && estado !== "PENDING") {
+          setError("La solicitud en Nequi fue rechazada o expiró. Inténtalo de nuevo.");
+          return null;
+        }
+      }
+      setError("No vimos la aprobación en Nequi a tiempo. Vuelve a intentarlo y acepta la solicitud en tu app.");
+      return null;
+    } finally {
+      setEsperandoNequi(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (submittingRef.current) return;
@@ -196,30 +266,13 @@ export default function SubscribeForm({
         return;
       }
 
-      const res = await fetch(`${wompiApiBase(publicKey)}/tokens/cards`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${publicKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          number: number.replace(/\s+/g, ""),
-          cvc,
-          exp_month: expMonth,
-          exp_year: expYear,
-          card_holder: cardHolder,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json?.data?.id) {
-        setError(json?.error?.messages ? JSON.stringify(json.error.messages) : t.revisaTarjeta);
-        return;
-      }
+      const tokenId = metodo === "nequi" ? await tokenizarNequi() : await tokenizarTarjeta();
+      if (!tokenId) return;
 
       startTransition(async () => {
         const result = await subscribeToPlan(
           planId,
-          json.data.id,
+          tokenId,
           coupon.status === "valid-descuento" && couponCode ? couponCode : undefined,
           codigoReferidoInput.trim() || undefined
         );
@@ -360,6 +413,60 @@ export default function SubscribeForm({
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-move-green/10 bg-white p-6">
+          <div className="grid grid-cols-2 gap-2 rounded-full bg-move-green/5 p-1">
+            {(["tarjeta", "nequi"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMetodo(m)}
+                className={`rounded-full px-4 py-2 font-heading text-sm font-semibold transition-colors ${
+                  metodo === m ? "bg-move-green text-white" : "text-move-green/70"
+                }`}
+              >
+                {m === "tarjeta" ? "Tarjeta" : "Nequi"}
+              </button>
+            ))}
+          </div>
+
+          {metodo === "nequi" ? (
+            <div className="space-y-4">
+              <label className="block">
+                <span className="font-heading text-sm font-medium text-move-green">Celular de tu cuenta Nequi</span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  required
+                  maxLength={13}
+                  value={telefonoNequi}
+                  onChange={(e) => setTelefonoNequi(e.target.value)}
+                  placeholder="300 123 4567"
+                  className="mt-2 w-full rounded-xl border border-move-green/20 px-4 py-3 font-body text-move-green outline-none focus:border-move-coral"
+                />
+                <span className="mt-1 block font-body text-xs text-move-green/60">
+                  Te llegará una solicitud a tu app de Nequi para autorizar el pago mensual de tu plan. Acéptala para terminar.
+                </span>
+              </label>
+              {esperandoNequi && (
+                <p className="rounded-xl bg-move-lime/40 px-4 py-3 font-heading text-sm font-semibold text-move-green">
+                  📲 Abre tu app de Nequi y acepta la solicitud de UNIQUE. Te esperamos aquí…
+                </p>
+              )}
+              <label className="flex items-start gap-2 font-body text-xs text-move-green/70">
+                <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-0.5" />
+                <span>
+                  {t.cardFields.aceptoBefore}{" "}
+                  <a href={permalinkAcceptance} target="_blank" rel="noopener noreferrer" className="underline">
+                    {t.cardFields.terminos}
+                  </a>{" "}
+                  {t.cardFields.aceptoMiddle}{" "}
+                  <a href={permalinkPersonalAuth} target="_blank" rel="noopener noreferrer" className="underline">
+                    {t.cardFields.autorizacion}
+                  </a>{" "}
+                  {t.cardFields.aceptoAfter}
+                </span>
+              </label>
+            </div>
+          ) : (
           <CardFields
             number={number}
             setNumber={setNumber}
@@ -377,6 +484,7 @@ export default function SubscribeForm({
             permalinkPersonalAuth={permalinkPersonalAuth}
             t={t.cardFields}
           />
+          )}
 
           <label className="block">
             <span className="font-heading text-sm font-medium text-move-green">

@@ -42,7 +42,7 @@ export async function bookClass(
     return { ok: false, error: "Esta clase todavía no se puede reservar." };
   }
   if (clase.linkExterno) {
-    return { ok: false, error: "Esta clase se reserva directamente en la página del aliado." };
+    return { ok: false, error: `Esta experiencia se reserva en la página del aliado: ${clase.linkExterno}` };
   }
 
   const userName =

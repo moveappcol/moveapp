@@ -41,6 +41,9 @@ export async function bookClass(
   if (clase.proximamente) {
     return { ok: false, error: "Esta clase todavía no se puede reservar." };
   }
+  if (clase.linkExterno) {
+    return { ok: false, error: "Esta clase se reserva directamente en la página del aliado." };
+  }
 
   const userName =
     [user?.firstName, user?.lastName].filter(Boolean).join(" ") || email;

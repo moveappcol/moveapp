@@ -212,6 +212,8 @@ export const es = {
     sinClasesProgramadas: "Este gimnasio todavía no tiene clases programadas.",
     noHayClasesEsteDia: "No hay clases programadas para este día.",
     proximamenteAviso: "Todavía no se puede reservar — muy pronto abrimos cupos.",
+    reservarExterno: "Reservar",
+    reservarExternoAviso: "Esta experiencia se reserva directamente en la página de nuestro aliado.",
     waitlist: {
       enEspera: (posicion: number | null) =>
         `Estás en la lista de espera${posicion ? ` (posición ${posicion})` : ""} — te avisamos si se libera un cupo.`,

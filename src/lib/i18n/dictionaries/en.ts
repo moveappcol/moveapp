@@ -208,6 +208,8 @@ export const en: Dictionary = {
     sinClasesProgramadas: "This gym doesn't have any classes scheduled yet.",
     noHayClasesEsteDia: "No classes scheduled for this day.",
     proximamenteAviso: "Not open for booking yet — spots open soon.",
+    reservarExterno: "Book",
+    reservarExternoAviso: "This experience is booked directly on our partner's website.",
     waitlist: {
       enEspera: (posicion: number | null) =>
         `You're on the waitlist${posicion ? ` (position ${posicion})` : ""} — we'll let you know if a spot opens up.`,

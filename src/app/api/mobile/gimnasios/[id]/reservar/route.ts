@@ -39,6 +39,9 @@ export async function POST(
   if (clase.proximamente) {
     return NextResponse.json({ ok: false, error: "Esta clase todavía no se puede reservar." }, { status: 400 });
   }
+  if (clase.linkExterno) {
+    return NextResponse.json({ ok: false, error: "Esta clase se reserva directamente en la página del aliado." }, { status: 400 });
+  }
 
   const result = await createReservation({
     userEmail: user.email,

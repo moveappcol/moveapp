@@ -194,12 +194,14 @@ function ClaseCard({
           )}
           {!clase.proximamente && <CuposAviso cuposDisponibles={clase.cuposDisponibles} t={t} />}
         </div>
-        <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
-          {precioEfectivo(clase) < clase.credits && (
-            <span className="mr-1 text-move-green/40 line-through">{clase.credits}</span>
-          )}
-          {t.credits(precioEfectivo(clase))}
-        </span>
+        {!clase.linkExterno && (
+          <span className="whitespace-nowrap rounded-full bg-move-coral/10 px-3 py-1 font-heading text-xs font-semibold text-move-coral">
+            {precioEfectivo(clase) < clase.credits && (
+              <span className="mr-1 text-move-green/40 line-through">{clase.credits}</span>
+            )}
+            {t.credits(precioEfectivo(clase))}
+          </span>
+        )}
       </div>
 
       {mostrarFotos && clase.fotos.length > 0 && (
@@ -217,6 +219,18 @@ function ClaseCard({
           />
         ) : yaReservada ? (
           <p className="font-body text-sm font-medium text-move-green">{t.yaReservada}</p>
+        ) : clase.linkExterno ? (
+          <>
+            <p className="mb-2 font-body text-sm text-move-green/50">{t.reservarExternoAviso}</p>
+            <a
+              href={clase.linkExterno}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-full bg-move-coral px-5 py-2 font-heading text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            >
+              {t.reservarExterno} ↗
+            </a>
+          </>
         ) : clase.proximamente ? (
           <>
             <p className="mb-2 font-body text-sm text-move-green/50">{t.proximamenteAviso}</p>

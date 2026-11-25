@@ -73,6 +73,12 @@ export type Clase = {
   fotos: string[];
   /** Las mismas fotos en resolución completa, para verlas en grande. */
   fotosFull: string[];
+  /** Link a la página de reservas de un aliado (campo "Link reserva externa"
+   * en Airtable) — para experiencias que se reservan fuera de UNIQUE (ej.
+   * Ozlo). Si está puesto, el botón Reservar abre ese link en vez de
+   * reservar con créditos, y la reserva con créditos queda bloqueada. null
+   * si la clase se reserva normal en UNIQUE. */
+  linkExterno: string | null;
 };
 
 /** Los créditos que realmente se cobran al reservar — el descuento si
@@ -188,6 +194,7 @@ function mapRecordToClase(
   const actividad = firstSelectValue(record.get("Actividad"));
   const descripcion = (record.get(DESCRIPCION_FIELD) as string)?.trim();
   const fotos = (record.get("Fotos") as Attachment[] | undefined) ?? [];
+  const linkExterno = (record.get("Link reserva externa") as string | undefined)?.trim();
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
@@ -206,6 +213,7 @@ function mapRecordToClase(
     proximamente: Boolean(record.get("Sepuedereservar")),
     fotos: fotos.map((f) => attachmentDisplayUrl(f, "large")),
     fotosFull: fotos.map((f) => attachmentDisplayUrl(f, "full")),
+    linkExterno: linkExterno && /^https?:\/\//i.test(linkExterno) ? linkExterno : null,
   };
 }
 

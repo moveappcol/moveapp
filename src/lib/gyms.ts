@@ -306,7 +306,7 @@ function normalizeGymGenero(raw: unknown): GymGenero {
   return "todos";
 }
 
-type Attachment = {
+export type Attachment = {
   url: string;
   thumbnails?: { large?: { url: string }; full?: { url: string } };
 };
@@ -318,7 +318,7 @@ type Attachment = {
  * "full" (resolución casi original, solo para cuando se hace zoom). Si no
  * hay thumbnail del tamaño pedido, cae al siguiente más grande disponible,
  * y por último al archivo original (adjuntos que no son imagen). */
-function attachmentDisplayUrl(attachment: Attachment, size: "large" | "full" = "full"): string {
+export function attachmentDisplayUrl(attachment: Attachment, size: "large" | "full" = "full"): string {
   if (size === "large") {
     return attachment.thumbnails?.large?.url ?? attachment.thumbnails?.full?.url ?? attachment.url;
   }

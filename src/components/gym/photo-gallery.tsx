@@ -7,7 +7,17 @@ import { createPortal } from "react-dom";
  * sueltas sin ninguna acción al tocarlas, lo que generaba "dead clicks" en
  * Clarity (confirmado viendo grabaciones reales: la gente las toca
  * esperando verlas más grandes). */
-export default function PhotoGallery({ photos, alt }: { photos: string[]; alt: string }) {
+export default function PhotoGallery({
+  photos,
+  alt,
+  fullPhotos,
+}: {
+  photos: string[];
+  alt: string;
+  /** Versión en resolución completa de las mismas fotos, para el lightbox —
+   * si no viene, el lightbox usa `photos`. */
+  fullPhotos?: string[];
+}) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -88,7 +98,7 @@ export default function PhotoGallery({ photos, alt }: { photos: string[]; alt: s
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={photos[openIndex]}
+              src={fullPhotos?.[openIndex] ?? photos[openIndex]}
               alt={alt}
               onClick={(e) => e.stopPropagation()}
               className="max-h-[85vh] max-w-full rounded-xl object-contain"

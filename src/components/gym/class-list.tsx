@@ -12,6 +12,7 @@ import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 import type { Locale } from "@/lib/i18n/locale";
 import WaitlistForm from "./waitlist-form";
+import PhotoGallery from "./photo-gallery";
 
 type T = Dictionary["gimnasio"];
 
@@ -126,6 +127,7 @@ function ClaseCard({
   highlighted,
   fechaCompleta,
   paseGratisVence,
+  mostrarFotos,
 }: {
   clase: Clase;
   gimnasioId: string;
@@ -148,6 +150,9 @@ function ClaseCard({
    * el gimnasio de Experiencias): su fecha de vencimiento, para ofrecerle
    * reservar con él. */
   paseGratisVence?: string | null;
+  /** true solo en el gimnasio de Experiencias: ahí cada evento muestra sus
+   * propias fotos (campo "Fotos" de la clase en Airtable). */
+  mostrarFotos?: boolean;
 }) {
   /* useActionState vive aquí (no en un hijo) a propósito: bookClass() hace
    * revalidatePath, y ese revalidate llega en la MISMA transición en la que
@@ -196,6 +201,12 @@ function ClaseCard({
           {t.credits(precioEfectivo(clase))}
         </span>
       </div>
+
+      {mostrarFotos && clase.fotos.length > 0 && (
+        <div className="mt-4">
+          <PhotoGallery photos={clase.fotos} fullPhotos={clase.fotosFull} alt={clase.name} />
+        </div>
+      )}
 
       <div className="mt-4">
         {justBooked ? (
@@ -432,6 +443,7 @@ export default function ClassList({
             highlighted={clase.id === targetClaseId}
             fechaCompleta
             paseGratisVence={paseGratisVence}
+            mostrarFotos
           />
         ))}
       </ul>

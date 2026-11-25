@@ -8,7 +8,7 @@ import {
   agregarOcurrenciaALiquidacion,
   buildOcurrenciaCounts,
 } from "./liquidaciones";
-import { getGymBillingInfo, getGyms, esGimnasioDeExperiencias } from "./gyms";
+import { getGymBillingInfo, getGyms, esGimnasioDeExperiencias, attachmentDisplayUrl, type Attachment } from "./gyms";
 
 const CACHE_TTL_MS = 5_000;
 const CLASES_CON_CUPOS_CACHE_KEY = "classes:allWithCupos";
@@ -66,6 +66,13 @@ export type Clase = {
    * (campo nuevo en Airtable, vacío = false — nunca cambia nada ya
    * publicado). */
   proximamente: boolean;
+  /** Fotos propias de esta clase (campo de adjuntos "Fotos" en Airtable) —
+   * pensado para las Experiencias, donde cada evento tiene sus fotos; la UI
+   * solo las muestra en el gimnasio de Experiencias. Versión liviana para la
+   * tarjeta; vacío si no tiene. */
+  fotos: string[];
+  /** Las mismas fotos en resolución completa, para verlas en grande. */
+  fotosFull: string[];
 };
 
 /** Los créditos que realmente se cobran al reservar — el descuento si
@@ -180,6 +187,7 @@ function mapRecordToClase(
   const tipo = firstSelectValue(record.get("Tipo"));
   const actividad = firstSelectValue(record.get("Actividad"));
   const descripcion = (record.get(DESCRIPCION_FIELD) as string)?.trim();
+  const fotos = (record.get("Fotos") as Attachment[] | undefined) ?? [];
   return {
     id: record.id,
     name: (record.get("Clase") as string)?.trim() ?? "Sin nombre",
@@ -196,6 +204,8 @@ function mapRecordToClase(
     actividad: actividad || null,
     descripcion: descripcion || null,
     proximamente: Boolean(record.get("Sepuedereservar")),
+    fotos: fotos.map((f) => attachmentDisplayUrl(f, "large")),
+    fotosFull: fotos.map((f) => attachmentDisplayUrl(f, "full")),
   };
 }
 

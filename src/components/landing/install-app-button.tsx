@@ -21,9 +21,6 @@ declare global {
  * que ahí se deja el flujo de PWA tal como estaba. */
 const APP_STORE_URL = "https://apps.apple.com/app/id6809840851";
 
-/** Mismo scheme que "scheme" en el app.json de la app móvil. */
-const APP_SCHEME = "uniqueapp://";
-
 /** En Android/Chrome, este evento nos da el diálogo nativo de instalación
  * -- un solo clic en "Instalar" y listo. En iPhone, Apple no expone ninguna
  * API para disparar "Agregar a pantalla de inicio" desde código: ahí no
@@ -83,23 +80,12 @@ export default function InstallAppButton({ label, sobreVerde = false }: { label:
 
   const handleClick = async () => {
     if (isIOS) {
-      // Si ya tiene la app instalada, este scheme la abre directo — nunca
-      // se ve el App Store de por medio. Si no la tiene, iOS simplemente
-      // no hace nada con el scheme (sin error que JS pueda leer), así que
-      // la única forma de saberlo es: si seguimos viendo la página pasado
-      // un rato corto, es porque no abrió nada → ahí sí mandamos al App
-      // Store como respaldo.
-      const fallbackTimer = window.setTimeout(() => {
-        if (!document.hidden) window.location.href = APP_STORE_URL;
-      }, 1500);
-      document.addEventListener(
-        "visibilitychange",
-        () => {
-          if (document.hidden) window.clearTimeout(fallbackTimer);
-        },
-        { once: true }
-      );
-      window.location.href = APP_SCHEME;
+      // Directo al App Store. Antes se probaba primero el scheme de la app
+      // (por si ya estaba instalada), pero cuando no lo está Safari no lo
+      // ignora: muestra una alerta de "dirección no válida" antes de que
+      // llegara el respaldo al App Store. Si ya la tiene instalada, el App
+      // Store le muestra "Abrir" igual.
+      window.location.href = APP_STORE_URL;
       return;
     }
     if (deferredPrompt) {
